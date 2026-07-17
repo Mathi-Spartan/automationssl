@@ -2,7 +2,24 @@
 // Credentials come exclusively from environment variables (never bundled client-side):
 //   GOGETSSL_USER, GOGETSSL_PASS, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
+import forge from 'node-forge'
+
 const GG = 'https://my.gogetssl.com/api'
+
+// Products whose placeholder CSR must carry a wildcard common name
+const WILDCARD_CN = new Set([300, 401, 403])
+
+// The order API requires a CSR even for automation/ACME plans. It is a pure
+// formality: the customer's ACME client generates its own keys later, so we
+// create a throwaway key+CSR in memory and discard the key immediately.
+function placeholderCsr(commonName) {
+  const keys = forge.pki.rsa.generateKeyPair(2048)
+  const csr = forge.pki.createCertificationRequest()
+  csr.publicKey = keys.publicKey
+  csr.setSubject([{ name: 'commonName', value: commonName }])
+  csr.sign(keys.privateKey, forge.md.sha256.create())
+  return forge.pki.certificationRequestToPem(csr)
+}
 
 const KNOWN_PRODUCTS = {
   300: 'Sectigo ACME Certificate-as-a-Service',
@@ -43,11 +60,16 @@ export default async function handler(req, res) {
     const months = Number(period) || 12
 
     // -------- place order with GoGetSSL --------
+    const base = domain.replace(/^\*\./, '')
+    const cn = WILDCARD_CN.has(Number(product_id)) ? `*.${base.replace(/^www\./, '')}` : base
+    const finalCsr = csr || placeholderCsr(cn)
+
     const key = await ggAuth()
     const params = new URLSearchParams({
       product_id: String(product_id),
       period: String(months),
       server_count: '-1',
+      webserver_type: '-1',
       admin_firstname: firstname,
       admin_lastname: lastname,
       admin_phone: phone,
@@ -59,7 +81,7 @@ export default async function handler(req, res) {
       tech_title: 'Mr.',
       tech_email: email,
     })
-    if (csr) params.set('csr', csr)
+    params.set('csr', finalCsr)
 
     const orderRes = await fetch(`${GG}/orders/add_ssl_order/?auth_key=${key}`, {
       method: 'POST',
