@@ -13,11 +13,12 @@ export function deliverables(order) {
   // CaaS credentials live at items[0].account: eab_mac_id / eab_mac_key / server_url.
   // account.status is "pending" until the customer's ACME client registers.
   let acme = null
-  if (isAcme && account?.eab_mac_key) {
+  if (isAcme && account?.eab_mac_key && account?.server_url) {
+    // Values passed through verbatim from the CA — no fallbacks, no synthesis.
     acme = {
       eab_kid: account.eab_mac_id || account.id,
       eab_hmac_key: account.eab_mac_key,
-      server_url: account.server_url || 'https://acme.sectigo.com/v2/DV',
+      server_url: account.server_url,
     }
   }
   const aiStatus = item?.autoinstall?.status || null
@@ -29,12 +30,21 @@ export function deliverables(order) {
     aiStatus,
     acme,
     renewal: item?.subscription?.next_renewal || null,
+    begin: item?.subscription?.begin || null,
+    caOrderStatus: order?.api_response?.order?.status || null,
+    acmeAccountStatus: account?.status || null,
     vendorDomains,
     agentInstalled: Boolean(item?.autoinstall?.installation_method) || (aiStatus && aiStatus !== 'incomplete'),
     isAcme,
     enrollReady,
     activated: isAcme ? clientRegistered : Boolean(aiStatus && aiStatus !== 'incomplete'),
   }
+}
+
+function fmtTime(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  } catch { return '' }
 }
 
 function daysUntil(dateStr) {
@@ -49,6 +59,24 @@ function fmtDate(dateStr) {
   } catch {
     return dateStr
   }
+}
+
+export async function refreshOrders(list) {
+  // Always ask the backend for a live CA sync of these orders (server throttles
+  // actual vendor calls to one per 2 minutes per order).
+  const { data: sess } = await supabase.auth.getSession()
+  const token = sess?.session?.access_token
+  if (!token || list.length === 0) return false
+  const results = await Promise.all(
+    list.map((o) =>
+      fetch('/api/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ order_id: o.id }),
+      }).then((r) => r.json()).catch(() => null)
+    )
+  )
+  return results.some((r) => r?.refreshed)
 }
 
 async function refreshPending(orders) {
@@ -207,16 +235,24 @@ certbot register --server ${d.acme.server_url} \
 
       <div className="kv" style={{ marginTop: 8 }}>
         <div><b>Order ID</b> {order.gogetssl_order_id}</div>
-        {!d.activated && d.renewal && <div><b>Plan runs until</b> {fmtDate(d.renewal)}</div>}
+        {d.begin && <div><b>Subscription began</b> {fmtDate(d.begin)}</div>}
+        {d.renewal && <div><b>Next renewal</b> {fmtDate(d.renewal)}</div>}
+        {d.caOrderStatus && <div><b>CA order status</b> {d.caOrderStatus}</div>}
+        {d.isAcme && d.acmeAccountStatus && <div><b>ACME account status</b> {d.acmeAccountStatus}</div>}
+        {d.aiStatus && <div><b>AutoInstall status</b> {d.aiStatus}</div>}
+        {order.last_synced_at && <div><b>Synced from CA</b> today {fmtTime(order.last_synced_at)}</div>}
       </div>
 
       {d.vendorDomains.length > 0 && (
         <div className="chips" style={{ marginTop: 6 }}>
-          {d.vendorDomains.map((dom) => (
-            <span className="chip lock" key={typeof dom === 'string' ? dom : JSON.stringify(dom)}>
-              🔒 {typeof dom === 'string' ? dom : dom?.name || dom?.domain || ''}
-            </span>
-          ))}
+          {d.vendorDomains.map((dom) => {
+            const name = typeof dom === 'string' ? dom : dom?.name || dom?.domain || ''
+            return d.activated ? (
+              <span className="chip lock" key={name} title="Secured — certificate active">🔒 {name}</span>
+            ) : (
+              <span className="chip" key={name} title="Registered with the CA — no certificate issued yet">{name} · awaiting cert</span>
+            )
+          })}
         </div>
       )}
 
@@ -322,7 +358,7 @@ function CustomerDashboard({ session, profile }) {
 
   async function checkNow(order) {
     setChecking(order.id)
-    await refreshPending([order])
+    await refreshOrders([order])
     await load()
     setChecking(null)
   }
@@ -376,7 +412,7 @@ function CustomerDashboard({ session, profile }) {
           <div className="panel">
           {pending.map((o) => (
             <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
-              onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
+              onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
               <PlanCard order={o} isReseller={false} servers={servers} noHead
                 onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id} />
             </SubRow>
@@ -390,7 +426,7 @@ function CustomerDashboard({ session, profile }) {
           <div className="panel">
           {active.map((o) => (
             <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
-              onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
+              onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
               <PlanCard order={o} isReseller={false} servers={servers} noHead onAssignServer={assignServer} />
             </SubRow>
           ))}
@@ -453,7 +489,7 @@ function ResellerDashboard({ session, profile }) {
 
   async function checkNow(order) {
     setChecking(order.id)
-    await refreshPending([order])
+    await refreshOrders([order])
     await load()
     setChecking(null)
   }
@@ -521,7 +557,7 @@ function ResellerDashboard({ session, profile }) {
       <div className="panel">
       {inventory.map((o) => (
         <SubRow key={o.id} order={o} isReseller open={!!open[o.id]}
-          onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
+          onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
         <PlanCard order={o} isReseller servers={servers} noHead
           onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
           {subs.length > 0 && (

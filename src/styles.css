@@ -232,7 +232,8 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .plan-note.ok-note { background: var(--cert-soft, #eaf5ee); border-radius: 10px; padding: 10px 14px; }
 .plan-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .checklist { margin: 8px 0 0 18px; padding: 0; display: grid; gap: 5px; font-size: 0.88rem; }
-.checklist li.done { color: var(--pine); text-decoration: line-through; text-decoration-thickness: 1px; }
+.checklist li.done { color: #235581; list-style: none; margin-left: -18px; }
+.checklist li.done::before { content: '✓ '; font-weight: 700; }
 .checklist li.muted { color: var(--ink-soft); }
 .celebrate { animation: pop 0.5s ease; font-size: 1rem; }
 @keyframes pop { 0% { transform: scale(0.96); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
