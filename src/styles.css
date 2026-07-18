@@ -707,89 +707,65 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 }
 
 /* ---------- plans comparison table ---------- */
-.tv-outer { border: 1.5px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--card); margin-bottom: 8px; }
+.tv-outer { border: 1.5px solid #dde5ef; border-radius: 18px; overflow: hidden; background: #fff; box-shadow: 0 2px 20px rgba(10,37,64,0.06); }
 .tv-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .tv-col-label { width: 168px; }
 .tv-col-prod { width: calc((100% - 168px) / 5); }
 
 /* header */
-.tv-corner { background: #061728; }
-.tv-th { padding: 18px 14px 16px; background: #0a2540; text-align: center; vertical-align: top; border-right: 1px solid rgba(255,255,255,0.07); }
+.tv-corner { background: #fff; border-bottom: 2px solid #dde5ef; }
+.tv-th { background: #fff; text-align: center; vertical-align: top; border-bottom: 2px solid #dde5ef; border-right: 1px solid #edf1f7; padding: 22px 14px 18px; }
 .tv-th:last-child { border-right: none; }
-.tv-th-accent { background: #0d2e50; border-left: 2px solid #3375b1; }
-.tv-brand-circle { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin: 0 auto 8px; color: #fff; }
-.tv-prod-name { font-size: 11.5px; font-weight: 700; color: #fff; line-height: 1.35; letter-spacing: -0.01em; }
-.tv-prod-sub { font-size: 10px; color: #7aafda; margin-top: 3px; font-family: var(--mono); }
-.tv-badge { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .05em; padding: 2px 7px; border-radius: 4px; margin-top: 6px; }
-.tv-badge-wc { background: rgba(180,223,252,0.15); color: #b4dffc; }
-.tv-badge-caas { background: rgba(255,196,80,0.18); color: #ffc450; }
+.tv-th-accent { background: #f4f9ff; border-top: 3px solid #3375b1; }
+.tv-brand-logo { display: flex; justify-content: center; margin-bottom: 12px; }
+.tv-brand-logo svg { filter: drop-shadow(0 3px 8px rgba(0,0,0,0.18)); border-radius: 8px; }
+.tv-prod-name { font-family: var(--display); font-size: 13px; font-weight: 700; color: #0a2540; line-height: 1.3; }
+.tv-prod-sub { font-size: 10px; color: #6b86a0; margin-top: 4px; font-family: var(--mono); }
+.tv-badge { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .05em; padding: 3px 8px; border-radius: 4px; margin-top: 7px; }
+.tv-badge-wc { background: #e8f0fa; color: #2e6ba2; border: 1px solid #c3d5eb; }
+.tv-badge-caas { background: #fff3d4; color: #9a6209; border: 1px solid #f0d080; }
 
-/* section rows */
-.tv-section-row td { padding: 7px 14px 5px; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #3375b1; background: #f0f6fd; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+/* section header rows */
+.tv-section-row td { padding: 9px 16px 7px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #3375b1; background: #f0f6fd; border-top: 1px solid #dde5ef; border-bottom: 1px solid #dde5ef; }
 
-/* data rows */
-.tv-data-row { border-bottom: 0.5px solid #edf1f7; }
-.tv-data-row:hover td { background: #fafbfd; }
-.tv-data-row:hover td.tv-val-accent { background: #f2f8ff; }
-.tv-label { padding: 10px 14px; font-size: 11.5px; color: var(--ink-soft); font-weight: 500; background: #fafbfd; border-right: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
-.tv-val { padding: 10px 10px; text-align: center; vertical-align: middle; border-right: 0.5px solid #edf1f7; font-size: 12px; color: var(--ink); }
+/* data rows — alternating */
+.tv-data-row { border-bottom: 1px solid #edf1f7; transition: background 0.1s; }
+.tv-data-row:nth-child(even) td { background: #fafbfd; }
+.tv-data-row:nth-child(even) td.tv-val-accent { background: #f2f8ff; }
+.tv-data-row:hover td { background: #f0f6fd; }
+.tv-data-row:hover td.tv-val-accent { background: #e8f2ff; }
+.tv-label { padding: 12px 16px; font-size: 12px; color: #2d3e52; font-weight: 600; background: #fafbfd; border-right: 2px solid #dde5ef; vertical-align: middle; white-space: nowrap; }
+.tv-val { padding: 10px 10px; text-align: center; vertical-align: middle; border-right: 1px solid #edf1f7; font-size: 12px; color: #0d1116; }
 .tv-val:last-child { border-right: none; }
-.tv-val-accent { background: #f7fafd; }
+.tv-val-accent { background: #f7fbff; }
+.tv-data-row:nth-child(even) .tv-label { background: #f5f6fa; }
 
-/* tick / cross */
-.tv-yes { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: #e3f5ec; border-radius: 50%; }
-.tv-yes i { font-size: 12px; color: #1a7a4c; }
-.tv-no { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; }
-.tv-no i { font-size: 13px; color: #c8d4e0; }
-.tv-partial { font-size: 11px; color: #3375b1; font-weight: 600; line-height: 1.3; }
+/* tick icons */
+.tv-yes { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: #e0f4ea; border-radius: 50%; border: 1.5px solid #b8e0c8; }
+.tv-yes i { font-size: 13px; color: #1a7a4c; font-weight: 700; }
+.tv-no { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: #f4f5f7; border-radius: 50%; }
+.tv-no i { font-size: 14px; color: #bfcad4; }
+.tv-partial { font-size: 12px; color: #2e6ba2; font-weight: 700; line-height: 1.3; }
 
 /* price row */
-.tv-price-row td { padding: 14px 10px; background: #fafbfd; border-top: 1.5px solid var(--line); text-align: center; vertical-align: middle; border-right: 0.5px solid var(--line); }
+.tv-price-row td { padding: 16px 12px; background: #f0f6fd; border-top: 2px solid #dde5ef; text-align: center; vertical-align: middle; border-right: 1px solid #dde5ef; }
 .tv-price-row td:last-child { border-right: none; }
-.tv-price-row .tv-label { text-align: left; font-weight: 700; color: var(--ink); font-size: 12px; border-right: 1px solid var(--line); }
-.tv-price { display: block; font-family: var(--display); font-weight: 800; font-size: 20px; color: #0a2540; line-height: 1; }
-.tv-price-note { display: block; font-family: var(--mono); font-size: 9.5px; color: var(--ink-soft); margin-top: 3px; line-height: 1.4; }
+.tv-price-row .tv-label { text-align: left; font-weight: 700; font-size: 13px; color: #0a2540; border-right: 2px solid #dde5ef; }
+.tv-price { display: block; font-family: var(--display); font-weight: 800; font-size: 24px; color: #0a2540; line-height: 1; }
+.tv-price-note { display: block; font-family: var(--mono); font-size: 9px; color: #7a8fa0; margin-top: 4px; line-height: 1.5; }
+.tv-price-cell.tv-val-accent { background: #e8f2ff; }
 
 /* cta row */
-.tv-cta-row td { padding: 10px 10px 14px; background: #fafbfd; text-align: center; border-right: 0.5px solid var(--line); }
+.tv-cta-row td { padding: 12px 10px 16px; background: #f7f9fc; border-right: 1px solid #edf1f7; text-align: center; }
 .tv-cta-row td:last-child { border-right: none; }
-.tv-cta-row .tv-label { border-right: 1px solid var(--line); }
-.tv-btn-order { display: block; width: 100%; font-size: 12px; padding: 9px 0; border-radius: 8px; margin-bottom: 6px; text-align: center; }
-.tv-btn-det { display: block; text-align: center; font-size: 11px; color: var(--pine); text-decoration: underline; }
-.tv-btn-det:hover { color: var(--cert); }
+.tv-cta-row .tv-label { background: #f7f9fc; border-right: 2px solid #dde5ef; }
+.tv-cta-cell.tv-val-accent { background: #f0f7ff; }
+.tv-btn-order { display: block; width: 100%; background: #3375b1; color: #fff; border: none; border-radius: 9px; padding: 10px 0; font-size: 12.5px; font-weight: 700; cursor: pointer; margin-bottom: 7px; text-align: center; letter-spacing: 0.01em; transition: background 0.15s; }
+.tv-btn-order:hover { background: #296194; }
+.tv-btn-det { display: block; text-align: center; font-size: 11px; color: #3375b1; text-decoration: underline; font-weight: 500; }
+.tv-btn-det:hover { color: #0a2540; }
 
 @media (max-width: 900px) {
   .tv-outer { overflow-x: auto; }
-  .tv-table { min-width: 700px; }
+  .tv-table { min-width: 680px; }
 }
-
-/* ---------- plans table v2 — fresh header ---------- */
-.tv-outer { border: 1.5px solid #e0e8f4; border-radius: 18px; box-shadow: 0 4px 24px rgba(10,37,64,0.07); }
-.tv-corner { background: #f7f9fc; border-bottom: 1.5px solid #e0e8f4; }
-.tv-th { background: #f7f9fc; border-bottom: 1.5px solid #e0e8f4; border-right: 1px solid #e8eef6; padding: 20px 12px 16px; }
-.tv-th:last-child { border-right: none; }
-.tv-th-accent { background: #eef5ff; border-left: 2px solid #3375b1; }
-.tv-brand-logo { display: flex; justify-content: center; margin-bottom: 10px; }
-.tv-brand-logo svg { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15)); }
-.tv-prod-name { font-size: 12.5px; font-weight: 700; color: #0a2540; line-height: 1.3; letter-spacing: -0.01em; }
-.tv-prod-sub { font-size: 10px; color: #5e84a2; margin-top: 3px; font-family: var(--mono); }
-.tv-badge { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .05em; padding: 2px 7px; border-radius: 4px; margin-top: 6px; }
-.tv-badge-wc { background: #e0eef8; color: #2e6ba2; }
-.tv-badge-caas { background: #fff3d6; color: #a0660a; border: 1px solid #f0d080; }
-.tv-section-row td { color: #2e6ba2; background: #f4f8fd; border-top: 1px solid #e0e8f4; border-bottom: 1px solid #e0e8f4; font-size: 10px; letter-spacing: .07em; }
-.tv-label { background: #fafbfd; border-right: 1px solid #e8eef6; font-size: 12px; color: #3a4f63; }
-.tv-data-row:hover td { background: #f7faff; }
-.tv-data-row:hover td.tv-val-accent { background: #eef5ff; }
-.tv-val-accent { background: #f4f9ff; }
-.tv-yes { background: #eaf6f0; width: 24px; height: 24px; }
-.tv-yes i { color: #1a7a4c; font-size: 13px; }
-.tv-no i { color: #d0dae4; font-size: 14px; }
-.tv-partial { color: #2e6ba2; font-weight: 700; font-size: 12px; }
-.tv-price { font-size: 22px; font-weight: 800; color: #0a2540; }
-.tv-price-note { font-size: 9.5px; color: #7a8fa0; }
-.tv-price-row td { background: #f7f9fc; border-top: 1.5px solid #e0e8f4; }
-.tv-price-row .tv-label { font-weight: 700; font-size: 12px; color: #0a2540; }
-.tv-cta-row td { background: #f7f9fc; }
-.tv-btn-order { background: #3375b1; border-radius: 9px; font-size: 12.5px; padding: 10px 0; }
-.tv-btn-order:hover { background: #296194; }
-.tv-btn-det { color: #3375b1; font-size: 11px; }
