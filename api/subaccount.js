@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (rows?.[0]?.account_type !== 'reseller')
       return res.status(403).json({ error: true, message: 'Only reseller accounts can create customer accounts.' })
 
-    const { email, password, full_name } = req.body || {}
+    const { email, password, full_name, company_name } = req.body || {}
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
       return res.status(400).json({ error: true, message: 'A valid email is required.' })
     if (!password || String(password).length < 8)
@@ -56,7 +56,11 @@ export default async function handler(req, res) {
     const up = await fetch(`${SB()}/rest/v1/profiles?id=eq.${created.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}`, Prefer: 'return=minimal' },
-      body: JSON.stringify({ parent_reseller_id: user.id }),
+      body: JSON.stringify({
+        parent_reseller_id: user.id,
+        email: String(email).trim().toLowerCase(),
+        ...(company_name ? { company_name: String(company_name).trim() } : {}),
+      }),
     })
     if (!up.ok) console.error('Sub-account link failed:', up.status, await up.text().catch(() => ''))
 

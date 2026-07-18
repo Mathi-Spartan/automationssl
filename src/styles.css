@@ -1558,3 +1558,5 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .cust-search .ti { font-size: 14px; flex-shrink: 0; }
 .cust-search input { flex: 1; min-width: 0; border: none; background: none; outline: none; font: inherit; font-size: 0.85rem; color: #0a2540; padding: 0; }
 .cust-search input::placeholder { color: #9aa3b5; }
+.cust-company { color: #4a5568; }
+.cust-email { font-size: 0.75rem; font-family: var(--mono); color: #66738a; margin-top: 1px; }

@@ -9,7 +9,7 @@ export default function Customers() {
   const { session, profile, loading } = useAuth()
   const [subs, setSubs] = useState(null)
   const [orders, setOrders] = useState([])
-  const [form, setForm] = useState({ email: '', password: '', full_name: '' })
+  const [form, setForm] = useState({ email: '', password: '', full_name: '', company_name: '' })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
@@ -18,7 +18,7 @@ export default function Customers() {
 
   async function reload() {
     const [p, o] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, created_at, customer_code').eq('parent_reseller_id', session.user.id).order('created_at'),
+      supabase.from('profiles').select('id, full_name, created_at, customer_code, email, company_name').eq('parent_reseller_id', session.user.id).order('created_at'),
       supabase.from('orders').select('id, user_id, product_name, product_id, api_response, assigned_at, status').neq('user_id', session.user.id),
     ])
     setSubs(p.data || [])
@@ -47,7 +47,7 @@ export default function Customers() {
       const body = await res.json()
       if (!res.ok || body.error) throw new Error(body.message || 'Could not create the account.')
       setMsg(`Account created for ${form.email}. Share these credentials with your customer — they can sign in right away.`)
-      setForm({ email: '', password: '', full_name: '' })
+      setForm({ email: '', password: '', full_name: '', company_name: '' })
       setShowForm(false)
       reload()
     } catch (e2) {
@@ -80,6 +80,11 @@ export default function Customers() {
               <label htmlFor="cname">Full name</label>
               <input id="cname" required placeholder="Acme Corp / John Smith" autoFocus
                 value={form.full_name} onChange={set('full_name')} />
+            </div>
+            <div className="field">
+              <label htmlFor="ccompany">Company name</label>
+              <input id="ccompany" type="text" placeholder="Company name (optional)"
+                value={form.company_name} onChange={set('company_name')} />
             </div>
             <div className="field">
               <label htmlFor="cemail">Email</label>
@@ -125,7 +130,7 @@ export default function Customers() {
           .filter(c => {
             if (!search.trim()) return true
             const q = search.trim().toLowerCase()
-            return (c.full_name || '').toLowerCase().includes(q) || (c.customer_code || '').toLowerCase().includes(q)
+            return (c.full_name || '').toLowerCase().includes(q) || (c.customer_code || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.company_name || '').toLowerCase().includes(q)
           })
           .map(c => {
           const co = orders.filter(o => o.user_id === c.id)
@@ -139,7 +144,8 @@ export default function Customers() {
                 <div className="cust-avatar">{(c.full_name || '?')[0].toUpperCase()}</div>
                 <div>
                   <div className="cust-name">{c.full_name || 'Unnamed customer'}{c.customer_code && <span className="cust-code">{c.customer_code}</span>}</div>
-                  <div className="cust-meta">Joined {joined}</div>
+                  <div className="cust-meta">Joined {joined}{c.company_name && <span className="cust-company"> · {c.company_name}</span>}</div>
+                  {c.email && <div className="cust-email">{c.email}</div>}
                 </div>
               </div>
               <div className="cust-row-stats">
