@@ -1,4 +1,36 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import * as XLSX from 'xlsx'
+
+/* ── Excel export utility ── */
+function buildXLSX(rows, filename, sheetName = 'Orders') {
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  // Column widths
+  ws['!cols'] = [
+    { wch: 12 }, { wch: 38 }, { wch: 14 }, { wch: 20 },
+    { wch: 18 }, { wch: 14 }, { wch: 10 }, { wch: 10 },
+  ]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, sheetName)
+  XLSX.writeFile(wb, filename)
+}
+
+const CA_LABELS = { 300: 'Sectigo', 400: 'RapidSSL', 401: 'RapidSSL', 402: 'GeoTrust', 403: 'GeoTrust' }
+
+function ordersToRows(orders, includeCustomer = true, customerName = null) {
+  const header = ['Order #', 'Product', 'CA', ...(includeCustomer ? ['Customer'] : []), 'Domain(s)', 'Status', 'Renews', 'Days left']
+  const rows = (orders || []).map(o => {
+    const d = deliverables(o)
+    const dom = d.vendorDomains.map(v => typeof v === 'string' ? v : v?.name || '').filter(Boolean).join('; ') || '—'
+    const days = d.renewal ? Math.ceil((new Date(d.renewal) - Date.now()) / 86400000) : ''
+    const status = d.activated ? 'Automated' : 'Pending setup'
+    const renews = d.renewal || '—'
+    const ca = CA_LABELS[o.product_id] || ''
+    const cust = customerName || o.customer_name || '—'
+    return [o.gogetssl_order_id, o.product_name, ca, ...(includeCustomer ? [cust] : []), dom, status, renews, days]
+  })
+  return [header, ...rows]
+}
+
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
@@ -536,21 +568,11 @@ function CustomerDashboard({ session, profile }) {
             </div>
             <a href="#" className="clm-export-btn" onClick={(e) => {
               e.preventDefault()
-              const header = 'Order #,Product,CA,Domain,Status,Renews,Days left'
-              const rows = (orders || []).map(o => {
-                const d = deliverables(o)
-                const dom = d.vendorDomains.map(v => typeof v === 'string' ? v : v?.name || '').filter(Boolean).join('; ')
-                const days = d.renewal ? Math.ceil((new Date(d.renewal) - Date.now()) / 86400000) : ''
-                const ca = { 300: 'Sectigo', 400: 'RapidSSL', 401: 'RapidSSL', 402: 'GeoTrust', 403: 'GeoTrust' }[o.product_id] || ''
-                return [o.gogetssl_order_id, `"${o.product_name}"`, ca, dom || '—', d.activated ? 'Automated' : 'Pending setup', d.renewal || '—', days].join(',')
-              })
-              const csv = [header, ...rows].join('\n')
-              const blob = new Blob([csv], { type: 'text/csv' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url; a.download = 'certificates.csv'; a.click()
-              URL.revokeObjectURL(url)
-            }}>Export CSV</a>
+              buildXLSX(ordersToRows(orders, false), 'my-certificates.xlsx', 'Certificates')
+            }}>
+              <i className="ti ti-file-spreadsheet" style={{fontSize:13,verticalAlign:-1,marginRight:4}} aria-hidden="true"/>
+              Export Excel
+            </a>
           </div>
 
           {/* tab strip */}
@@ -1038,12 +1060,27 @@ function ResellerDashboard({ session, profile }) {
               <div className="rd-main-title">{selInfo?.label || 'Subscriptions'}</div>
               <div className="rd-main-sub">{selInfo?.count ?? 0} subscription{selInfo?.count!==1?'s':''}{selInfo?.pending>0 ? ` · ${selInfo.pending} need action` : ''}</div>
             </div>
-            {selCustomer !== '__all__' && selCustomer !== '__mine__' && (
-              <div className="rd-main-actions">
-                <span className="rd-main-stat ok">{allOrders?.filter(o=>o.user_id===selCustomer&&deliverables(o).activated).length||0} automated</span>
-                <span className="rd-main-stat warn">{allOrders?.filter(o=>o.user_id===selCustomer&&!deliverables(o).activated).length||0} pending</span>
-              </div>
-            )}
+            <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+              {selCustomer !== '__all__' && selCustomer !== '__mine__' && (
+                <div className="rd-main-actions">
+                  <span className="rd-main-stat ok">{allOrders?.filter(o=>o.user_id===selCustomer&&deliverables(o).activated).length||0} automated</span>
+                  <span className="rd-main-stat warn">{allOrders?.filter(o=>o.user_id===selCustomer&&!deliverables(o).activated).length||0} pending</span>
+                </div>
+              )}
+              {visibleRows.length > 0 && (
+                <a href="#" className="clm-export-btn" onClick={e => {
+                  e.preventDefault()
+                  const custLabel = selCustomer === '__all__' ? 'all' : selCustomer === '__mine__' ? 'inventory' : (subs.find(c=>c.id===selCustomer)?.full_name||'customer').replace(/\s+/g,'-').toLowerCase()
+                  const filename = `orders-${custLabel}.xlsx`
+                  const inclCust = selCustomer === '__all__'
+                  const custName = selCustomer !== '__all__' && selCustomer !== '__mine__' ? (subs.find(c=>c.id===selCustomer)?.full_name||null) : null
+                  buildXLSX(ordersToRows(visibleRows, inclCust, custName), filename, 'Orders')
+                }}>
+                  <i className="ti ti-file-spreadsheet" style={{fontSize:13,verticalAlign:-1,marginRight:4}} aria-hidden="true"/>
+                  Export Excel
+                </a>
+              )}
+            </div>
           </div>
 
           {selCustomer === '__all__' && (
