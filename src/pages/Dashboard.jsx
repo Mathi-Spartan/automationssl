@@ -524,25 +524,25 @@ function CaasInline({ order, onChanged }) {
   }
 
   return (
-    <div className="caas-inline">
-      <span className="assign-label">Secured domains <em className="caas-note">(one CaaS plan covers many — added domains are billed pro-rated by the CA)</em></span>
-      {msg && <div className="alert ok">{msg}</div>}
-      {err && <div className="alert error">{err}</div>}
-      <div className="chips" style={{ margin: '6px 0' }}>
-        {d.vendorDomains.length === 0 && <span className="muted-line">No domains yet.</span>}
+    <div className="caas-tag-editor">
+      <div className="caas-tag-row">
+        <span className="caas-tag-label">🔒 Domains</span>
+        {d.vendorDomains.length === 0 && <span className="caas-empty-tag">no domains yet</span>}
         {d.vendorDomains.map((dom) => {
           const name = typeof dom === 'string' ? dom : dom?.name || ''
-          return <span className="chip" key={name}>{name}</span>
+          return <span className="caas-tag" key={name}>{name}</span>
         })}
+        <div className="caas-add-pill">
+          <input className="caas-add-input" placeholder="add domain…" value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain())} />
+          <button type="button" className="caas-add-btn" disabled={busy} onClick={addDomain}>
+            {busy ? '…' : '+ Add'}
+          </button>
+        </div>
       </div>
-      <div className="chip-add">
-        <input placeholder="add domain e.g. shop.example.com" value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain())} />
-        <button className="btn primary" type="button" disabled={busy} onClick={addDomain}>
-          {busy ? 'Adding…' : 'Add domain'}
-        </button>
-      </div>
+      {msg && <p className="caas-feedback ok">{msg}</p>}
+      {err && <p className="caas-feedback err">{err}</p>}
     </div>
   )
 }

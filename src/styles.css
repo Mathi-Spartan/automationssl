@@ -568,3 +568,18 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
   .tbl-row { grid-template-columns: 1fr auto 18px; }
   .tbl-row .tbl-id, .tbl-row .tbl-owner, .tbl-row .sub-row-meta { display: none; }
 }
+
+/* ---------- CaaS compact tag editor ---------- */
+.caas-tag-editor { margin-top: 10px; }
+.caas-tag-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; background: #f4f8fd; border: 1px solid #d0e3f5; border-radius: 10px; }
+.caas-tag-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #235581; white-space: nowrap; margin-right: 2px; }
+.caas-tag { background: #e8f2fc; border: 1px solid #c3daf1; border-radius: 6px; padding: 3px 9px; font-size: 0.8rem; font-family: var(--mono); color: #1a4a7a; }
+.caas-empty-tag { font-size: 0.8rem; color: var(--ink-soft); font-style: italic; }
+.caas-add-pill { display: flex; align-items: center; margin-left: auto; border: 1px solid #b8d4ee; border-radius: 7px; overflow: hidden; background: #fff; }
+.caas-add-input { border: none; outline: none; padding: 5px 10px; font-size: 0.82rem; width: 170px; background: transparent; font-family: inherit; }
+.caas-add-btn { border: none; background: #3375b1; color: #fff; font-size: 0.8rem; font-weight: 700; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+.caas-add-btn:hover { background: #296194; }
+.caas-add-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.caas-feedback { font-size: 0.78rem; margin: 5px 2px 0; }
+.caas-feedback.ok { color: #1a6b35; }
+.caas-feedback.err { color: #b02020; }
