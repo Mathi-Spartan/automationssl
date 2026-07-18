@@ -4,9 +4,21 @@
 export default async function handler(req, res) {
   const env = {
     GOGETSSL_USER: Boolean(process.env.GOGETSSL_USER),
+    GOGETSSL_PARTNER_CODE: Boolean(process.env.GOGETSSL_PARTNER_CODE),
     GOGETSSL_PASS: Boolean(process.env.GOGETSSL_PASS),
     SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
     SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+  }
+
+  // Report only the JWT "role" claim of the Supabase key (service_role vs anon).
+  // The key itself is never exposed. Inserts to RLS-protected tables require service_role.
+  let supabase_key_role = null
+  try {
+    const jwt = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const payload = JSON.parse(Buffer.from(jwt.split('.')[1] || '', 'base64url').toString('utf8'))
+    supabase_key_role = payload.role || 'unknown'
+  } catch {
+    supabase_key_role = env.SUPABASE_SERVICE_ROLE_KEY ? 'not_a_jwt' : null
   }
 
   let ca_auth = 'skipped'
@@ -30,5 +42,5 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(200).json({ env, ca_auth, ca_response })
+  return res.status(200).json({ env, supabase_key_role, ca_auth, ca_response })
 }

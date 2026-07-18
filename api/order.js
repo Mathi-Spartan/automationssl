@@ -77,6 +77,32 @@ export default async function handler(req, res) {
       })
     }
 
+    // -------- extract customer deliverables from the CA response --------
+    // These are shown once on the success screen and again via /api/status.
+    const item = order?.items?.[0] || {}
+    const itemId = item.id || null
+
+    let autoinstall = null
+    if (item.autoinstall) {
+      autoinstall = {
+        setup_link: item.autoinstall.login_sso_link || item.autoinstall.manage_sso_link || null,
+        status: item.autoinstall.status || null,
+      }
+    }
+
+    let acme = null
+    if (product.category === 'acme') {
+      const found = {}
+      const scan = (obj) => {
+        for (const [k, v] of Object.entries(obj || {})) {
+          if (v && typeof v === 'object' && !Array.isArray(v)) scan(v)
+          else if (/eab|server_url|acme_account|directory/i.test(k) && v) found[k] = v
+        }
+      }
+      scan(order)
+      if (Object.keys(found).length) acme = found
+    }
+
     // -------- record in Supabase (best-effort; order already exists at the CA) --------
     let db_ok = true
     try {
@@ -102,11 +128,16 @@ export default async function handler(req, res) {
         }),
       })
       db_ok = sbRes.ok
-    } catch {
+      if (!sbRes.ok) {
+        // Never fail the customer for this, but make the cause visible in logs.
+        console.error('Supabase insert rejected:', sbRes.status, await sbRes.text().catch(() => ''))
+      }
+    } catch (e) {
       db_ok = false
+      console.error('Supabase insert failed:', String(e))
     }
 
-    return res.status(200).json({ order_id: orderId, db_ok })
+    return res.status(200).json({ order_id: orderId, item_id: itemId, db_ok, autoinstall, acme })
   } catch (err) {
     return res.status(500).json({ error: true, message: 'Order failed.', detail: String(err.message || err) })
   }

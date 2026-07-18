@@ -72,10 +72,30 @@ export default function Order() {
             <div><b>Term</b> {form.period} months</div>
             <div><b>Contact</b> {form.email}</div>
           </div>
+          {result.autoinstall && result.autoinstall.setup_link && (
+            <div style={{ marginTop: 14 }}>
+              <p><strong>Next step — set up your automation agent.</strong> Open your personal
+              setup portal below to connect your server. Issuance and renewals run
+              automatically after that.</p>
+              <a className="btn primary" style={{ display: 'inline-block', marginTop: 10 }} href={result.autoinstall.setup_link} target="_blank" rel="noreferrer">
+                Open setup portal →
+              </a>
+              <p className="hint" style={{ fontSize: '0.8rem', marginTop: 8 }}>
+                This link is personal to your plan — save it somewhere safe and do not share it.
+              </p>
+            </div>
+          )}
+          {result.acme && (
+            <div style={{ marginTop: 14 }}>
+              <p><strong>Your ACME enrollment credentials</strong> — use these with certbot,
+              acme.sh, Caddy or any ACME client. Save them now; treat them like a password.</p>
+              <pre>{JSON.stringify(result.acme, null, 2)}</pre>
+            </div>
+          )}
           <p style={{ marginTop: 10 }}>
-            Your enrollment credentials and next steps will be available on the{' '}
+            You can retrieve these details anytime on the{' '}
             <Link to="/status" style={{ textDecoration: 'underline' }}>order status page</Link>{' '}
-            and sent to your email. Keep your Order ID safe.
+            using your Order ID and the email above. Keep your Order ID safe.
           </p>
         </div>
         <Link className="btn ghost" to="/">Back to plans</Link>
