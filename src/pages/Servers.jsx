@@ -59,18 +59,6 @@ export default function Servers() {
     reload(session.user.id)
   }
 
-  async function attachPlan(serverId, orderId) {
-    if (!orderId) return
-    const { error } = await supabase.from('orders').update({ server_id: serverId }).eq('id', orderId)
-    if (error) setErr(error.message)
-    else reload(session.user.id)
-  }
-
-  async function detachPlan(orderId) {
-    await supabase.from('orders').update({ server_id: null }).eq('id', orderId)
-    reload(session.user.id)
-  }
-
   async function addDomain(serverId) {
     const value = (newDomain[serverId] || '').trim().toLowerCase()
     if (!value) return
@@ -91,8 +79,6 @@ export default function Servers() {
     reload(session.user.id)
   }
 
-  const unattached = orders.filter((o) => !o.server_id)
-
   return (
     <div className="form-page wide">
       <div className="page-head">
@@ -100,8 +86,9 @@ export default function Servers() {
           <span className="eyebrow">Servers</span>
           <h1>Where your certificates live</h1>
           <p className="sub">
-            One card per machine — see the plans and domains running on each at a glance.
-            Attach plans here or from the <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link>.
+            A read-only map of your infrastructure — one card per machine, showing the plans
+            and domains on each. To connect a plan to a server, open it on the{' '}
+            <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link> and pick the server there.
           </p>
         </div>
         <button className="btn primary" type="button" onClick={() => setShowForm((v) => !v)}>
@@ -150,6 +137,9 @@ export default function Servers() {
         {(servers || []).map((s) => {
           const attached = orders.filter((o) => o.server_id === s.id)
           const doms = domains.filter((d) => d.server_id === s.id)
+          const secured = [...new Set(attached.flatMap((o) =>
+            deliverables(o).vendorDomains.map((v) => (typeof v === 'string' ? v : v?.name || v?.domain || ''))
+          ).filter(Boolean))]
           return (
             <div className="server-card" key={s.id}>
               <div className="server-head">
@@ -170,23 +160,17 @@ export default function Servers() {
                       <span className={'dot ' + (d.activated ? 'ok' : 'warn')} aria-hidden="true" />
                       <span className="server-plan-name">{o.product_name} <span className="mono">#{o.gogetssl_order_id}</span></span>
                       <span className="server-plan-state">{d.activated ? 'automated' : 'pending setup'}</span>
-                      <button type="button" className="linklike" onClick={() => detachPlan(o.id)}>detach</button>
                     </div>
                   )
                 })}
-                {unattached.length > 0 && (
-                  <select className="attach-select" value="" onChange={(e) => attachPlan(s.id, e.target.value)}>
-                    <option value="">+ Attach a plan…</option>
-                    {unattached.map((o) => (
-                      <option key={o.id} value={o.id}>{o.product_name} #{o.gogetssl_order_id}</option>
-                    ))}
-                  </select>
-                )}
               </div>
 
               <div className="server-section">
-                <div className="server-section-title">Domains <span className="count">{doms.length}</span></div>
+                <div className="server-section-title">Domains <span className="count">{secured.length + doms.length}</span></div>
                 <div className="chips">
+                  {secured.map((dom) => (
+                    <span key={'v-' + dom} className="chip lock" title="Secured by an attached plan">🔒 {dom}</span>
+                  ))}
                   {doms.map((d) => (
                     <span key={d.id} className="chip">
                       {d.domain}

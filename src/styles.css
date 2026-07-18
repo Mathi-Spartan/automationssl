@@ -277,3 +277,18 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .empty-state { text-align: center; border: 1.5px dashed var(--line); border-radius: 16px; padding: 48px 24px; margin-top: 20px; }
 .empty-icon { font-size: 2rem; margin-bottom: 8px; }
 .empty-state p { color: var(--ink-soft); max-width: 420px; margin: 8px auto 18px; }
+
+/* ---------- subscription accordion rows ---------- */
+.sub-row { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; background: var(--card, #fff); overflow: hidden; }
+.sub-row.open { box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+.sub-row-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 16px; border: none; background: none; cursor: pointer; text-align: left; font: inherit; flex-wrap: wrap; }
+.sub-row-head:hover { background: #fafaf8; }
+.sub-row-name { font-weight: 700; flex: 1; min-width: 180px; }
+.sub-row-meta { font-family: var(--mono); font-size: 0.76rem; color: var(--ink-soft); }
+.chev { color: var(--ink-soft); font-size: 0.8rem; }
+.sub-row-body { padding: 0 16px 14px; }
+.stage-pill { font-size: 0.74rem; font-weight: 600; border-radius: 999px; padding: 3px 11px; white-space: nowrap; }
+.stage-pill.ok { background: var(--cert-soft, #eaf5ee); color: var(--pine); border: 1px solid #c9e2d3; }
+.stage-pill.warn { background: #fbf3e2; color: #9a6b12; border: 1px solid #ecd9ae; }
+.plan-card.embedded { border: none; border-left: none; padding: 4px 0 0; margin-bottom: 0; border-radius: 0; }
+.section-h .count { background: var(--cert-soft, #eaf5ee); color: var(--pine); border-radius: 999px; padding: 1px 9px; font-size: 0.75rem; vertical-align: middle; margin-left: 6px; }

@@ -114,15 +114,42 @@ function Journey({ d }) {
   )
 }
 
-function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checking, children }) {
+function StagePill({ d }) {
+  if (d.activated && (d.isAcme || d.vendorDomains.length > 0)) return <span className="stage-pill ok">Automated ✓</span>
+  if (d.activated) return <span className="stage-pill ok">Active ✓</span>
+  const total = d.isAcme ? 3 : 4
+  const step = !d.agentInstalled ? 2 : 3
+  const label = d.isAcme ? 'configure ACME client' : !d.agentInstalled ? 'install agent' : 'add your domain'
+  return <span className="stage-pill warn">Step {step} of {total} — {label}</span>
+}
+
+export function SubRow({ order, isReseller, open, onToggle, children }) {
+  const d = deliverables(order)
+  return (
+    <div className={'sub-row' + (open ? ' open' : '') + (d.activated ? ' activated' : '')}>
+      <button type="button" className="sub-row-head" onClick={onToggle} aria-expanded={open}>
+        <span className="sub-row-name">{order.product_name}</span>
+        <StagePill d={d} />
+        {d.renewal && <span className="sub-row-meta">renews {fmtDate(d.renewal)}</span>}
+        <OriginBadge order={order} isReseller={isReseller} />
+        <span className="chev" aria-hidden="true">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && <div className="sub-row-body">{children}</div>}
+    </div>
+  )
+}
+
+function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checking, noHead, children }) {
   const d = deliverables(order)
   const days = daysUntil(d.renewal)
   return (
-    <div className={'plan-card' + (d.activated ? ' activated' : '')}>
-      <div className="plan-head">
-        <strong>{order.product_name}</strong>
-        <OriginBadge order={order} isReseller={isReseller} />
-      </div>
+    <div className={'plan-card' + (d.activated ? ' activated' : '') + (noHead ? ' embedded' : '')}>
+      {!noHead && (
+        <div className="plan-head">
+          <strong>{order.product_name}</strong>
+          <OriginBadge order={order} isReseller={isReseller} />
+        </div>
+      )}
 
       <Journey d={d} />
 
@@ -228,6 +255,8 @@ function CustomerDashboard({ session, profile }) {
   const [domains, setDomains] = useState([])
   const [checking, setChecking] = useState(null)
   const [err, setErr] = useState(null)
+  const [open, setOpen] = useState({})
+  const autoOpened = useRef(false)
 
   const load = useCallback(async () => {
     const [o, s, d] = await Promise.all([
@@ -267,6 +296,13 @@ function CustomerDashboard({ session, profile }) {
   const renewals = (orders || []).map((o) => deliverables(o).renewal).filter(Boolean).sort()
   const securedDomains = (orders || []).reduce((n, o) => n + deliverables(o).vendorDomains.length, 0)
 
+  useEffect(() => {
+    if (!autoOpened.current && orders && pending.length === 1) {
+      autoOpened.current = true
+      setOpen({ [pending[0].id]: true })
+    }
+  }, [orders])
+
   return (
     <div className="form-page wide">
       <span className="eyebrow">Dashboard</span>
@@ -277,11 +313,9 @@ function CustomerDashboard({ session, profile }) {
       </p>
 
       <Stats items={[
-        ['Plans', orders?.length ?? '…'],
-        ['Pending activation', orders ? pending.length : '…', pending.length ? 'action needed' : 'all clear'],
-        ['Activated', orders ? active.length : '…', active.length ? 'renewing automatically' : null],
-        ['Servers', servers.length],
-        ['Domains tracked', domains.length, securedDomains ? `${securedDomains} secured` : null],
+        ['Needs attention', orders ? pending.length : '…', pending.length ? 'activate below' : 'all clear'],
+        ['Automated', orders ? active.length : '…', active.length ? 'renewing automatically' : null],
+        ['Servers', servers.length, securedDomains ? `${securedDomains} domain${securedDomains === 1 ? '' : 's'} secured` : null],
       ]} />
       {orders && orders.length > 0 && (
         <p className="overview-line">
@@ -302,18 +336,24 @@ function CustomerDashboard({ session, profile }) {
 
       {pending.length > 0 && (
         <>
-          <h2 className="section-h">Needs activation</h2>
+          <h2 className="section-h">Needs activation <span className="count">{pending.length}</span></h2>
           {pending.map((o) => (
-            <PlanCard key={o.id} order={o} isReseller={false} servers={servers}
-              onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id} />
+            <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
+              onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
+              <PlanCard order={o} isReseller={false} servers={servers} noHead
+                onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id} />
+            </SubRow>
           ))}
         </>
       )}
       {active.length > 0 && (
         <>
-          <h2 className="section-h">Active &amp; automated</h2>
+          <h2 className="section-h">Active &amp; automated <span className="count">{active.length}</span></h2>
           {active.map((o) => (
-            <PlanCard key={o.id} order={o} isReseller={false} servers={servers} onAssignServer={assignServer} />
+            <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
+              onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
+              <PlanCard order={o} isReseller={false} servers={servers} noHead onAssignServer={assignServer} />
+            </SubRow>
           ))}
         </>
       )}
@@ -335,6 +375,7 @@ function ResellerDashboard({ session, profile }) {
   const [checking, setChecking] = useState(null)
   const [err, setErr] = useState(null)
   const [notice, setNotice] = useState(null)
+  const [open, setOpen] = useState({})
 
   const load = useCallback(async () => {
     const uid = session.user.id
@@ -438,7 +479,9 @@ function ResellerDashboard({ session, profile }) {
         </div>
       )}
       {inventory.map((o) => (
-        <PlanCard key={o.id} order={o} isReseller servers={servers}
+        <SubRow key={o.id} order={o} isReseller open={!!open[o.id]}
+          onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
+        <PlanCard order={o} isReseller servers={servers} noHead
           onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
           {subs.length > 0 && (
             <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -455,6 +498,7 @@ function ResellerDashboard({ session, profile }) {
             </div>
           )}
         </PlanCard>
+        </SubRow>
       ))}
 
       {assigned.length > 0 && (
