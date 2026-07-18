@@ -948,6 +948,7 @@ function ResellerDashboard({ session, profile }) {
 
   // Customer-view state
   const [selCustomer, setSelCustomer] = useState('__all__') // '__all__' | '__mine__' | customer.id
+  const [custSearch, setCustSearch] = useState('')
 
   const caLabels = { 300: 'Sectigo', 400: 'RapidSSL', 401: 'RapidSSL', 402: 'GeoTrust', 403: 'GeoTrust' }
   const caColors = { 300: '#b8001a', 400: '#1a6bb5', 401: '#1a6bb5', 402: '#c26a00', 403: '#c26a00' }
@@ -961,16 +962,27 @@ function ResellerDashboard({ session, profile }) {
   })()
 
   // Customer list for sidebar: "All", "Inventory (mine)", then each sub
+  const initialsOf = (name) => (name || 'C').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
+  const daysSince = (ts) => ts ? Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / 86400000)) : null
   const custList = [
-    { id: '__all__',  label: 'All subscriptions', count: (allOrders || []).length, icon: '▦' },
-    { id: '__mine__', label: 'My inventory',       count: inventory.length,         icon: '📦' },
-    ...subs.map(c => ({
-      id: c.id,
-      label: c.full_name || 'Customer',
-      count: allOrders ? allOrders.filter(o => o.user_id === c.id).length : 0,
-      pending: allOrders ? allOrders.filter(o => o.user_id === c.id && !deliverables(o).activated).length : 0,
-      icon: '👤',
-    })),
+    { id: '__all__',  label: 'All subscriptions', count: (allOrders || []).length },
+    { id: '__mine__', label: 'My inventory',       count: inventory.length },
+    ...subs.map(c => {
+      const theirs = allOrders ? allOrders.filter(o => o.user_id === c.id) : []
+      const pendingOrders = theirs.filter(o => !deliverables(o).activated)
+      const oldestDays = pendingOrders.length
+        ? Math.max(...pendingOrders.map(o => daysSince(o.assigned_at || o.created_at) ?? 0))
+        : null
+      return {
+        id: c.id,
+        label: c.full_name || 'Customer',
+        initials: initialsOf(c.full_name),
+        count: theirs.length,
+        pending: pendingOrders.length,
+        automated: theirs.length - pendingOrders.length,
+        oldestDays,
+      }
+    }),
   ]
 
   function OrderTable({ orderList }) {
@@ -1090,25 +1102,46 @@ function ResellerDashboard({ session, profile }) {
         <div className="rd-sidebar">
           <div className="rd-sidebar-head">
             <span className="rd-sidebar-title">Accounts</span>
-  
+            <Link to="/dashboard/customers" className="rd-sidebar-add">
+              <i className="ti ti-user-plus" style={{fontSize:13,verticalAlign:-2,marginRight:3}} aria-hidden="true"/>Add
+            </Link>
+          </div>
+          <div className="rd-sidebar-search">
+            <i className="ti ti-search" aria-hidden="true"/>
+            <input type="text" placeholder="Search accounts" value={custSearch}
+              onChange={e => setCustSearch(e.target.value)} aria-label="Search accounts"/>
           </div>
           <div className="rd-customer-list">
-            {custList.map(c => (
-              <div key={c.id} className={'rd-cust-item'+(selCustomer===c.id?' active':'')}>
-                <button type="button" className="rd-cust-row-btn"
-                  onClick={()=>{setSelCustomer(c.id);setFilter('all')}}>
-                  <span className="rd-cust-icon">{c.icon}</span>
-                  <span className="rd-cust-label">{c.label}</span>
-                  <span className="rd-cust-badges">
-                    {c.pending>0 && <span className="rd-cust-badge warn">{c.pending}</span>}
-                    <span className="rd-cust-badge">{c.count}</span>
-                  </span>
-                </button>
-                {c.id !== '__all__' && c.id !== '__mine__' && (
-                  <Link to={`/order-for/${c.id}`} className="rd-cust-buy">Buy</Link>
-                )}
-              </div>
+            {custList.filter(c => c.id === '__all__' || c.id === '__mine__').map(c => (
+              <button key={c.id} type="button"
+                className={'rd-list-item'+(selCustomer===c.id?' active':'')}
+                onClick={()=>{setSelCustomer(c.id);setFilter('all')}}>
+                <i className={'ti '+(c.id==='__all__'?'ti-list-details':'ti-package')} aria-hidden="true"/>
+                <span className="rd-cust-label">{c.label}</span>
+                <span className="rd-list-count">{c.count}</span>
+              </button>
             ))}
+            <div className="rd-cust-section">Customers · {subs.length}</div>
+            {custList.filter(c => c.id !== '__all__' && c.id !== '__mine__')
+              .filter(c => !custSearch || c.label.toLowerCase().includes(custSearch.toLowerCase()))
+              .map(c => {
+                const tone = c.count === 0 ? 'none' : c.pending > 0 ? 'warn' : 'ok'
+                const sub = c.count === 0 ? 'no plans yet'
+                  : c.pending > 0 ? `${c.pending} in setup${c.oldestDays > 0 ? ` · oldest ${c.oldestDays}d` : ''}`
+                  : 'all automated'
+                return (
+                  <button key={c.id} type="button"
+                    className={'rd-cust-item'+(selCustomer===c.id?' active':'')}
+                    onClick={()=>{setSelCustomer(c.id);setFilter('all')}}>
+                    <span className={'rd-cust-avatar '+tone}>{c.initials}</span>
+                    <span className="rd-cust-text">
+                      <span className="rd-cust-label">{c.label}</span>
+                      <span className={'rd-cust-sub '+tone}>{sub}</span>
+                    </span>
+                    {selCustomer===c.id && <i className="ti ti-chevron-right rd-cust-chev" aria-hidden="true"/>}
+                  </button>
+                )
+              })}
           </div>
         </div>
 
@@ -1124,6 +1157,10 @@ function ResellerDashboard({ session, profile }) {
                 <div className="rd-main-actions">
                   <span className="rd-main-stat ok">{allOrders?.filter(o=>o.user_id===selCustomer&&deliverables(o).activated).length||0} automated</span>
                   <span className="rd-main-stat warn">{allOrders?.filter(o=>o.user_id===selCustomer&&!deliverables(o).activated).length||0} pending</span>
+                  <Link to={`/order-for/${selCustomer}`} className="btn primary rd-main-buy">
+                    <i className="ti ti-shopping-cart" style={{fontSize:13,verticalAlign:-2,marginRight:5}} aria-hidden="true"/>
+                    Buy for this customer
+                  </Link>
                 </div>
               )}
               {visibleRows.length > 0 && (
