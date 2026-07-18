@@ -1062,9 +1062,8 @@ function ResellerDashboard({ session, profile }) {
                 <span className="rd-order-renew">{d.renewal ? fmtDate(d.renewal) : '—'}</span>
                 <span><StagePill d={d}/></span>
                 <span className="rd-order-actions" onClick={e => e.stopPropagation()}>
-                  <i className={'ti ' + (isOpen ? 'ti-chevron-up' : 'ti-chevron-down')} style={{fontSize:16,color:'var(--cert)',cursor:'pointer'}} aria-label={isOpen?'Collapse':'Expand'} aria-hidden="false"/>
-                  <i className="ti ti-x rd-cancel-icon" style={{fontSize:16,color:'#c0392b',cursor:'pointer',opacity:o.status==='cancelled'?.35:1}}
-                    aria-label="Cancel subscription"
+                  <i className={'ti ' + (isOpen ? 'ti-chevron-up' : 'ti-chevron-down')} aria-hidden="true"/>
+                  <i className="ti ti-x rd-cancel-icon" aria-hidden="true"
                     onClick={e => { e.stopPropagation(); if(o.status!=='cancelled') cancelOrder(o) }}/>
                 </span>
               </button>
