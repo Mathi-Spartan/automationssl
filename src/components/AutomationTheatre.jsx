@@ -1,271 +1,314 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
-const CA_BLUE = '#1a6bb5'
-const CA_RED = '#b8001a'
-const CA_AMBER = '#c26a00'
+/* Every value below comes from live orders #3575672 (AIS) and #3575678 (CaaS).
+   Tokens and secrets are truncated for public display. */
 
-const SCENARIOS = {
-  'agent-apache': {
-    group: 'agent',
-    host: 'api.example.com',
-    caName: 'RapidSSL certificate authority',
-    caMeta: 'api.example.com · DV',
-    color: CA_BLUE,
+const FLOWS = {
+  agent: {
+    label: 'AutoInstall agent',
+    accent: '#1a6bb5',
     tint: '#e8f0fa',
-    rows: [
-      ['Subscription registered', 'order #3575672'],
-      ['Agent enrolled', 'mutual TLS'],
-      ['HTTP-01 validation', 'api.example.com'],
-      ['Certificate issued', 'valid 47 days'],
-      ['Renewal scheduled', 'auto · day 31'],
-    ],
-    beats: [
-      { t: 'term', html: '<span class="th-p">$</span> curl -sSL https://autoinstall.easysecurity.in/s.sh | sh', s: 'Running the one-line installer' },
-      { t: 'term', html: '<span class="th-dim">agent v2.4 installed — detected Apache 2.4.58</span>', s: 'Agent detects Apache' },
-      { t: 'pkt', dir: 'r', label: 'agent registers', row: 0, s: 'Agent authenticates with the CA' },
-      { t: 'row', row: 1, s: 'Mutual TLS handshake complete' },
-      { t: 'pkt', dir: 'r', label: 'HTTP-01 challenge', row: 2, s: 'CA verifies you control the domain' },
-      { t: 'term', html: '<span class="th-dim">serving /.well-known/acme-challenge/</span>', s: 'Challenge served without your input' },
-      { t: 'pkt', dir: 'l', label: 'certificate', row: 3, s: 'Certificate issued and returned' },
-      { t: 'term', html: '<span class="th-ok">OK</span> written to /etc/ssl/api.example.com/', s: 'Certificate and key written to disk' },
-      { t: 'term', html: '<span class="th-ok">OK</span> apachectl graceful — vhost :443 live', s: 'Apache reloaded with no dropped connections' },
-      { t: 'row', row: 4, s: 'Renewal scheduled automatically' },
-      { t: 'term', html: '<span class="th-ok">Done.</span> <span class="th-dim">every future renewal runs without you</span>', s: 'Fully automated' },
+    steps: [
+      {
+        key: 'order', label: 'Order',
+        title: 'The order registers a subscription',
+        body: 'Your plan is created at the CA and comes back with a personal portal link. Nothing is installed yet — the subscription simply exists and is waiting for a server.',
+        portal: {
+          head: 'Portal · subscription', badge: 'Order 3575672',
+          blocks: [
+            { t: 'kv', k: 'Product', v: 'RapidSSL Plan + Automate' },
+            { t: 'kv', k: 'Category', v: 'ais' },
+            { t: 'kv', k: 'Begins', v: '2026-07-17' },
+            { t: 'kv', k: 'Status', v: 'incomplete', tone: 'warn' },
+          ],
+        },
+        api: { head: 'POST /api/order', code: `{
+  "order_id": 3575672,
+  "item_id": 993,
+  "autoinstall": {
+    "status": "incomplete",
+    "login_sso_link": "https://autoinstallssl.app/login/…"
+  }
+}` },
+      },
+      {
+        key: 'creds', label: 'Credentials',
+        title: 'The portal issues an install token',
+        body: 'Opening the SSO link drops you straight into the AutoInstall portal for this subscription. You pick the domain and web server, and it hands back a token scoped to that one subscription.',
+        portal: {
+          head: 'Portal · on the server', badge: 'autoinstallssl.app',
+          blocks: [
+            { t: 'field', k: 'Domain', v: 'example.com' },
+            { t: 'field', k: 'Server', v: 'NGINX' },
+            { t: 'field', k: 'AIS token', v: 'z55U6vS5…j5aeMqy', mark: true },
+          ],
+        },
+        api: { head: 'GET · token status', code: `{
+  "AISToken": "z55U6vS5…j5aeMqy",
+  "IsAgentInstalled": false
+}` },
+      },
+      {
+        key: 'install', label: 'Install',
+        title: 'Two commands on the box',
+        body: 'The first command installs the agent once per server. The second installs the certificate for this subscription and wires it into the web server. Run them and you are done.',
+        portal: {
+          head: 'Portal · on the server', badge: 'NGINX',
+          blocks: [
+            { t: 'step', n: 1, k: 'Install agent once per box', cmd: 'sudo wget -qO - https://files.autoinstallssl.com/packages/linux/version/latest/get.autoinstallssl.sh | sudo bash -s' },
+            { t: 'step', n: 2, k: 'Install certificate for this subscription', cmd: 'sudo runautoinstallssl.sh installcertificate --token z55U6vS5…j5aeMqy --validationtype file --validationprovider filesystem' },
+          ],
+        },
+        api: { head: 'GET · token status', code: `{
+  "AISToken": "z55U6vS5…j5aeMqy",
+  "IsAgentInstalled": true
+}` },
+      },
+      {
+        key: 'renew', label: 'Renew',
+        title: 'Renewals run without you',
+        body: 'The agent stays on the box, revalidates and reinstalls each cycle, and reports back. Your dashboard shows the subscription as automated with the next renewal date.',
+        portal: {
+          head: 'Portal · subscription', badge: 'Order 3575672',
+          blocks: [
+            { t: 'kv', k: 'Status', v: 'automated', tone: 'ok' },
+            { t: 'kv', k: 'Agent', v: 'installed', tone: 'ok' },
+            { t: 'kv', k: 'Next renewal', v: '2027-07-17' },
+            { t: 'kv', k: 'Manual steps', v: 'none', tone: 'ok' },
+          ],
+        },
+        api: { head: 'GET /api/refresh', code: `{
+  "status": "active",
+  "autoinstall": { "status": "completed" },
+  "subscription": { "next_renewal": "2027-07-17" }
+}` },
+      },
     ],
   },
-  'agent-iis': {
-    group: 'agent',
-    host: 'WIN-APP01',
-    prompt: 'PS',
-    caName: 'GeoTrust certificate authority',
-    caMeta: 'portal.example.com · DV',
-    color: CA_AMBER,
-    tint: '#fff2e2',
-    rows: [
-      ['Subscription registered', 'order #3575681'],
-      ['Agent enrolled', 'mutual TLS'],
-      ['HTTP-01 validation', 'portal.example.com'],
-      ['Certificate issued', 'valid 47 days'],
-      ['Binding updated', 'IIS site :443'],
-    ],
-    beats: [
-      { t: 'term', html: '<span class="th-p">PS></span> iwr https://autoinstall.easysecurity.in/s.ps1 -UseB | iex', s: 'Running the PowerShell installer' },
-      { t: 'term', html: '<span class="th-dim">agent v2.4 installed — detected IIS 10.0</span>', s: 'Agent detects IIS' },
-      { t: 'pkt', dir: 'r', label: 'agent registers', row: 0, s: 'Agent authenticates with the CA' },
-      { t: 'row', row: 1, s: 'Mutual TLS handshake complete' },
-      { t: 'pkt', dir: 'r', label: 'HTTP-01 challenge', row: 2, s: 'CA verifies you control the domain' },
-      { t: 'term', html: '<span class="th-dim">temporary handler added to Default Web Site</span>', s: 'Challenge served without your input' },
-      { t: 'pkt', dir: 'l', label: 'certificate', row: 3, s: 'Certificate issued and returned' },
-      { t: 'term', html: '<span class="th-ok">OK</span> imported to LocalMachine\\WebHosting', s: 'Certificate imported to the Windows store' },
-      { t: 'term', html: '<span class="th-ok">OK</span> HTTPS binding updated — old cert unbound', s: 'IIS binding switched to the new certificate' },
-      { t: 'row', row: 4, s: 'Binding updated on the IIS site' },
-      { t: 'term', html: '<span class="th-ok">Done.</span> <span class="th-dim">every future renewal runs without you</span>', s: 'Fully automated' },
-    ],
-  },
+
   acme: {
-    group: 'acme',
-    host: 'freecerts.in.net',
-    caName: 'Sectigo ACME certificate-as-a-service',
-    caMeta: 'freecerts.in.net · DV',
-    color: CA_RED,
+    label: 'ACME / certbot',
+    accent: '#b8001a',
     tint: '#fdeaea',
-    rows: [
-      ['EAB credentials verified', 'mac id jGCgV8Wh…'],
-      ['ACME account active', 'was pending'],
-      ['Domain authorized', 'freecerts.in.net'],
-      ['Certificate issued', 'order #3575678'],
-      ['Subscription renews', '2027-07-18'],
-    ],
-    beats: [
-      { t: 'term', html: '<span class="th-p">$</span> certbot register \\', s: 'Register against the Sectigo ACME endpoint' },
-      { t: 'term', html: '    --server https://acme.sectigo.com/v2/DV \\', s: 'The server URL your dashboard shows' },
-      { t: 'term', html: '    --config-dir /etc/ssl/acme \\', s: 'Keep certificates under your own path' },
-      { t: 'term', html: '    --eab-kid jGCgV8Wh… --eab-hmac-key ********', s: 'External account binding from your plan' },
-      { t: 'pkt', dir: 'r', label: 'EAB binding', row: 0, s: 'Sectigo verifies your binding key' },
-      { t: 'row', row: 1, s: 'ACME account moves from pending to active' },
-      { t: 'term', html: '<span class="th-p">$</span> certbot certonly --config-dir /etc/ssl/acme \\', s: 'Request the certificate' },
-      { t: 'term', html: '    -d freecerts.in.net', s: 'One of the domains on your CaaS plan' },
-      { t: 'pkt', dir: 'r', label: 'HTTP-01 order', row: 2, s: 'Domain control validated' },
-      { t: 'pkt', dir: 'l', label: 'fullchain.pem', row: 3, s: 'Certificate issued and returned' },
-      { t: 'term', html: '<span class="th-ok">OK</span> saved to /etc/ssl/acme/live/freecerts.in.net/', s: 'Certificate written to your own path' },
-      { t: 'row', row: 4, s: 'Subscription renews automatically on 2027-07-18' },
-      { t: 'term', html: '<span class="th-ok">Done.</span> <span class="th-dim">add more domains any time from your dashboard</span>', s: 'Fully automated' },
+    steps: [
+      {
+        key: 'order', label: 'Order',
+        title: 'The order opens a CaaS subscription',
+        body: 'A Certificate-as-a-Service plan is created at Sectigo. It covers up to 255 names, and you add or remove domains against it whenever you like.',
+        portal: {
+          head: 'Portal · subscription', badge: 'Order 3575678',
+          blocks: [
+            { t: 'kv', k: 'Product', v: 'Sectigo ACME CaaS' },
+            { t: 'kv', k: 'Category', v: 'caas' },
+            { t: 'kv', k: 'First domain', v: 'freecerts.in.net' },
+            { t: 'kv', k: 'Account', v: 'pending', tone: 'warn' },
+          ],
+        },
+        api: { head: 'POST /api/order', code: `{
+  "order_id": 3575678,
+  "item_id": 994,
+  "acme": {
+    "server_url": "https://acme.sectigo.com/v2/DV",
+    "eab_mac_id": "jGCgV8Wh…",
+    "eab_mac_key": "••••••••"
+  }
+}` },
+      },
+      {
+        key: 'creds', label: 'Credentials',
+        title: 'The subscription provides its ACME credentials',
+        body: 'Directory URL, key ID and HMAC key come back with the order and are shown in your dashboard. Any ACME client accepts these three values — certbot, acme.sh, Caddy, Traefik or cert-manager.',
+        portal: {
+          head: 'Portal · ACME credentials', badge: 'Subscription 994',
+          blocks: [
+            { t: 'field', k: 'Directory URL', v: 'https://acme.sectigo.com/v2/DV' },
+            { t: 'field', k: 'Key ID', v: 'jGCgV8Wh…', mark: true },
+            { t: 'field', k: 'HMAC key', v: '••••••••••••••••', mark: true },
+          ],
+        },
+        api: { head: 'GET · EAB credentials', code: `{
+  "server_url": "https://acme.sectigo.com/v2/DV",
+  "eab_mac_id": "jGCgV8Wh…",
+  "eab_mac_key": "••••••••"
+}` },
+      },
+      {
+        key: 'issue', label: 'Issue',
+        title: 'Register once, then request',
+        body: 'Bind your ACME client to the account with the EAB credentials, then ask for the certificate. The config directory flag keeps everything under a path you choose.',
+        portal: {
+          head: 'Portal · on the server', badge: 'certbot',
+          blocks: [
+            { t: 'step', n: 1, k: 'Bind the ACME account', cmd: 'certbot register --server https://acme.sectigo.com/v2/DV --config-dir /etc/ssl/acme --eab-kid jGCgV8Wh… --eab-hmac-key ••••••••' },
+            { t: 'step', n: 2, k: 'Request the certificate', cmd: 'certbot certonly --config-dir /etc/ssl/acme -d freecerts.in.net' },
+          ],
+        },
+        api: { head: 'GET · account status', code: `{
+  "account": { "status": "active" },
+  "certificate": "/etc/ssl/acme/live/freecerts.in.net/"
+}` },
+      },
+      {
+        key: 'grow', label: 'Grow',
+        title: 'Add domains against the same plan',
+        body: 'One subscription covers up to 255 names. New domains are added from your dashboard or the API and are billed pro-rated by the CA — no second order to place.',
+        portal: {
+          head: 'Portal · domains', badge: 'Subscription 994',
+          blocks: [
+            { t: 'kv', k: 'Domains in use', v: '1 of 255' },
+            { t: 'kv', k: 'Wildcards', v: 'supported', tone: 'ok' },
+            { t: 'kv', k: 'Renewals', v: 'automatic', tone: 'ok' },
+            { t: 'kv', k: 'Next renewal', v: '2027-07-18' },
+          ],
+        },
+        api: { head: 'POST /api/domains', code: `{
+  "subscription": 994,
+  "add": ["shop.freecerts.in.net"],
+  "billing": "pro-rated"
+}` },
+      },
     ],
   },
 }
 
-const GROUPS = [
-  { key: 'agent', label: 'AutoInstall agent', first: 'agent-apache' },
-  { key: 'acme', label: 'ACME / certbot', first: 'acme' },
+const TABS = [
+  { key: 'agent', label: 'AutoInstall agent' },
+  { key: 'acme', label: 'ACME / certbot' },
 ]
-const AGENT_TABS = [
-  { key: 'agent-apache', label: 'Apache · Linux' },
-  { key: 'agent-iis', label: 'IIS · Windows' },
-]
+
+function PortalBlock({ b }) {
+  if (b.t === 'kv') {
+    return (
+      <div className="fl-kv">
+        <span className="fl-kv-k">{b.k}</span>
+        <span className={'fl-kv-v' + (b.tone ? ' fl-' + b.tone : '')}>{b.v}</span>
+      </div>
+    )
+  }
+  if (b.t === 'field') {
+    return (
+      <div className="fl-field">
+        <span className="fl-field-k">{b.k}</span>
+        <span className={'fl-field-v' + (b.mark ? ' fl-mark' : '')}>{b.v}</span>
+      </div>
+    )
+  }
+  return (
+    <div className="fl-step">
+      <div className="fl-step-head">
+        <span className="fl-step-n">{b.n}</span>
+        <span className="fl-step-k">{b.k}</span>
+      </div>
+      <code className="fl-cmd">{b.cmd}</code>
+    </div>
+  )
+}
 
 export default function AutomationTheatre() {
-  const [scene, setScene] = useState('agent-apache')
-  const [lines, setLines] = useState([])
-  const [litRows, setLitRows] = useState([])
-  const [pkt, setPkt] = useState(null)
-  const [status, setStatus] = useState('Ready')
-  const [pct, setPct] = useState(0)
-  const [playing, setPlaying] = useState(false)
-
-  const timers = useRef([])
-  const stageRef = useRef(null)
+  const [flow, setFlow] = useState('agent')
+  const [idx, setIdx] = useState(0)
+  const [auto, setAuto] = useState(false)
+  const rootRef = useRef(null)
   const started = useRef(false)
+  const timer = useRef(null)
 
-  const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = [] }
+  const f = FLOWS[flow]
+  const step = f.steps[idx]
 
-  const play = useCallback((key) => {
-    clearTimers()
-    setLines([]); setLitRows([]); setPkt(null); setPct(0); setPlaying(true)
-    const d = SCENARIOS[key]
+  const stop = () => { if (timer.current) { clearInterval(timer.current); timer.current = null } }
+
+  const run = useCallback(() => {
+    stop()
     const reduce = typeof window !== 'undefined' && window.matchMedia
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (reduce) {
-      setLines(d.beats.filter((b) => b.t === 'term').map((b) => b.html))
-      setLitRows(d.rows.map((_, i) => i))
-      setStatus('Fully automated'); setPct(100); setPlaying(false)
-      return
-    }
-
-    let delay = 0
-    const n = d.beats.length
-    d.beats.forEach((b, i) => {
-      delay += b.t === 'pkt' ? 1150 : 720
-      timers.current.push(setTimeout(() => {
-        setStatus(b.s)
-        setPct(Math.round(((i + 1) / n) * 100))
-        if (b.t === 'term') setLines((L) => [...L, b.html])
-        if (b.t === 'row') setLitRows((R) => (R.includes(b.row) ? R : [...R, b.row]))
-        if (b.t === 'pkt') {
-          setPkt({ dir: b.dir, label: b.label, id: i })
-          timers.current.push(setTimeout(() => setPkt(null), 1050))
-          if (b.row != null) {
-            timers.current.push(setTimeout(() => {
-              setLitRows((R) => (R.includes(b.row) ? R : [...R, b.row]))
-            }, 900))
-          }
-        }
-        if (i === n - 1) timers.current.push(setTimeout(() => setPlaying(false), 400))
-      }, delay))
-    })
+    if (reduce) return
+    setAuto(true)
+    timer.current = setInterval(() => {
+      setIdx((i) => {
+        if (i >= 3) { stop(); setAuto(false); return i }
+        return i + 1
+      })
+    }, 4200)
   }, [])
 
   useEffect(() => {
-    const el = stageRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') { play('agent-apache'); return }
+    const el = rootRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
-        if (e.isIntersecting && !started.current) { started.current = true; play('agent-apache'); io.unobserve(e.target) }
+        if (e.isIntersecting && !started.current) { started.current = true; run(); io.unobserve(e.target) }
       })
-    }, { threshold: 0.35 })
+    }, { threshold: 0.3 })
     io.observe(el)
-    return () => { io.disconnect(); clearTimers() }
-  }, [play])
+    return () => { io.disconnect(); stop() }
+  }, [run])
 
-  useEffect(() => () => clearTimers(), [])
+  useEffect(() => () => stop(), [])
 
-  const d = SCENARIOS[scene]
-  const group = d.group
-
-  const switchScene = (key) => {
-    if (key === scene) return
-    setScene(key)
-    started.current = true
-    play(key)
+  const pick = (i) => { stop(); setAuto(false); setIdx(i) }
+  const switchFlow = (key) => {
+    if (key === flow) return
+    stop(); setAuto(false); setFlow(key); setIdx(0)
   }
 
   return (
-    <div className="th" ref={stageRef}>
-      <div className="th-tabs" role="tablist">
-        {GROUPS.map((g) => (
-          <button
-            key={g.key}
-            role="tab"
-            aria-selected={group === g.key}
-            className={'th-tab' + (group === g.key ? ' on' : '')}
-            onClick={() => switchScene(g.key === 'agent' ? 'agent-apache' : 'acme')}
-          >
-            {g.label}
+    <div className="fl" ref={rootRef} style={{ '--accent': f.accent, '--tint': f.tint }}>
+      <div className="fl-tabs" role="tablist">
+        {TABS.map((t) => (
+          <button key={t.key} role="tab" aria-selected={flow === t.key}
+            className={'fl-tab' + (flow === t.key ? ' on' : '')}
+            onClick={() => switchFlow(t.key)}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {group === 'agent' && (
-        <div className="th-subtabs" role="tablist">
-          {AGENT_TABS.map((t) => (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={scene === t.key}
-              className={'th-subtab' + (scene === t.key ? ' on' : '')}
-              onClick={() => switchScene(t.key)}
-            >
-              {t.label}
+      <div className="fl-panel">
+        <div className="fl-stepper" role="tablist">
+          {f.steps.map((s, i) => (
+            <button key={s.key} role="tab" aria-selected={i === idx}
+              className={'fl-sp' + (i === idx ? ' on' : '') + (i < idx ? ' done' : '')}
+              onClick={() => pick(i)}>
+              <span className="fl-sp-dot" />
+              <span className="fl-sp-label">{s.label}</span>
             </button>
           ))}
+          <span className={'fl-sp-track' + (auto ? ' run' : '')} aria-hidden="true">
+            <span className="fl-sp-fill" style={{ width: ((idx + 1) / f.steps.length) * 100 + '%' }} />
+          </span>
         </div>
-      )}
 
-      <div className="th-stage">
-        <div className="th-term">
-          <div className="th-term-bar">
-            <span className="th-tdot" style={{ background: '#e05252' }} />
-            <span className="th-tdot" style={{ background: '#e8a020' }} />
-            <span className="th-tdot" style={{ background: '#2eb85c' }} />
-            <span className="th-term-host">{d.prompt === 'PS' ? '' : 'root@'}{d.host}</span>
+        <div className="fl-body" key={flow + idx}>
+          <div className="fl-explain">
+            <h3 className="fl-title">{step.title}</h3>
+            <p className="fl-text">{step.body}</p>
           </div>
-          <div className="th-term-body">
-            {lines.map((html, i) => (
-              <div className="th-line" key={i} dangerouslySetInnerHTML={{ __html: html }} />
-            ))}
-            {playing && <div className="th-caret" aria-hidden="true" />}
-          </div>
-        </div>
 
-        <div className="th-wire" aria-hidden="true">
-          <div className="th-track" />
-          {pkt && (
-            <span
-              key={pkt.id}
-              className={'th-pkt ' + (pkt.dir === 'r' ? 'th-go-r' : 'th-go-l')}
-              style={{ background: d.color }}
-            />
-          )}
-          {pkt && <span className="th-wire-label">{pkt.label}</span>}
-        </div>
-
-        <div className="th-ca">
-          <div className="th-ca-head">
-            <span className="th-ca-mark" style={{ background: d.tint, color: d.color }}>
-              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-                <path d="M12 2.6 L19.6 6 v6.3c0 4.8-3.4 7.5-7.6 8.9-4.2-1.4-7.6-4.1-7.6-8.9V6z" fill="none" stroke="currentColor" strokeWidth="1.7" />
-                <path d="M8.6 12.1l2.4 2.4 4.5-4.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <div>
-              <div className="th-ca-name">{d.caName}</div>
-              <div className="th-ca-meta">{d.caMeta}</div>
+          <div className="fl-col">
+            <div className="fl-col-label">Portal</div>
+            <div className="fl-card">
+              <div className="fl-card-head">
+                <span className="fl-card-title">{step.portal.head}</span>
+                <span className="fl-card-badge">{step.portal.badge}</span>
+              </div>
+              <div className="fl-card-body">
+                {step.portal.blocks.map((b, i) => <PortalBlock b={b} key={i} />)}
+              </div>
             </div>
           </div>
-          {d.rows.map((r, i) => (
-            <div className={'th-row' + (litRows.includes(i) ? ' on' : '')} key={i}>
-              <span className="th-row-dot" />
-              <span className="th-row-text">{r[0]}</span>
-              <span className="th-row-val">{r[1]}</span>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="th-foot">
-        <span className="th-status">{status}</span>
-        <span className="th-prog"><span className="th-prog-fill" style={{ width: pct + '%' }} /></span>
-        <button type="button" className="th-replay" onClick={() => play(scene)}>Replay</button>
+          <div className="fl-col">
+            <div className="fl-col-label">API</div>
+            <div className="fl-card">
+              <div className="fl-card-head">
+                <span className="fl-card-title fl-mono">{step.api.head}</span>
+              </div>
+              <div className="fl-card-body">
+                <pre className="fl-code">{step.api.code}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
