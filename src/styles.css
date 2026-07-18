@@ -839,3 +839,23 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 /* compact step pill for CLM table */
 .clm-step-pill { display: inline-flex; align-items: center; gap: 6px; background: #fff7e6; border: 1px solid #f0d090; border-radius: 20px; padding: 3px 10px 3px 4px; font-size: 0.76rem; font-weight: 600; color: #9a6209; white-space: nowrap; }
 .clm-step-num { background: #f0a020; color: #fff; font-size: 0.68rem; font-weight: 800; border-radius: 20px; padding: 1px 6px; }
+
+/* CLM table — richer cert column + contextual action cell */
+.clm-meta-id { font-family: var(--mono); }
+.clm-meta-sep { margin: 0 4px; color: #d0d8e4; }
+.clm-no-domain { color: #c8d4de; font-style: italic; }
+.clm-cert-method { margin-top: 4px; font-size: 0.69rem; color: #9aa8b5; display: flex; align-items: center; gap: 5px; }
+.clm-method-badge { font-size: 0.63rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; flex-shrink: 0; }
+.clm-method-acme { background: #e8f2ff; color: #2e6ba2; }
+.clm-method-agent { background: #eaf3ec; color: #1a5e2a; }
+
+.clm-action-cell { vertical-align: middle; }
+.clm-inline-action { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.clm-inline-tag { font-size: 0.63rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+.clm-inline-tag-acme { background: #e8f2ff; color: #1a5090; }
+.clm-inline-tag-agent { background: #eaf3ec; color: #1a5e2a; }
+.clm-cta-primary { font-size: 0.78rem; font-weight: 700; color: #fff; background: #3375b1; border-radius: 6px; padding: 4px 10px; text-decoration: none; white-space: nowrap; display: inline-block; }
+.clm-cta-primary:hover { background: #296194; color: #fff; }
+.clm-inline-hint { font-size: 0.76rem; color: #9aa8b5; font-style: italic; }
+.clm-action-sync { font-size: 0.72rem; padding: 3px 8px; background: #f4f6f8; border-color: #e0e8f4; color: #7a8fa0; }
+.clm-action-sync:hover { background: #e8f2ff; color: #3375b1; border-color: #c3d5eb; }

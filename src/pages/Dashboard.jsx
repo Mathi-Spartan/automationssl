@@ -582,7 +582,19 @@ function CustomerDashboard({ session, profile }) {
                       onClick={() => openRow(o)} style={{ cursor: 'pointer' }}>
                       <td>
                         <div className="clm-cert-name">{o.product_name}</div>
-                        <div className="clm-cert-meta">#{o.gogetssl_order_id}{domainList.length > 0 && <> · <span className="clm-domain">{domainList[0]}{domainList.length > 1 ? ` +${domainList.length - 1}` : ''}</span></>}</div>
+                        <div className="clm-cert-meta">
+                          <span className="clm-meta-id">#{o.gogetssl_order_id}</span>
+                          {domainList.length > 0
+                            ? <><span className="clm-meta-sep">·</span><span className="clm-domain">{domainList[0]}{domainList.length > 1 ? ` +${domainList.length - 1}` : ''}</span></>
+                            : <><span className="clm-meta-sep">·</span><span className="clm-no-domain">no domain added yet</span></>
+                          }
+                        </div>
+                        <div className="clm-cert-method">
+                          {d.isAcme
+                            ? <><span className="clm-method-badge clm-method-acme">ACME</span> certbot · acme.sh · Caddy</>
+                            : <><span className="clm-method-badge clm-method-agent">Agent</span> AutoInstall · any ACME client</>
+                          }
+                        </div>
                       </td>
                       <td>
                         <div className="clm-ca">
@@ -614,16 +626,44 @@ function CustomerDashboard({ session, profile }) {
                         <div className="clm-bar"><div className="clm-bar-fill" style={{ width: pct + '%', background: barColor }} /></div>
                         <div className="clm-bar-label">Year 1</div>
                       </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        {!d.activated && (
-                          <button type="button" className="clm-action-btn"
-                            disabled={checking === o.id}
-                            onClick={() => checkNow(o)}>
-                            {checking === o.id ? 'Syncing…' : '⟳ Sync'}
+                      <td onClick={(e) => e.stopPropagation()} className="clm-action-cell">
+                        {d.activated ? (
+                          <button type="button" className="clm-action-btn clm-action-sync"
+                            disabled={checking === o.id} onClick={() => checkNow(o)}>
+                            {checking === o.id ? 'Syncing…' : '⟳ Re-sync'}
                           </button>
-                        )}
-                        {d.setupLink && (
-                          <a className="clm-action-link" href={d.setupLink} target="_blank" rel="noreferrer">Setup portal →</a>
+                        ) : d.isAcme ? (
+                          // Sectigo ACME — show EAB credentials hint
+                          <div className="clm-inline-action">
+                            <span className="clm-inline-tag clm-inline-tag-acme">ACME</span>
+                            {d.enrollReady && d.acme ? (
+                              <a className="clm-cta-primary" href="#" onClick={(e) => { e.preventDefault(); openRow(o) }}>
+                                View credentials →
+                              </a>
+                            ) : (
+                              <span className="clm-inline-hint">Provisioning…</span>
+                            )}
+                            <button type="button" className="clm-action-btn clm-action-sync"
+                              disabled={checking === o.id} onClick={() => checkNow(o)}>
+                              {checking === o.id ? '…' : '⟳'}
+                            </button>
+                          </div>
+                        ) : (
+                          // AutoInstall agent — show portal link
+                          <div className="clm-inline-action">
+                            <span className="clm-inline-tag clm-inline-tag-agent">Agent</span>
+                            {d.setupLink ? (
+                              <a className="clm-cta-primary" href={d.setupLink} target="_blank" rel="noreferrer">
+                                Setup portal →
+                              </a>
+                            ) : (
+                              <span className="clm-inline-hint">Loading…</span>
+                            )}
+                            <button type="button" className="clm-action-btn clm-action-sync"
+                              disabled={checking === o.id} onClick={() => checkNow(o)}>
+                              {checking === o.id ? '…' : '⟳'}
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
