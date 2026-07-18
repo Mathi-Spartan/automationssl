@@ -117,6 +117,13 @@ export default function Order() {
 
   if (result) {
     const isAcme = !!result.acme
+    // GoGetSSL v2 returns eab_mac_id / eab_mac_key; older shapes use eab_kid / eab_hmac_key.
+    const a = result.acme || {}
+    const acmeCreds = result.acme ? {
+      server_url: a.server_url || a.directory || '',
+      eab_kid: a.eab_mac_id || a.eab_kid || a.id || '',
+      eab_hmac_key: a.eab_mac_key || a.eab_hmac_key || '',
+    } : null
     const steps = isAcme
       ? ['Order confirmed', 'Configure ACME client', 'Renews automatically']
       : ['Order confirmed', 'Install the agent', 'Renews automatically']
@@ -161,18 +168,18 @@ export default function Order() {
             </div>
           </div>
 
-          {isAcme && result.acme ? (
+          {isAcme && acmeCreds ? (
             <div className="wizard-setup-body">
               <div className="wizard-cred-grid">
-                <WizardCred label="ACME server URL" value={result.acme.server_url} />
-                <WizardCred label="EAB key ID" value={result.acme.eab_kid} />
-                <WizardCred label="EAB HMAC key" value={result.acme.eab_hmac_key} />
+                <WizardCred label="ACME server URL" value={acmeCreds.server_url} />
+                <WizardCred label="EAB key ID" value={acmeCreds.eab_kid} />
+                <WizardCred label="EAB HMAC key" value={acmeCreds.eab_hmac_key} />
               </div>
               <div className="wizard-cmd-block">
                 <div className="wizard-cmd-label">Quick start — copy and run</div>
                 <div className="wizard-cmd-wrap">
-                  <code className="wizard-cmd">{`certbot register --server ${result.acme.server_url} --eab-kid ${result.acme.eab_kid} --eab-hmac-key ${result.acme.eab_hmac_key}`}</code>
-                  <WizardCopyBtn text={`certbot register --server ${result.acme.server_url} --eab-kid ${result.acme.eab_kid} --eab-hmac-key ${result.acme.eab_hmac_key}`} />
+                  <code className="wizard-cmd">{`certbot register --server ${acmeCreds.server_url} --eab-kid ${acmeCreds.eab_kid} --eab-hmac-key ${acmeCreds.eab_hmac_key}`}</code>
+                  <WizardCopyBtn text={`certbot register --server ${acmeCreds.server_url} --eab-kid ${acmeCreds.eab_kid} --eab-hmac-key ${acmeCreds.eab_hmac_key}`} />
                 </div>
               </div>
               <p className="wizard-hint">Works with certbot, acme.sh, Caddy, Traefik, and cert-manager. Save these credentials — they are yours alone.</p>
