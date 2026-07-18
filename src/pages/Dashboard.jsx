@@ -552,12 +552,7 @@ function CustomerDashboard({ session, profile }) {
           {/* table */}
           <table className="clm-table">
             <colgroup>
-              <col style={{ width: '32%' }} />
-              <col style={{ width: '11%' }} />
-              <col style={{ width: '18%' }} />
-              <col style={{ width: '13%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '14%' }} />
+              <col /><col /><col /><col /><col /><col />
             </colgroup>
             <thead>
               <tr>
@@ -596,9 +591,20 @@ function CustomerDashboard({ session, profile }) {
                         </div>
                       </td>
                       <td>
-                        <span className={'clm-status-pill' + (d.activated ? ' ok' : ' warn')}>
-                          {d.activated ? 'Automated ✓' : <StagePill d={d} />}
-                        </span>
+                        {d.activated
+                          ? <span className="clm-status-pill ok">Automated ✓</span>
+                          : (() => {
+                              let step, label
+                              if (d.isAcme) { step = d.enrollReady ? 3 : 2; label = d.enrollReady ? 'Configure ACME' : 'Provisioning' }
+                              else { step = !d.agentInstalled ? 2 : 3; label = !d.agentInstalled ? 'Install agent' : 'Add domain' }
+                              return (
+                                <span className="clm-step-pill">
+                                  <span className="clm-step-num">{step}/4</span>
+                                  {label}
+                                </span>
+                              )
+                            })()
+                        }
                       </td>
                       <td>
                         <div className="clm-renew">{d.renewal ? fmtDate(d.renewal) : '—'}</div>
