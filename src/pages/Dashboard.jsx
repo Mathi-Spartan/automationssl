@@ -1049,7 +1049,11 @@ function ResellerDashboard({ session, profile }) {
                 <span className="rd-order-date">{orderedDate}</span>
                 <span className="rd-order-id-domain">
                   <span className="rd-order-id" style={{color:'var(--cert)'}}>{o.gogetssl_order_id}</span>
-                  <span className="rd-order-domain">{d.vendorDomains?.[0] && (typeof d.vendorDomains[0]==='string' ? d.vendorDomains[0] : d.vendorDomains[0]?.name) || '—'}</span>
+                  <span className="rd-order-domain">{
+                    (d.vendorDomains?.[0] && (typeof d.vendorDomains[0]==='string' ? d.vendorDomains[0] : d.vendorDomains[0]?.name))
+                    || o.domain
+                    || '—'
+                  }</span>
                 </span>
                 <span className="rd-order-product">
                   <span className="rd-ca-dot" style={{background: caColors[o.product_id]||'#888'}}/>
@@ -1058,11 +1062,11 @@ function ResellerDashboard({ session, profile }) {
                 {wide && <span className="rd-order-cust">{customerName(o)}{o.assigned_at && <i className="ti ti-lock" style={{fontSize:11,marginLeft:4,verticalAlign:-1}} aria-hidden="true"/>}</span>}
                 <span className="rd-order-renew">{d.renewal ? fmtDate(d.renewal) : '—'}</span>
                 <span><StagePill d={d}/></span>
-                <span className="rd-order-actions">
-                  <i className={'ti ' + (isOpen ? 'ti-chevron-up' : 'ti-chevron-down')} style={{fontSize:15,color:'var(--cert)'}} aria-label={isOpen?'Collapse':'Expand'} aria-hidden="false"/>
-                  <i className="ti ti-x rd-cancel-icon" style={{fontSize:15,color:'#c0392b'}}
-                    aria-label="Cancel"
-                    onClick={e => { e.stopPropagation(); cancelOrder(o) }}/>
+                <span className="rd-order-actions" onClick={e => e.stopPropagation()}>
+                  <i className={'ti ' + (isOpen ? 'ti-chevron-up' : 'ti-chevron-down')} style={{fontSize:16,color:'var(--cert)',cursor:'pointer'}} aria-label={isOpen?'Collapse':'Expand'} aria-hidden="false"/>
+                  <i className="ti ti-x rd-cancel-icon" style={{fontSize:16,color:'#c0392b',cursor:'pointer',opacity:o.status==='cancelled'?.35:1}}
+                    aria-label="Cancel subscription"
+                    onClick={e => { e.stopPropagation(); if(o.status!=='cancelled') cancelOrder(o) }}/>
                 </span>
               </button>
               {isOpen && (
