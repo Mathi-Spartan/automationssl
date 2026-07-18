@@ -865,32 +865,136 @@ function ResellerDashboard({ session, profile }) {
     ['attention', `Needs attention · ${(allOrders || []).filter((o) => !deliverables(o).activated).length}`],
   ]
 
+  // Customer-view state
+  const [selCustomer, setSelCustomer] = useState('__all__') // '__all__' | '__mine__' | customer.id
+
+  const caLabels = { 300: 'Sectigo', 400: 'RapidSSL', 401: 'RapidSSL', 402: 'GeoTrust', 403: 'GeoTrust' }
+  const caColors = { 300: '#b8001a', 400: '#1a6bb5', 401: '#1a6bb5', 402: '#c26a00', 403: '#c26a00' }
+
+  // Rows shown in the right panel
+  const visibleRows = (() => {
+    if (!allOrders) return []
+    if (selCustomer === '__all__') return rows
+    if (selCustomer === '__mine__') return (own || []).filter(o => !o.assigned_at)
+    return allOrders.filter(o => o.user_id === selCustomer)
+  })()
+
+  // Customer list for sidebar: "All", "Inventory (mine)", then each sub
+  const custList = [
+    { id: '__all__',  label: 'All subscriptions', count: (allOrders || []).length, icon: '▦' },
+    { id: '__mine__', label: 'My inventory',       count: inventory.length,         icon: '📦' },
+    ...subs.map(c => ({
+      id: c.id,
+      label: c.full_name || 'Customer',
+      count: allOrders ? allOrders.filter(o => o.user_id === c.id).length : 0,
+      pending: allOrders ? allOrders.filter(o => o.user_id === c.id && !deliverables(o).activated).length : 0,
+      icon: '👤',
+    })),
+  ]
+
+  function OrderTable({ orderList }) {
+    if (!orderList || orderList.length === 0)
+      return <div className="rd-empty"><i className="ti ti-inbox" style={{fontSize:28,color:'#b4dffc'}} aria-hidden="true"/><p>No subscriptions here.</p></div>
+    return (
+      <div className="rd-order-table">
+        <div className="rd-tbl-head">
+          <span>Order #</span><span>Product</span>
+          {selCustomer === '__all__' && <span>Customer</span>}
+          <span>Status</span><span>Renews</span><span/>
+        </div>
+        {orderList.map(o => {
+          const d = deliverables(o)
+          const mine = o.user_id === session.user.id && !o.assigned_at
+          const isOpen = !!open[o.id]
+          return (
+            <div className={'rd-order-row' + (isOpen ? ' open' : '')} key={o.id}>
+              <button type="button" className={'rd-tbl-row' + (selCustomer === '__all__' ? ' wide' : '')} onClick={() => {
+                const opening = !isOpen
+                setOpen(x => ({ ...x, [o.id]: !x[o.id] }))
+                if (opening) refreshOrders([o]).then(r => r && load())
+              }} aria-expanded={isOpen}>
+                <span className="rd-order-id">#{o.gogetssl_order_id}</span>
+                <span className="rd-order-product">
+                  <span className="rd-ca-dot" style={{background: caColors[o.product_id]||'#888'}}/>
+                  <span>{o.product_name}</span>
+                </span>
+                {selCustomer === '__all__' && (
+                  <span className="rd-order-cust">{customerName(o)}{o.assigned_at && ' 🔒'}</span>
+                )}
+                <span><StagePill d={d}/></span>
+                <span className="rd-order-renew">{d.renewal ? fmtDate(d.renewal) : '—'}</span>
+                <span className="chev">{isOpen ? '▾' : '▸'}</span>
+              </button>
+              {isOpen && (
+                <div className="sub-row-body">
+                  {mine ? (
+                    <PlanCard order={o} isReseller servers={servers} noHead
+                      onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
+                      {Number(o.product_id) === 300 && <CaasInline order={o} onChanged={load}/>}
+                      {subs.length > 0 && (
+                        <div className="assign-row">
+                          <span className="assign-label">Assign to customer</span>
+                          <select value={assignTo[o.id]||''} onChange={e => setAssignTo({...assignTo,[o.id]:e.target.value})}>
+                            <option value="">— choose customer —</option>
+                            {subs.map(c => <option key={c.id} value={c.id}>{c.full_name||c.id.slice(0,8)}</option>)}
+                          </select>
+                          <button className="btn primary" type="button" disabled={!assignTo[o.id]||busyAssign===o.id} onClick={()=>assign(o)}>
+                            {busyAssign===o.id?'Assigning…':'Assign permanently →'}
+                          </button>
+                          <p className="assign-warn">⚠ Assignment is permanent and cannot be undone.</p>
+                        </div>
+                      )}
+                    </PlanCard>
+                  ) : (
+                    <div className="cust-detail">
+                      <p className="muted-line">
+                        {o.assigned_at?'Permanently assigned to ':'Purchased by '}<b>{customerName(o)}</b>
+                        {o.assigned_at?' — locked, cannot be reassigned.':'.'}
+                        {' '}CA status: <StatusVal value={d.activated?'activated':'pending setup'}/>
+                      </p>
+                      {Number(o.product_id)===300 && <CaasInline order={o} onChanged={load}/>}
+                      <button className="btn ghost" type="button" disabled={checking===o.id} onClick={()=>checkNow(o)}>
+                        {checking===o.id?'Checking…':'⟳ Re-sync from CA'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const selInfo = custList.find(c => c.id === selCustomer)
+
   return (
     <div className="dash-page">
       <span className="eyebrow">Reseller dashboard</span>
       <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>
 
-      {/* ---- KPI strip ---- */}
+      {/* KPI strip */}
       <div className="r-kpi-strip">
-        <button type="button" className={'r-kpi' + (filter === 'inventory' ? ' accent' : '')} onClick={() => setFilter('inventory')}>
+        <button type="button" className={'r-kpi'+(selCustomer==='__mine__'?' accent':'')} onClick={()=>setSelCustomer('__mine__')}>
           <span className="r-kpi-num">{own ? inventory.length : '—'}</span>
           <span className="r-kpi-label">Inventory</span>
           <span className="r-kpi-sub">unassigned plans</span>
         </button>
-        <button type="button" className={'r-kpi' + (filter === 'assigned' ? ' accent' : '')} onClick={() => setFilter('assigned')}>
+        <button type="button" className={'r-kpi'+(filter==='assigned'?' accent':'')} onClick={()=>{setFilter('assigned');setSelCustomer('__all__')}}>
           <span className="r-kpi-num">{assigned.length}</span>
           <span className="r-kpi-label">Assigned</span>
           <span className="r-kpi-sub">to customers</span>
         </button>
-        <button type="button" className={'r-kpi' + (filter === 'attention' ? ' accent' : '')} onClick={() => setFilter('attention')}>
-          <span className="r-kpi-num">{(allOrders || []).filter((o) => !deliverables(o).activated).length}</span>
+        <button type="button" className={'r-kpi'+(filter==='attention'?' accent':'')} onClick={()=>{setFilter('attention');setSelCustomer('__all__')}}>
+          <span className="r-kpi-num">{(allOrders||[]).filter(o=>!deliverables(o).activated).length}</span>
           <span className="r-kpi-label">Needs attention</span>
           <span className="r-kpi-sub">not yet automated</span>
         </button>
-        <button type="button" className="r-kpi" onClick={() => setFilter('all')}>
+        <button type="button" className="r-kpi" onClick={()=>{setSelCustomer('__all__');setFilter('all')}}>
           <span className="r-kpi-num">{subs.length}</span>
           <span className="r-kpi-label">Customers</span>
-          <span className="r-kpi-sub">{subServers.length} server{subServers.length !== 1 ? 's' : ''} · {subDomains.length} domain{subDomains.length !== 1 ? 's' : ''}</span>
+          <span className="r-kpi-sub">{subServers.length} server{subServers.length!==1?'s':''} · {subDomains.length} domain{subDomains.length!==1?'s':''}</span>
         </button>
       </div>
 
@@ -898,103 +1002,57 @@ function ResellerDashboard({ session, profile }) {
       {err && <div className="alert error">{err}</div>}
       {notice && <div className="alert ok">{notice}</div>}
 
-      {/* ---- unified subscriptions table ---- */}
-      <div className="r-section-head">
-        <div>
-          <h2 className="r-section-title">All subscriptions</h2>
-        </div>
-        <div className="r-head-actions">
-          <div className="filter-bar">
-            {filters.map(([key, label]) => (
-              <button key={key} type="button" className={'filter-chip' + (filter === key ? ' on' : '')} onClick={() => setFilter(key)}>{label}</button>
+      {/* Two-panel layout */}
+      <div className="rd-layout">
+
+        {/* Left: customer list */}
+        <div className="rd-sidebar">
+          <div className="rd-sidebar-head">
+            <span className="rd-sidebar-title">Accounts</span>
+            <Link to="/#plans" className="rd-sidebar-buy">+ Buy</Link>
+          </div>
+          <div className="rd-customer-list">
+            {custList.map(c => (
+              <button key={c.id} type="button"
+                className={'rd-cust-row'+(selCustomer===c.id?' active':'')}
+                onClick={()=>{setSelCustomer(c.id);setFilter('all')}}>
+                <span className="rd-cust-icon">{c.icon}</span>
+                <span className="rd-cust-label">{c.label}</span>
+                <span className="rd-cust-badges">
+                  {c.pending>0 && <span className="rd-cust-badge warn">{c.pending}</span>}
+                  <span className="rd-cust-badge">{c.count}</span>
+                </span>
+              </button>
             ))}
           </div>
-          <Link to="/#plans" className="btn primary">+ Buy plans</Link>
+        </div>
+
+        {/* Right: orders panel */}
+        <div className="rd-main">
+          <div className="rd-main-head">
+            <div>
+              <div className="rd-main-title">{selInfo?.label || 'Subscriptions'}</div>
+              <div className="rd-main-sub">{selInfo?.count ?? 0} subscription{selInfo?.count!==1?'s':''}{selInfo?.pending>0 ? ` · ${selInfo.pending} need action` : ''}</div>
+            </div>
+            {selCustomer !== '__all__' && selCustomer !== '__mine__' && (
+              <div className="rd-main-actions">
+                <span className="rd-main-stat ok">{allOrders?.filter(o=>o.user_id===selCustomer&&deliverables(o).activated).length||0} automated</span>
+                <span className="rd-main-stat warn">{allOrders?.filter(o=>o.user_id===selCustomer&&!deliverables(o).activated).length||0} pending</span>
+              </div>
+            )}
+          </div>
+
+          {selCustomer === '__all__' && (
+            <div className="rd-filter-bar">
+              {filters.map(([key,label]) => (
+                <button key={key} type="button" className={'filter-chip'+(filter===key?' on':'')} onClick={()=>setFilter(key)}>{label}</button>
+              ))}
+            </div>
+          )}
+
+          <OrderTable orderList={visibleRows} />
         </div>
       </div>
-
-      {own && (allOrders || []).length === 0 ? (
-        <div className="r-empty">
-          <span className="r-empty-icon">📦</span>
-          <div className="r-empty-text">
-            <h3>No subscriptions yet</h3>
-            <p>Purchase plans to stock your inventory — they'll appear here ready to activate or assign.</p>
-          </div>
-          <Link to="/#plans" className="btn primary">Browse plans →</Link>
-        </div>
-      ) : (
-        <div className="panel">
-          <div className="tbl-head">
-            <span>Order #</span>
-            <span>Product</span>
-            <span>Customer</span>
-            <span>Status</span>
-            <span>Renews</span>
-            <span />
-          </div>
-          {rows.length === 0 && <p className="muted-line" style={{ padding: '14px 16px' }}>Nothing matches this filter.</p>}
-          {rows.map((o) => {
-            const d = deliverables(o)
-            const mine = o.user_id === session.user.id && !o.assigned_at
-            const isOpen = !!open[o.id]
-            return (
-              <div className={'sub-row' + (isOpen ? ' open' : '')} key={o.id}>
-                <button type="button" className="tbl-row" onClick={() => {
-                  const opening = !isOpen
-                  setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))
-                  if (opening) refreshOrders([o]).then((r) => r && load())
-                }} aria-expanded={isOpen}>
-                  <span className="tbl-id">#{o.gogetssl_order_id}</span>
-                  <span className="tbl-product">{o.product_name}</span>
-                  <span className="tbl-owner">{customerName(o)}{o.assigned_at && <span className="lock" title="Permanently assigned"> 🔒</span>}</span>
-                  <span className="tbl-status"><StagePill d={d} /></span>
-                  <span className="sub-row-meta">{d.renewal ? fmtDate(d.renewal) : '—'}</span>
-                  <span className="chev" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
-                </button>
-                {isOpen && (
-                  <div className="sub-row-body">
-                    {mine ? (
-                      <PlanCard order={o} isReseller servers={servers} noHead
-                        onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
-                        {Number(o.product_id) === 300 && <CaasInline order={o} onChanged={load} />}
-                        {subs.length > 0 && (
-                          <div className="assign-row">
-                            <span className="assign-label">Assign to customer</span>
-                            <select value={assignTo[o.id] || ''} onChange={(e) => setAssignTo({ ...assignTo, [o.id]: e.target.value })}>
-                              <option value="">— choose customer —</option>
-                              {subs.map((c) => (
-                                <option key={c.id} value={c.id}>{c.full_name || c.id.slice(0, 8)}</option>
-                              ))}
-                            </select>
-                            <button className="btn primary" type="button"
-                              disabled={!assignTo[o.id] || busyAssign === o.id}
-                              onClick={() => assign(o)}>
-                              {busyAssign === o.id ? 'Assigning…' : 'Assign permanently →'}
-                            </button>
-                            <p className="assign-warn">⚠ Assignment is permanent and cannot be undone.</p>
-                          </div>
-                        )}
-                      </PlanCard>
-                    ) : (
-                      <div className="cust-detail">
-                        <p className="muted-line">
-                          {o.assigned_at ? 'Permanently assigned to ' : 'Purchased by '}<b>{customerName(o)}</b>
-                          {o.assigned_at ? ' — locked, cannot be reassigned.' : '.'}
-                          {' '}CA status: <StatusVal value={d.activated ? 'activated' : 'pending setup'} />
-                        </p>
-                        {Number(o.product_id) === 300 && <CaasInline order={o} onChanged={load} />}
-                        <button className="btn ghost" type="button" disabled={checking === o.id} onClick={() => checkNow(o)}>
-                          {checking === o.id ? 'Checking…' : '⟳ Re-sync from CA'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }
