@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+import { deliverables } from './Dashboard.jsx'
 
 export default function Customers() {
   const { session, profile, loading } = useAuth()
@@ -18,7 +19,7 @@ export default function Customers() {
     const [p, s, o, d] = await Promise.all([
       supabase.from('profiles').select('id, full_name, created_at').eq('parent_reseller_id', session.user.id).order('created_at'),
       supabase.from('servers').select('id, owner_id, name, environment').neq('owner_id', session.user.id),
-      supabase.from('orders').select('id, user_id, server_id, product_name, status').neq('user_id', session.user.id),
+      supabase.from('orders').select('id, user_id, server_id, product_name, status, product_id, api_response, assigned_at').neq('user_id', session.user.id),
       supabase.from('tracked_domains').select('id, owner_id, server_id, domain').neq('owner_id', session.user.id),
     ])
     setSubs(p.data || [])
@@ -92,12 +93,13 @@ export default function Customers() {
         const cs = servers.filter((s) => s.owner_id === c.id)
         const co = orders.filter((o) => o.user_id === c.id)
         const cd = domains.filter((d) => d.owner_id === c.id)
+        const activated = co.filter((o) => deliverables(o).activated).length
         return (
           <div className="alert ok" key={c.id} style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <strong>{c.full_name || 'Unnamed customer'}</strong>
               <span className="mono" style={{ fontSize: '0.78rem' }}>
-                {cs.length} server{cs.length === 1 ? '' : 's'} · {co.length} plan{co.length === 1 ? '' : 's'} · {cd.length} domain{cd.length === 1 ? '' : 's'}
+                {cs.length} server{cs.length === 1 ? '' : 's'} · {co.length} plan{co.length === 1 ? '' : 's'} ({activated} activated, {co.length - activated} pending) · {cd.length} domain{cd.length === 1 ? '' : 's'}
               </span>
             </div>
             {cs.map((s) => {

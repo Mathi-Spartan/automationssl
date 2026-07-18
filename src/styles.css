@@ -208,3 +208,10 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 
 .form-page.wide { max-width: 860px; }
 .form-page.wide select, .form-page.wide input { font: inherit; }
+
+.stat-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 20px 0 26px; }
+.stat { background: var(--card, #fff); border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px; text-align: center; }
+.stat-value { font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
+.stat-label { font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
+.badge { display: inline-block; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.03em; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; background: #fff; color: var(--ink-soft); white-space: nowrap; }
+.section-h { font-family: var(--display); font-weight: 800; font-size: 1.15rem; margin: 26px 0 10px; letter-spacing: -0.01em; }
