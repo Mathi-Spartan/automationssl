@@ -1099,15 +1099,20 @@ function ResellerDashboard({ session, profile }) {
                     </PlanCard>
                   ) : (
                     <div className="cust-detail">
-                      <p className="muted-line">
-                        {o.assigned_at?'Permanently assigned to ':'Purchased by '}<b>{customerName(o)}</b>
-                        {o.assigned_at?' — locked, cannot be reassigned.':'.'}
-                        {' '}CA status: <StatusVal value={d.activated?'activated':'pending setup'}/>
-                      </p>
-                      {Number(o.product_id)===300 && <CaasInline order={o} onChanged={load}/>}
+                      <div className="cust-detail-info">
+                        {o.assigned_at ? 'Permanently assigned to ' : 'Purchased by '}
+                        <b>{customerName(o)}</b>
+                        {o.assigned_at ? ' — locked.' : '.'}{' '}
+                        CA status: <StatusVal value={d.activated ? 'activated' : 'pending setup'}/>
+                      </div>
+                      {Number(o.product_id) === 300 && (
+                        <div className="cust-detail-domains">
+                          <CaasInline order={o} onChanged={load}/>
+                        </div>
+                      )}
                       <div className="cust-detail-actions">
                         <button className="btn ghost" type="button" disabled={checking===o.id} onClick={()=>checkNow(o)}>
-                          {checking===o.id?'Checking…':'⟳ Re-sync from CA'}
+                          {checking===o.id ? 'Checking…' : '⟳ Re-sync from CA'}
                         </button>
                         {Number(o.product_id) !== 300 && (
                           <button className="btn ghost" type="button" onClick={async () => {
@@ -1123,8 +1128,8 @@ function ResellerDashboard({ session, profile }) {
                               })
                               const body = await r.json()
                               if (body.sso_link) window.open(body.sso_link, '_blank')
-                              else alert('No setup link available yet — click ⟳ Re-sync from CA first, then try again.')
-                            } catch { alert('Could not retrieve the setup link — please try Re-sync from CA.') }
+                              else alert('No setup link yet — click ⟳ Re-sync from CA first.')
+                            } catch { alert('Could not retrieve the setup link.') }
                           }}>Open setup portal ↗</button>
                         )}
                         <button className="btn ghost danger-btn" type="button"
