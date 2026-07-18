@@ -457,3 +457,7 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .todo.current { font-weight: 600; }
 .todo.current .todo-dot { border-color: #d9a441; color: #9a6b12; }
 .todo-sub { font-size: 0.76rem; color: var(--ink-soft); font-weight: 400; width: 100%; margin-left: 31px; }
+
+.caas-row { padding: 14px 16px; }
+.caas-row + .caas-row { border-top: 1px solid var(--line); }
+.caas-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.92rem; }

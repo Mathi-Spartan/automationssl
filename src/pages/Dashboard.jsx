@@ -315,6 +315,13 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
         )}
       </div>
 
+      {d.isAcme && !isReseller && (
+        <p className="hint" style={{ fontSize: '0.78rem', marginTop: 10 }}>
+          Need another domain on this subscription? Domains are added by your provider
+          (billing is pro-rated) — contact your reseller and it appears here automatically.
+        </p>
+      )}
+
       {order.last_synced_at && (
         <p className="sync-line">⟳ Synced from the CA today at {fmtTime(order.last_synced_at)} — updates automatically.</p>
       )}
@@ -487,6 +494,84 @@ function CustomerDashboard({ session, profile }) {
   )
 }
 
+// ---------- reseller: Sectigo CaaS multi-domain management ----------
+
+function CaasDomainManager({ caasOrders, ownerName, onChanged }) {
+  const [inputs, setInputs] = useState({})
+  const [busy, setBusy] = useState(null)
+  const [msg, setMsg] = useState(null)
+  const [err, setErr] = useState(null)
+
+  if (caasOrders.length === 0) return null
+
+  async function addDomain(o) {
+    const value = (inputs[o.id] || '').trim().toLowerCase()
+    if (!value) return
+    if (!confirm(`Add ${value} to CaaS subscription #${o.gogetssl_order_id}?\n\nThe CA bills this pro-rated to the subscription's renewal date.`)) return
+    setBusy(o.id)
+    setErr(null)
+    setMsg(null)
+    try {
+      const { data: sess } = await supabase.auth.getSession()
+      const res = await fetch('/api/domains', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
+        body: JSON.stringify({ order_id: o.id, domain: value }),
+      })
+      const body = await res.json()
+      if (!res.ok || body.error) throw new Error(body.message || 'Domain addition failed.')
+      setMsg(`${body.added} added to #${o.gogetssl_order_id} — credentials and domains re-synced from the CA.`)
+      setInputs((x) => ({ ...x, [o.id]: '' }))
+      onChanged()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <>
+      <h2 className="section-h">Sectigo CaaS — domain management</h2>
+      <p className="sub" style={{ marginBottom: 12 }}>
+        One CaaS subscription can secure many domains. Adding a domain is billed by the CA
+        <b> pro-rated to the renewal date</b> — that's why only you, as the reseller, can do it.
+        Customers see new domains and refreshed credentials on their card automatically.
+      </p>
+      {msg && <div className="alert ok">{msg}</div>}
+      {err && <div className="alert error">{err}</div>}
+      <div className="panel">
+        {caasOrders.map((o) => {
+          const d = deliverables(o)
+          return (
+            <div className="caas-row" key={o.id}>
+              <div className="caas-head">
+                <span><b>#{o.gogetssl_order_id}</b> · {ownerName(o)}</span>
+                {d.acmeAccountStatus && <StatusVal value={d.acmeAccountStatus} />}
+              </div>
+              <div className="chips" style={{ margin: '8px 0' }}>
+                {d.vendorDomains.length === 0 && <span className="muted-line">No domains yet.</span>}
+                {d.vendorDomains.map((dom) => {
+                  const name = typeof dom === 'string' ? dom : dom?.name || ''
+                  return <span className="chip" key={name}>{name}</span>
+                })}
+              </div>
+              <div className="chip-add">
+                <input placeholder="add domain e.g. shop.example.com" value={inputs[o.id] || ''}
+                  onChange={(e) => setInputs((x) => ({ ...x, [o.id]: e.target.value }))}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain(o))} />
+                <button className="btn primary" type="button" disabled={busy === o.id} onClick={() => addDomain(o)}>
+                  {busy === o.id ? 'Adding…' : 'Add domain (pro-rated)'}
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 // ---------- reseller view ----------
 
 function ResellerDashboard({ session, profile }) {
@@ -628,6 +713,12 @@ function ResellerDashboard({ session, profile }) {
         </SubRow>
       ))}
       </div>
+
+      <CaasDomainManager
+        caasOrders={[...(own || []), ...subOrders].filter((o) => Number(o.product_id) === 300)}
+        ownerName={(o) => o.user_id === session.user.id ? 'your subscription' : (subs.find((c) => c.id === o.user_id)?.full_name || 'customer')}
+        onChanged={load}
+      />
 
       {assigned.length > 0 && (
         <>
