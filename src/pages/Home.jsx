@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { PRODUCTS } from '../catalog.js'
-import { Reveal, Stagger, LineReveal, CountUp, StepSequence } from '../components/Motion.jsx'
+import { Reveal, Stagger, LineReveal, CountUp } from '../components/Motion.jsx'
+import AutomationTheatre from '../components/AutomationTheatre.jsx'
 
 const META = {
   400: { color: '#1a6bb5', tint: '#e8f0fa', tag: 'Agent', coverage: 'Single domain', features: ['www + apex domain', 'AutoInstall agent', 'Any ACME client', 'Auto-renews every cycle'] },
@@ -43,7 +44,7 @@ function PlanCards() {
       {ordered.map((p) => {
         const m = META[p.id] || META[400]
         return (
-          <article className={'pb-card' + (p.featured ? ' pb-card-hi' : '')} key={p.id}>
+          <article className={'pb-card' + (p.featured ? ' pb-card-hi' : '')} key={p.id} style={{ '--ca': m.color }}>
             {p.featured && <span className="pb-ribbon">Most flexible</span>}
             <div className="pb-card-top">
               <span className="pb-mark" style={{ background: m.tint }}>
@@ -123,17 +124,10 @@ export default function Home() {
         <div className="wrap">
           <Reveal className="b-head">
             <span className="b-head-eyebrow">How it works</span>
-            <h2 className="b-h2">From order to automated in four steps.</h2>
-            <p className="b-head-sub">Works with Apache, Nginx, Caddy, Traefik, IIS and LiteSpeed.</p>
+            <h2 className="b-h2">Watch a certificate automate itself.</h2>
+            <p className="b-head-sub">Real commands, real CA exchange. Pick the path that matches your stack.</p>
           </Reveal>
-          <StepSequence
-            steps={[
-              { tag: 'Order', title: 'Place your order', desc: 'Pick your CA and coverage. The CA registers your subscription within minutes.' },
-              { tag: 'Setup portal', title: 'Open your portal', desc: 'Your dashboard shows a personal AutoInstall link, or your ACME credentials.' },
-              { tag: 'One command', title: 'Run it on your server', desc: 'The agent installs and phones home. ACME users point certbot at the endpoint.' },
-              { tag: 'Automated', title: 'Renews on its own', desc: 'Validation, issuance and installation repeat every cycle without you.' },
-            ]}
-          />
+          <AutomationTheatre />
         </div>
       </section>
 
