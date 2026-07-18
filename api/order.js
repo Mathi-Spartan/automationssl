@@ -113,7 +113,8 @@ export default async function handler(req, res) {
       // The V2 API requires domains as an ARRAY of strings (verified against the
       // official GoGetSSL WHMCS module's normalizeDomains) — a bare string is
       // rejected with the generic GEX-3 error.
-      payload = { product: { id: Number(product_id) }, domains: [domain.replace(/^\*\./, '')] }
+      const callbackBase = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://automationssl.vercel.app'
+      payload = { product: { id: Number(product_id) }, domains: [domain.replace(/^\*\./, '')], callback_url: `${callbackBase}/api/cron-sync` }
     } else {
       endpoint = `${GG2}/certificates/ais`
       payload = {

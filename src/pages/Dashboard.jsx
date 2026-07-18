@@ -809,7 +809,27 @@ function CaasInline({ order, onChanged }) {
         {d.vendorDomains.length === 0 && <span className="caas-empty-tag">no domains yet</span>}
         {d.vendorDomains.map((dom) => {
           const name = typeof dom === 'string' ? dom : dom?.name || ''
-          return <span className="caas-tag" key={name}>{name}</span>
+          return (
+            <span className="caas-tag" key={name}>
+              {name}
+              <button type="button" className="caas-tag-rm" title={`Remove ${name}`} onClick={async () => {
+                if (!confirm(`Remove ${name} from CaaS #${order.gogetssl_order_id}?`)) return
+                setBusy(true); setErr(null); setMsg(null)
+                try {
+                  const { data: sess } = await supabase.auth.getSession()
+                  const res = await fetch('/api/domains', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
+                    body: JSON.stringify({ order_id: order.id, domain: name }),
+                  })
+                  const body = await res.json()
+                  if (!res.ok || body.error) throw new Error(body.message || 'Removal failed.')
+                  setMsg(`${name} removed.`)
+                  onChanged()
+                } catch (e) { setErr(e.message) } finally { setBusy(false) }
+              }}>×</button>
+            </span>
+          )
         })}
         <div className="caas-add-pill">
           <input className="caas-add-input" placeholder="add domain…" value={value}
@@ -842,6 +862,9 @@ function ResellerDashboard({ session, profile }) {
   const [notice, setNotice] = useState(null)
   const [open, setOpen] = useState({})
   const [filter, setFilter] = useState('all')
+  const [balance, setBalance] = useState(null)
+  const [cancelling, setCancelling] = useState(null)
+  const [cancelErr, setCancelErr] = useState(null)
 
   const load = useCallback(async () => {
     const uid = session.user.id
@@ -868,6 +891,16 @@ function ResellerDashboard({ session, profile }) {
       if (await refreshPending(all)) load()
     })
   }, [load])
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data?.session?.access_token) return
+      fetch('/api/balance', { headers: { Authorization: `Bearer ${data.session.access_token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.ok) setBalance({ amount: d.balance, currency: d.currency }) })
+        .catch(() => {})
+    })
+  }, [])
 
   const allOrders = own ? [...own, ...subOrders] : null
   const celebrate = usePendingPoll(allOrders, load)
@@ -1025,6 +1058,14 @@ function ResellerDashboard({ session, profile }) {
                     <PlanCard order={o} isReseller servers={servers} noHead
                       onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
                       {Number(o.product_id) === 300 && <CaasInline order={o} onChanged={load}/>}
+                      <div className="cancel-row">
+                        {cancelErr && cancelling === o.id && <span className="cancel-err">{cancelErr}</span>}
+                        <button className="btn ghost danger-btn" type="button"
+                          disabled={cancelling === o.id || o.status === 'cancelled'}
+                          onClick={() => cancelOrder(o)}>
+                          {cancelling === o.id ? 'Cancelling…' : o.status === 'cancelled' ? 'Cancelled' : 'Cancel subscription'}
+                        </button>
+                      </div>
                       {subs.length > 0 && (
                         <div className="assign-row">
                           <span className="assign-label">Assign to customer</span>
@@ -1050,6 +1091,19 @@ function ResellerDashboard({ session, profile }) {
                       <button className="btn ghost" type="button" disabled={checking===o.id} onClick={()=>checkNow(o)}>
                         {checking===o.id?'Checking…':'⟳ Re-sync from CA'}
                       </button>
+                      {Number(o.product_id) !== 300 && (
+                        <button className="btn ghost" type="button" onClick={async () => {
+                          const { data } = await supabase.auth.getSession()
+                          const r = await fetch('/api/sso', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+                            body: JSON.stringify({ order_id: o.id }),
+                          })
+                          const body = await r.json()
+                          if (body.sso_link) window.open(body.sso_link, '_blank')
+                          else alert(body.message || 'Could not get a fresh link.')
+                        }}>Fresh setup link ↗</button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1061,11 +1115,29 @@ function ResellerDashboard({ session, profile }) {
     )
   }
 
+  async function cancelOrder(order) {
+    if (!confirm(`Cancel "${order.product_name}" (#${order.gogetssl_order_id})? This cannot be undone.`)) return
+    setCancelling(order.id); setCancelErr(null)
+    try {
+      const { data } = await supabase.auth.getSession()
+      const r = await fetch('/api/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+        body: JSON.stringify({ order_id: order.id }),
+      })
+      const body = await r.json()
+      if (!r.ok || body.error) { setCancelErr(body.message || 'Cancellation failed.'); return }
+      await load()
+    } catch (e) { setCancelErr(String(e.message || e)) }
+    finally { setCancelling(null) }
+  }
+
   const selInfo = custList.find(c => c.id === selCustomer)
 
   return (
     <div className="dash-page">
       <div className="dash-head-row">
+        {balance && <div className="reseller-balance">Balance: <strong>{balance.currency} {Number(balance.amount).toFixed(2)}</strong></div>}
         <div>
           <span className="eyebrow">Reseller dashboard</span>
           <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>

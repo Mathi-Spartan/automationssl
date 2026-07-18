@@ -1560,3 +1560,14 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .cust-search input::placeholder { color: #9aa3b5; }
 .cust-company { color: #4a5568; }
 .cust-email { font-size: 0.75rem; font-family: var(--mono); color: #66738a; margin-top: 1px; }
+
+/* ── new API features: balance, cancel, remove domain, SSO ── */
+.reseller-balance { font-size: 0.8rem; color: #4a5568; background: #f0f4fa; border: 0.5px solid #d5dded; border-radius: 8px; padding: 5px 12px; }
+.reseller-balance strong { color: #0a2540; }
+.cancel-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid #eef1f8; }
+.cancel-err { font-size: 0.78rem; color: #c0392b; flex: 1; }
+.danger-btn { color: #c0392b !important; border-color: #e8b4b8 !important; }
+.danger-btn:hover { background: #fff5f5 !important; }
+.caas-tag { display: inline-flex; align-items: center; gap: 4px; }
+.caas-tag-rm { background: none; border: none; cursor: pointer; color: #9aa3b5; font-size: 13px; line-height: 1; padding: 0 2px; border-radius: 3px; }
+.caas-tag-rm:hover { color: #c0392b; background: #fff0f0; }

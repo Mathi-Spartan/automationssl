@@ -34,6 +34,7 @@ async function resolveUser(req) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'DELETE') return handleRemove(req, res)
   if (req.method !== 'POST') return res.status(405).json({ error: true, message: 'Method not allowed' })
 
   try {
@@ -121,5 +122,66 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, added: clean, api_response: fresh, vendor_response: addBody })
   } catch (err) {
     return res.status(500).json({ error: true, message: 'Domain addition failed.', detail: String(err.message || err) })
+  }
+}
+
+// ---- DELETE: remove a domain from a CaaS subscription ----
+async function handleRemove(req, res) {
+  try {
+    const user = await resolveUser(req)
+    if (!user?.id) return res.status(401).json({ error: true, message: 'Please sign in.' })
+
+    const pr = await (await fetch(`${SB()}/rest/v1/profiles?id=eq.${user.id}&select=account_type`, { headers: H() })).json()
+    if (pr?.[0]?.account_type !== 'reseller')
+      return res.status(403).json({ error: true, message: 'Domain management is reserved for reseller accounts.' })
+
+    const { order_id, domain } = req.body || {}
+    const clean = String(domain || '').trim().toLowerCase()
+    if (!order_id || !clean) return res.status(400).json({ error: true, message: 'order_id and domain are required.' })
+
+    const ord = await (await fetch(
+      `${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,product_id,gogetssl_order_id,api_response`,
+      { headers: H() }
+    )).json()
+    const order = ord?.[0]
+    if (!order) return res.status(404).json({ error: true, message: 'Order not found.' })
+    if (Number(order.product_id) !== 300)
+      return res.status(400).json({ error: true, message: 'Domain removal applies to Sectigo ACME CaaS subscriptions only.' })
+
+    let allowed = order.user_id === user.id
+    if (!allowed && order.user_id) {
+      const op = await (await fetch(`${SB()}/rest/v1/profiles?id=eq.${order.user_id}&select=parent_reseller_id`, { headers: H() })).json()
+      allowed = op?.[0]?.parent_reseller_id === user.id
+    }
+    if (!allowed) return res.status(403).json({ error: true, message: 'This subscription does not belong to you or your customers.' })
+
+    const rmRes = await fetch(
+      `${GG2}/certificates/acme/${order.gogetssl_order_id}/domains/${encodeURIComponent(clean)}`,
+      { method: 'DELETE', headers: ggHeaders() }
+    )
+    if (!rmRes.ok && rmRes.status !== 204) {
+      const body = await rmRes.json().catch(() => ({}))
+      console.error('CaaS domain remove rejected:', rmRes.status, JSON.stringify(body))
+      return res.status(502).json({ error: true, message: 'The CA rejected the domain removal.', detail: body?.message || body })
+    }
+
+    // re-sync so dashboard reflects the removal
+    const itemId = order?.api_response?.items?.[0]?.id
+    let fresh = null
+    if (itemId) {
+      const stRes = await fetch(`${GG2}/certificates/caas/${encodeURIComponent(itemId)}`, { headers: ggHeaders() })
+      if (stRes.ok) fresh = await stRes.json()
+    }
+    if (fresh) {
+      await fetch(`${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}`, {
+        method: 'PATCH',
+        headers: { ...H(), Prefer: 'return=minimal' },
+        body: JSON.stringify({ api_response: fresh, last_synced_at: new Date().toISOString() }),
+      })
+    }
+
+    return res.status(200).json({ ok: true, removed: clean, api_response: fresh })
+  } catch (err) {
+    return res.status(500).json({ error: true, message: 'Domain removal failed.', detail: String(err.message || err) })
   }
 }
