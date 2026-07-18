@@ -38,9 +38,6 @@ export default function DashShell({ children }) {
               <span className="ic" aria-hidden="true">👥</span> Customers
             </NavLink>
           )}
-          <a href="/#plans">
-            <span className="ic" aria-hidden="true">＋</span> Buy plans
-          </a>
           {!isReseller && (
             <Link to="/status">
               <span className="ic" aria-hidden="true">☰</span> Order status

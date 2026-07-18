@@ -1009,7 +1009,7 @@ function ResellerDashboard({ session, profile }) {
         <div className="rd-sidebar">
           <div className="rd-sidebar-head">
             <span className="rd-sidebar-title">Accounts</span>
-            <Link to="/#plans" className="rd-sidebar-buy">+ Buy</Link>
+  
           </div>
           <div className="rd-customer-list">
             {custList.map(c => (
@@ -1024,7 +1024,7 @@ function ResellerDashboard({ session, profile }) {
                   </span>
                 </button>
                 {c.id !== '__all__' && c.id !== '__mine__' && (
-                  <Link to={`/order-for/${c.id}`} className="rd-cust-buy" title={`Buy a plan for ${c.label}`}>+</Link>
+                  <Link to={`/order-for/${c.id}`} className="rd-cust-buy">Buy</Link>
                 )}
               </div>
             ))}
