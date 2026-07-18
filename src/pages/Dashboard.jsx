@@ -1022,35 +1022,48 @@ function ResellerDashboard({ session, profile }) {
   function OrderTable({ orderList }) {
     if (!orderList || orderList.length === 0)
       return <div className="rd-empty"><i className="ti ti-inbox" style={{fontSize:28,color:'#b4dffc'}} aria-hidden="true"/><p>No subscriptions here.</p></div>
+    const wide = selCustomer === '__all__'
     return (
       <div className="rd-order-table">
-        <div className="rd-tbl-head">
-          <span>Order #</span><span>Product</span>
-          {selCustomer === '__all__' && <span>Customer</span>}
-          <span>Status</span><span>Renews</span><span/>
+        <div className={'rd-tbl-head rd-tbl-head-v2' + (wide ? ' wide' : '')}>
+          <span>Date</span>
+          <span>Order ID / Domain</span>
+          <span>Product</span>
+          {wide && <span>Customer</span>}
+          <span>Expires</span>
+          <span>Status</span>
+          <span style={{textAlign:'right'}}>Actions</span>
         </div>
         {orderList.map(o => {
           const d = deliverables(o)
           const mine = o.user_id === session.user.id && !o.assigned_at
           const isOpen = !!open[o.id]
+          const orderedDate = o.created_at ? fmtDate(o.created_at) : '—'
           return (
             <div className={'rd-order-row' + (isOpen ? ' open' : '')} key={o.id}>
-              <button type="button" className={'rd-tbl-row' + (selCustomer === '__all__' ? ' wide' : '')} onClick={() => {
+              <button type="button" className={'rd-tbl-row-v2' + (wide ? ' wide' : '')} onClick={() => {
                 const opening = !isOpen
                 setOpen(x => ({ ...x, [o.id]: !x[o.id] }))
                 if (opening) refreshOrders([o]).then(r => r && load())
               }} aria-expanded={isOpen}>
-                <span className="rd-order-id">#{o.gogetssl_order_id}</span>
+                <span className="rd-order-date">{orderedDate}</span>
+                <span className="rd-order-id-domain">
+                  <span className="rd-order-id" style={{color:'var(--cert)'}}>{o.gogetssl_order_id}</span>
+                  <span className="rd-order-domain">{d.vendorDomains?.[0] && (typeof d.vendorDomains[0]==='string' ? d.vendorDomains[0] : d.vendorDomains[0]?.name) || '—'}</span>
+                </span>
                 <span className="rd-order-product">
                   <span className="rd-ca-dot" style={{background: caColors[o.product_id]||'#888'}}/>
-                  <span>{o.product_name}</span>
+                  <span className="rd-order-product-name">{o.product_name}</span>
                 </span>
-                {selCustomer === '__all__' && (
-                  <span className="rd-order-cust">{customerName(o)}{o.assigned_at && ' 🔒'}</span>
-                )}
-                <span><StagePill d={d}/></span>
+                {wide && <span className="rd-order-cust">{customerName(o)}{o.assigned_at && <i className="ti ti-lock" style={{fontSize:11,marginLeft:4,verticalAlign:-1}} aria-hidden="true"/>}</span>}
                 <span className="rd-order-renew">{d.renewal ? fmtDate(d.renewal) : '—'}</span>
-                <span className="chev">{isOpen ? '▾' : '▸'}</span>
+                <span><StagePill d={d}/></span>
+                <span className="rd-order-actions">
+                  <i className={'ti ' + (isOpen ? 'ti-chevron-up' : 'ti-chevron-down')} style={{fontSize:15,color:'var(--cert)'}} aria-label={isOpen?'Collapse':'Expand'} aria-hidden="false"/>
+                  <i className="ti ti-x rd-cancel-icon" style={{fontSize:15,color:'#c0392b'}}
+                    aria-label="Cancel"
+                    onClick={e => { e.stopPropagation(); cancelOrder(o) }}/>
+                </span>
               </button>
               {isOpen && (
                 <div className="sub-row-body">
@@ -1124,6 +1137,10 @@ function ResellerDashboard({ session, profile }) {
             </div>
           )
         })}
+        <div className="rd-tbl-footer">
+          <span>{orderList.length} subscription{orderList.length!==1?'s':''}</span>
+          <span><i className="ti ti-refresh" style={{fontSize:12,verticalAlign:-2,marginRight:4}} aria-hidden="true"/>Synced from CA</span>
+        </div>
       </div>
     )
   }
