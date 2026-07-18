@@ -202,19 +202,13 @@ export default function AutomationTheatre() {
                   : `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)}`}
               >
                 <span className="lc-slice-days">{s.days}d</span>
-                <span className="lc-slice-exp">{fmtSlice(s.endsOn)}</span>
+                <span className="lc-slice-exp">{fmtSlice(s.startsOn)} <i className="lc-slice-arr" aria-hidden="true">→</i> {fmtSlice(s.endsOn)}</span>
               </div>
             ))}
           </div>
 
           <div className="lc-legend">
-            <span className="lc-legend-item"><i className="lc-dot" aria-hidden="true" />each block expires on the date shown</span>
-            <span className="lc-legend-sep" />
-            <span className="lc-legend-note">
-              {slices[slices.length - 1].partial
-                ? `last one runs ${slices[slices.length - 1].days}d to the term end`
-                : `${slices[0].days}-day maximum on ${fmtSlice(startISO)}`}
-            </span>
+            <span className="lc-legend-item"><i className="lc-dot" aria-hidden="true" />each block shows the days it covers, and the dates it runs between</span>
           </div>
         </div>
 
