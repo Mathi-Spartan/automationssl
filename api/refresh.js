@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, refreshed: false, status: order.status, api_response: order.api_response })
     }
 
-    const category = Number(order.product_id) === 300 ? 'acme' : 'ais'
+    const category = Number(order.product_id) === 300 ? 'caas' : 'ais'  // CaaS reads use /certificates/caas/{id}; /acme/{id} 404s
     const itemId = order?.api_response?.items?.[0]?.id
     if (!itemId) return res.status(200).json({ ok: true, refreshed: false, status: order.status, api_response: order.api_response })
 

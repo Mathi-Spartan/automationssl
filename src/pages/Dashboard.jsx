@@ -8,26 +8,32 @@ import { useAuth } from '../lib/AuthContext.jsx'
 export function deliverables(order) {
   const item = order?.api_response?.items?.[0] || {}
   const link = item?.autoinstall?.login_sso_link || item?.autoinstall?.manage_sso_link || null
-  const acme = {}
-  const scan = (obj) => {
-    for (const [k, v] of Object.entries(obj || {})) {
-      if (v && typeof v === 'object' && !Array.isArray(v)) scan(v)
-      else if (/eab|server_url|acme_account|directory/i.test(k) && v) acme[k] = v
+  const isAcme = Number(order.product_id) === 300
+  const account = item?.account || null
+  // CaaS credentials live at items[0].account: eab_mac_id / eab_mac_key / server_url.
+  // account.status is "pending" until the customer's ACME client registers.
+  let acme = null
+  if (isAcme && account?.eab_mac_key) {
+    acme = {
+      eab_kid: account.eab_mac_id || account.id,
+      eab_hmac_key: account.eab_mac_key,
+      server_url: account.server_url || 'https://acme.sectigo.com/v2/DV',
     }
   }
-  const isAcme = Number(order.product_id) === 300
-  if (isAcme) scan(order.api_response)
   const aiStatus = item?.autoinstall?.status || null
   const vendorDomains = Array.isArray(item?.domains) ? item.domains : []
+  const enrollReady = Boolean(acme)
+  const clientRegistered = Boolean(account?.status && account.status !== 'pending')
   return {
     setupLink: link,
     aiStatus,
-    acme: Object.keys(acme).length ? acme : null,
+    acme,
     renewal: item?.subscription?.next_renewal || null,
     vendorDomains,
     agentInstalled: Boolean(item?.autoinstall?.installation_method) || (aiStatus && aiStatus !== 'incomplete'),
     isAcme,
-    activated: isAcme ? true : Boolean(aiStatus && aiStatus !== 'incomplete'),
+    enrollReady,
+    activated: isAcme ? clientRegistered : Boolean(aiStatus && aiStatus !== 'incomplete'),
   }
 }
 
@@ -90,8 +96,9 @@ function Journey({ d }) {
   const steps = d.isAcme
     ? [
         { label: 'Ordered', done: true },
-        { label: 'Configure ACME client', done: d.vendorDomains.length > 0 },
-        { label: 'Automated', done: d.vendorDomains.length > 0 },
+        { label: 'Enrollment ready', done: d.enrollReady },
+        { label: 'Configure ACME client', done: d.activated },
+        { label: 'Automated', done: d.activated },
       ]
     : [
         { label: 'Ordered', done: true },
@@ -115,12 +122,15 @@ function Journey({ d }) {
 }
 
 function StagePill({ d }) {
-  if (d.activated && (d.isAcme || d.vendorDomains.length > 0)) return <span className="stage-pill ok">Automated ✓</span>
-  if (d.activated) return <span className="stage-pill ok">Active ✓</span>
-  const total = d.isAcme ? 3 : 4
+  if (d.activated) return <span className="stage-pill ok">Automated ✓</span>
+  if (d.isAcme) {
+    return d.enrollReady
+      ? <span className="stage-pill warn">Step 3 of 4 — configure ACME client</span>
+      : <span className="stage-pill warn">Step 2 of 4 — enrollment provisioning</span>
+  }
   const step = !d.agentInstalled ? 2 : 3
-  const label = d.isAcme ? 'configure ACME client' : !d.agentInstalled ? 'install agent' : 'add your domain'
-  return <span className="stage-pill warn">Step {step} of {total} — {label}</span>
+  const label = !d.agentInstalled ? 'install agent' : 'add your domain'
+  return <span className="stage-pill warn">Step {step} of {4} — {label}</span>
 }
 
 export function SubRow({ order, isReseller, open, onToggle, children }) {
@@ -161,6 +171,29 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
           🎉 <b>Automation is live.</b> Issuance and renewals are hands-off from here
           {d.renewal && <> — covered until <b>{fmtDate(d.renewal)}</b>{days != null && <> ({days} days), renews automatically</>}</>}.
         </p>
+      ) : d.isAcme ? (
+        <div className="plan-note">
+          {d.enrollReady ? (
+            <>
+              <b>Your enrollment credentials are ready.</b>
+              <ol className="checklist">
+                <li className="done">Enrollment provisioned by the CA.</li>
+                <li>Register your ACME client with the credentials below (certbot, acme.sh, Caddy, Traefik, cert-manager…).</li>
+                <li>Request the certificate for your domain — renewals run on their own after that.</li>
+              </ol>
+              <pre className="acme-creds">{`# one-time registration
+certbot register --server ${d.acme.server_url} \
+  --eab-kid ${d.acme.eab_kid} \
+  --eab-hmac-key ${d.acme.eab_hmac_key}`}</pre>
+              <p className="hint" style={{ fontSize: '0.78rem' }}>Treat these credentials like a password — they're yours alone.</p>
+            </>
+          ) : (
+            <>
+              <b>The CA is provisioning your enrollment — usually a few minutes.</b>{' '}
+              Use "Check my setup" below, or just wait: this page re-checks automatically.
+            </>
+          )}
+        </div>
       ) : (
         <div className="plan-note">
           <b>You're {d.agentInstalled ? '1 step' : 'about 5 minutes'} away.</b>
@@ -193,14 +226,14 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
             {d.activated ? 'Open automation portal →' : 'Activate — open setup portal →'}
           </a>
         )}
-        {!d.activated && !d.isAcme && onCheck && (
+        {!d.activated && onCheck && (
           <button className="btn ghost" type="button" disabled={checking} onClick={() => onCheck(order)}>
             {checking ? 'Checking…' : 'Check my setup'}
           </button>
         )}
       </div>
 
-      {d.acme && (
+      {d.acme && d.activated && (
         <details style={{ marginTop: 10 }}>
           <summary><strong>ACME enrollment credentials</strong> — works with certbot, acme.sh, Caddy…</summary>
           <pre>{JSON.stringify(d.acme, null, 2)}</pre>

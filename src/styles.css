@@ -417,3 +417,8 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .dash-user { border-top-color: rgba(255,255,255,0.14); }
 .dash-family { font-family: var(--mono); font-size: 0.66rem; color: #6f8aa5; margin-top: 12px; display: block; }
 .dash-family a { text-decoration: underline; color: #8fb4d6; }
+
+/* hero fix: kill the legacy two-column grid; single centered column */
+.hero .wrap { display: block; }
+.hero p.lede, .hero .lede { color: #e6f0fa; max-width: 640px; margin: 0 auto 30px; font-size: 1.06rem; }
+.acme-creds { background: #0a2540; color: #cfe4f7; border-radius: 10px; padding: 14px 16px; font-family: var(--mono); font-size: 0.78rem; overflow-x: auto; margin-top: 10px; white-space: pre; }

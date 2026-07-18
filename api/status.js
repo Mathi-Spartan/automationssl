@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     const record = rows[0]
 
     // -------- live status from GoGetSSL V2 --------
-    const category = Number(record.product_id) === 300 ? 'acme' : 'ais'
+    const category = Number(record.product_id) === 300 ? 'caas' : 'ais'  // CaaS reads use /certificates/caas/{id}; /acme/{id} 404s
     const itemId = record?.api_response?.items?.[0]?.id || record.gogetssl_order_id
 
     const stRes = await fetch(`${GG2}/certificates/${category}/${encodeURIComponent(itemId)}`, {
