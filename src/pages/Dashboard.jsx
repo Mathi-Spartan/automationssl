@@ -711,8 +711,10 @@ function ResellerDashboard({ session, profile }) {
       {own && inventory.length === 0 ? (
         <div className="r-empty">
           <span className="r-empty-icon">📦</span>
-          <h3>No inventory yet</h3>
-          <p>Purchase plans to stock your reseller inventory — they'll appear here ready to activate or assign.</p>
+          <div className="r-empty-text">
+            <h3>No inventory yet</h3>
+            <p>Purchase plans to stock your inventory — they'll appear here ready to activate or assign.</p>
+          </div>
           <Link to="/#plans" className="btn primary">Browse plans →</Link>
         </div>
       ) : (

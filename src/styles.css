@@ -493,3 +493,45 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .assigned-plans { display: flex; flex-direction: column; gap: 6px; }
 .assigned-plan-row { display: flex; align-items: center; gap: 10px; font-size: 0.88rem; flex-wrap: wrap; padding: 8px 10px; background: #fafbff; border: 1px solid var(--line); border-radius: 10px; }
 .assigned-plan-name { font-weight: 600; flex: 1; min-width: 180px; }
+
+/* ---------- clean & compact dashboard pass (v3) ---------- */
+.dash-main { padding: 26px 32px 60px; }
+.dash-page { max-width: 1060px; font-size: 0.94rem; }
+.dash-page h1 { font-size: 1.28rem; margin: 0 0 2px; }
+.dash-page .sub { font-size: 0.85rem; margin-bottom: 18px; }
+
+.dash-side { width: 208px; padding: 18px 12px; }
+.dash-logo { font-size: 0.98rem; margin-bottom: 22px; }
+.dash-nav a { font-size: 0.85rem; padding: 8px 11px; border-radius: 8px; }
+
+.r-kpi-strip { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 14px 0 24px; }
+.r-kpi { padding: 13px 16px; border-radius: 12px; }
+.r-kpi-num { font-size: 1.45rem; }
+.r-kpi-label { font-size: 0.78rem; }
+.r-kpi-sub { font-size: 0.7rem; }
+
+.r-section-head { margin: 24px 0 10px; align-items: center; }
+.r-section-title { font-size: 0.98rem; }
+.r-section-desc { font-size: 0.79rem; max-width: 640px; }
+.r-section-head .btn { padding: 7px 14px; font-size: 0.82rem; }
+
+/* slim inline empty state instead of tall hero card */
+.r-empty { display: flex; align-items: center; text-align: left; gap: 14px; padding: 16px 18px; border-radius: 12px; }
+.r-empty-icon { font-size: 1.3rem; margin: 0; }
+.r-empty h3 { font-size: 0.92rem; margin: 0; }
+.r-empty p { margin: 2px 0 0; font-size: 0.8rem; max-width: none; flex: 1; }
+.r-empty .btn { padding: 7px 14px; font-size: 0.82rem; white-space: nowrap; }
+.r-empty-text { flex: 1; }
+
+.panel { border-radius: 12px; margin-bottom: 20px; }
+.caas-row { padding: 12px 16px; }
+.caas-head { font-size: 0.88rem; }
+.chip-add { max-width: 560px; }
+.chip-add input { padding: 8px 12px; font-size: 0.86rem; }
+.chip-add .btn { padding: 8px 14px; font-size: 0.82rem; white-space: nowrap; }
+
+.assigned-customer-row { padding: 13px 16px; }
+.stat-strip { gap: 10px; }
+.dash-page .stat { padding: 12px 14px; }
+.dash-page .stat-value { font-size: 1.4rem; }
+.alert { font-size: 0.85rem; }
