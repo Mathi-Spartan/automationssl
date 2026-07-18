@@ -18,8 +18,8 @@ export default function DashShell({ children }) {
       <aside className="dash-side">
         <Link to="/" className="dash-logo" aria-label="AutomationSSL home">
           <svg width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-            <circle cx="13" cy="13" r="10" stroke="#10b981" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
-            <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#34d399" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            <circle cx="13" cy="13" r="10" stroke="#b4dffc" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
+            <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" fill="none" />
           </svg>
           Automation<em>SSL</em>
         </Link>
@@ -51,6 +51,7 @@ export default function DashShell({ children }) {
             <span className="dash-user-role">{isReseller ? 'Reseller account' : 'Customer account'}</span>
           </div>
           <a href="/" onClick={signOut} className="dash-signout">Sign out</a>
+          <span className="dash-family">an <a href="https://easysecurity.in" target="_blank" rel="noreferrer">easysecurity.in</a> product</span>
         </div>
       </aside>
 

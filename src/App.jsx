@@ -15,8 +15,8 @@ function Logo() {
   return (
     <Link to="/" className="logo" aria-label="AutomationSSL home">
       <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-        <circle cx="13" cy="13" r="10" stroke="#10b981" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
-        <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#0b7a57" strokeWidth="2.4" strokeLinecap="round" strokeJoin="round" fill="none" />
+        <circle cx="13" cy="13" r="10" stroke="#b4dffc" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
+        <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeJoin="round" fill="none" />
       </svg>
       Automation<em>SSL</em>
     </Link>
@@ -27,7 +27,10 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="wrap">
-        <Logo />
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Logo />
+          <span className="brand-tag">SSL automation · an easysecurity.in product</span>
+        </div>
         <nav className="nav" aria-label="Main">
           <a href="/#plans">Plans</a>
           <a href="/#how">How it works</a>
@@ -75,7 +78,8 @@ export function Footer() {
         </div>
         <div className="mono">
           Launch testing phase — all plans free of charge.
-          <br />© {new Date().getFullYear()} AutomationSSL
+          <br />© {new Date().getFullYear()} AutomationSSL — part of the{' '}
+          <a href="https://easysecurity.in" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>easysecurity.in</a> family
         </div>
       </div>
     </footer>

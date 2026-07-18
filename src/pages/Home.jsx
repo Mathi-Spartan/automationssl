@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { PRODUCTS } from '../catalog.js'
-import { RenewalLoop } from '../App.jsx'
 
 function PlanCard({ p }) {
   return (
@@ -33,30 +32,65 @@ function PlanCard({ p }) {
 export default function Home() {
   return (
     <>
+      {/* ---------- blue hero, EasySecurity family style ---------- */}
       <section className="hero">
-        <div className="wrap">
-          <div>
-            <span className="eyebrow">RapidSSL · GeoTrust · Sectigo ACME</span>
-            <h1>
-              Certificates that <span className="loopword">renew themselves</span>.
-            </h1>
-            <p className="lede">
-              Automation plans from three major Certificate Authorities. Enroll a
-              server once — issuance, deployment checks and every renewal after
-              that run without you. No cron jobs. No 3 a.m. expiry pages.
-            </p>
-            <div className="hero-actions">
-              <a className="btn primary" href="#plans">Browse plans</a>
-              <a className="btn ghost" href="#how">How it works</a>
-            </div>
-            <p className="testing-note">
-              <span className="dot" /> Launch testing phase — every plan is free of charge
-            </p>
+        <div className="wrap hero-inner">
+          <p className="hero-kicker">SSL Automation Store · an easysecurity.in product</p>
+          <h1 className="hero-title">
+            Order once.
+            <br />
+            <span className="accent">Secured forever.</span>
+          </h1>
+          <p className="lede">
+            Automation plans from RapidSSL, GeoTrust and Sectigo. Enroll a server
+            once — issuance, installation and every renewal after that run
+            hands-off. No cron jobs. No 3 a.m. expiry pages.
+          </p>
+          <div className="hero-actions">
+            <a className="btn hero-primary" href="#plans">Browse plans →</a>
+            <a className="btn hero-ghost" href="#why">Why automate now</a>
           </div>
-          <RenewalLoop />
+          <hr className="hero-rule" />
+          <div className="trust-row">
+            <span>✓ <b>RapidSSL · GeoTrust · Sectigo</b> trust chain</span>
+            <span>✓ <b>Zero-touch</b> issue → install → renew</span>
+            <span>✓ <b>47-day lifetimes</b> ready</span>
+          </div>
         </div>
       </section>
 
+      {/* ---------- why now: 47-day narrative ---------- */}
+      <section className="block" id="why">
+        <div className="wrap">
+          <div className="section-head center">
+            <h2>Manual SSL is about to become impossible.</h2>
+            <p>
+              The CA/B Forum is cutting public certificate lifetimes to 47 days by 2029.
+              What used to be a yearly chore becomes a task every six weeks — per certificate,
+              per server. Automation stops being nice-to-have.
+            </p>
+          </div>
+          <div className="value-grid">
+            <div className="value-card">
+              <span className="value-num">200</span>
+              <h3>days today → 47 by 2029</h3>
+              <p>Certificate lifetimes are shrinking on a published schedule. Every cut multiplies the renewals you'd do by hand.</p>
+            </div>
+            <div className="value-card">
+              <span className="value-num">1</span>
+              <h3>command to automate</h3>
+              <p>Install the agent or point your ACME client once. Validation, issuance, installation and renewal run on their own after that.</p>
+            </div>
+            <div className="value-card">
+              <span className="value-num">0</span>
+              <h3>expiry incidents</h3>
+              <p>Built-in monitoring watches every renewal. If anything needs attention, you hear about it before your visitors ever could.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- plans ---------- */}
       <section className="block alt" id="plans">
         <div className="wrap">
           <div className="section-head">
@@ -75,6 +109,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------- how it works ---------- */}
       <section className="block" id="how">
         <div className="wrap">
           <div className="section-head">
@@ -86,17 +121,18 @@ export default function Home() {
               <span className="mono-tag">01 / order</span>
               <h3>Place your free order</h3>
               <p>
-                Choose a plan and tell us the domain and contact details. Your
-                plan is registered with the Certificate Authority within minutes.
+                Sign in, choose a plan and tell us your contact details. Your
+                subscription is registered with the Certificate Authority within
+                minutes and appears in your dashboard.
               </p>
             </div>
             <div className="step">
-              <span className="mono-tag">02 / enroll</span>
-              <h3>Point your ACME client at the CA</h3>
+              <span className="mono-tag">02 / connect</span>
+              <h3>Install the agent — or point ACME at the CA</h3>
               <p>
-                You receive enrollment credentials for your plan. Certbot,
-                acme.sh, Caddy, Traefik or cert-manager — any standard ACME
-                client works.
+                AutoInstall plans give you a personal setup portal with a one-line
+                install command. The Sectigo plan hands you ACME credentials for
+                certbot, acme.sh, Caddy, Traefik or cert-manager.
               </p>
             </div>
             <div className="step">
@@ -104,8 +140,8 @@ export default function Home() {
               <h3>Renewals happen on their own</h3>
               <p>
                 Your server and the CA handle validation, issuance and renewal
-                between themselves for the full plan term. Check the order status
-                page any time.
+                between themselves for the full plan term. Your dashboard shows
+                live status the whole way.
               </p>
             </div>
           </div>
@@ -123,6 +159,15 @@ export default function Home() {
               <div><span className="comment"># done. certificate issued, renewal timer armed.</span></div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ---------- closing CTA band ---------- */}
+      <section className="cta-band">
+        <div className="wrap">
+          <h2>Put your certificates on autopilot today.</h2>
+          <p>Every plan is free of charge during the launch testing phase.</p>
+          <a className="btn hero-primary" href="#plans">Choose your plan →</a>
         </div>
       </section>
     </>

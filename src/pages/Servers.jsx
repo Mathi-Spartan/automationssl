@@ -91,9 +91,11 @@ export default function Servers() {
             <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link> and pick the server there.
           </p>
         </div>
-        <button className="btn primary" type="button" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Close' : '+ Add server'}
-        </button>
+        {(showForm || (servers && servers.length > 0)) && (
+          <button className="btn primary" type="button" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? 'Close' : '+ Add server'}
+          </button>
+        )}
       </div>
 
       {err && <div className="alert error">{err}</div>}
