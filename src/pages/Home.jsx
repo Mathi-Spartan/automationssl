@@ -6,7 +6,34 @@ function PlansTable() {
   const regular = PRODUCTS.filter((p) => !p.featured)
   const caas = PRODUCTS.find((p) => p.featured)
   const allProducts = [...regular, caas]
-  const brandColor = { RapidSSL: '#1a6bb5', GeoTrust: '#e8832a', Sectigo: '#c00020' }
+  const BrandLogo = ({ brand }) => {
+    if (brand === 'RapidSSL') return (
+      <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="8" fill="#1a6bb5"/>
+        <text x="18" y="14" textAnchor="middle" fill="#fff" fontSize="7" fontWeight="700" fontFamily="Arial,sans-serif">RAPID</text>
+        <text x="18" y="23" textAnchor="middle" fill="#7ec8f7" fontSize="8.5" fontWeight="800" fontFamily="Arial,sans-serif">SSL</text>
+        <rect x="7" y="26" width="22" height="2" rx="1" fill="#7ec8f7" opacity="0.5"/>
+      </svg>
+    )
+    if (brand === 'GeoTrust') return (
+      <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="8" fill="#1a1a2e"/>
+        <circle cx="18" cy="16" r="9" fill="none" stroke="#e8832a" strokeWidth="2.2"/>
+        <path d="M18 7 Q23 11 23 16 Q23 21 18 25 Q13 21 13 16 Q13 11 18 7Z" fill="#e8832a" opacity="0.25"/>
+        <line x1="18" y1="7" x2="18" y2="25" stroke="#e8832a" strokeWidth="1.2"/>
+        <line x1="9" y1="16" x2="27" y2="16" stroke="#e8832a" strokeWidth="1.2"/>
+        <text x="18" y="31" textAnchor="middle" fill="#e8832a" fontSize="5.5" fontWeight="700" fontFamily="Arial,sans-serif">GeoTrust</text>
+      </svg>
+    )
+    return (
+      <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="8" fill="#c00020"/>
+        <path d="M18 6 L28 10 L28 19 Q28 26 18 30 Q8 26 8 19 L8 10 Z" fill="rgba(255,255,255,0.15)"/>
+        <path d="M18 9 L25 12.5 L25 19 Q25 24.5 18 27.5 Q11 24.5 11 19 L11 12.5 Z" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
+        <text x="18" y="22" textAnchor="middle" fill="#fff" fontSize="7.5" fontWeight="800" fontFamily="Arial,sans-serif">Sectigo</text>
+      </svg>
+    )
+  }
 
   const rows = [
     { section: 'Coverage' },
@@ -48,7 +75,7 @@ function PlansTable() {
             <th className="tv-corner" />
             {allProducts.map((p) => (
               <th key={p.id} className={"tv-th" + (p.featured ? " tv-th-accent" : "")}>
-                <div className="tv-brand-circle" style={{ background: brandColor[p.brand] }}>{p.brand[0]}</div>
+                <div className="tv-brand-logo"><BrandLogo brand={p.brand} /></div>
                 <div className="tv-prod-name">{shortName(p)}</div>
                 <div className="tv-prod-sub">{p.coverage}</div>
                 {(p.coverage.startsWith("Wildcard") || p.featured) && (
