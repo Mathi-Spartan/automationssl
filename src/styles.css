@@ -1151,3 +1151,17 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .srv-form-note strong { color: #3375b1; }
 .req { color: #e24b4a; margin-left: 2px; }
 @media (max-width: 700px) { .srv-form-grid { grid-template-columns: 1fr; } }
+
+/* ── TLS check button + result panel ── */
+.clm-act-tls { font-size: 0.7rem; font-weight: 700; color: #5e7a8a; background: #f4f6f8; border: 1px solid #dde5ef; border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.clm-act-tls:hover { background: #e8f2ff; color: #2e6ba2; border-color: #c3d5eb; }
+.clm-act-tls.tls-ok { color: #1a7a4c; background: #e0f4ea; border-color: #b8dfc8; }
+.clm-act-tls.tls-warn { color: #9a6209; background: #fff3d4; border-color: #f0c060; }
+.clm-act-tls:disabled { opacity: 0.5; cursor: wait; }
+
+.clm-tls-result { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid; }
+.clm-tls-result.tls-ok { background: #f0fbf5; border-color: #b8dfc8; }
+.clm-tls-result.tls-warn { background: #fff9f0; border-color: #f0c060; }
+.clm-tls-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.clm-tls-title { font-size: 0.82rem; font-weight: 700; color: #0a2540; margin-bottom: 2px; }
+.clm-tls-meta { font-size: 0.74rem; color: #7a8fa0; line-height: 1.5; }

@@ -422,6 +422,8 @@ function CustomerDashboard({ session, profile }) {
   const [sortDir, setSortDir] = useState('asc')
   const [page, setPage] = useState(0)
   const PAGE = 25
+  const [tlsResults, setTlsResults] = useState({})
+  const [tlsChecking, setTlsChecking] = useState(null)
 
   const load = useCallback(async () => {
     const [o, s] = await Promise.all([
@@ -442,6 +444,21 @@ function CustomerDashboard({ session, profile }) {
     await refreshOrders([order])
     await load()
     setChecking(null)
+  }
+
+  async function checkTLS(order) {
+    const d = deliverables(order)
+    const dom = d.vendorDomains.map(v => typeof v === 'string' ? v : v?.name || '').filter(Boolean)[0]
+    if (!dom) return
+    setTlsChecking(order.id)
+    try {
+      const r = await fetch('/api/tlscheck?domain=' + encodeURIComponent(dom))
+      const body = await r.json()
+      setTlsResults(x => ({ ...x, [order.id]: body }))
+    } catch (_e) {
+      setTlsResults(x => ({ ...x, [order.id]: { ok: false, error: 'Network error' } }))
+    }
+    setTlsChecking(null)
   }
 
   const all = orders || []
@@ -665,9 +682,19 @@ function CustomerDashboard({ session, profile }) {
                       <td onClick={(e) => e.stopPropagation()} className="clm-action-cell">
                         <div className="clm-action-row">
                           {d.activated ? (
-                            <button type="button" className="clm-act-ghost" disabled={checking === o.id} onClick={() => checkNow(o)}>
-                              {checking === o.id ? '…' : '⟳ Sync'}
-                            </button>
+                            <>
+                              <button type="button" className="clm-act-ghost" disabled={checking === o.id} onClick={() => checkNow(o)}>
+                                {checking === o.id ? '…' : '⟳'}
+                              </button>
+                              {deliverables(o).vendorDomains.length > 0 && (
+                                <button type="button"
+                                  className={'clm-act-tls' + (tlsResults[o.id] ? (tlsResults[o.id].ok && !tlsResults[o.id].expired ? ' tls-ok' : ' tls-warn') : '')}
+                                  disabled={tlsChecking === o.id}
+                                  title="Live TLS check" onClick={() => checkTLS(o)}>
+                                  {tlsChecking === o.id ? '…' : '🔍 TLS'}
+                                </button>
+                              )}
+                            </>
                           ) : d.isAcme ? (
                             <>
                               {d.enrollReady && d.acme
@@ -692,6 +719,23 @@ function CustomerDashboard({ session, profile }) {
                       <tr className="clm-expand-row">
                         <td colSpan={6}>
                           <div className="clm-expand-body">
+                            {tlsResults[o.id] && (
+                              <div className={'clm-tls-result' + (tlsResults[o.id].ok && !tlsResults[o.id].expired ? ' tls-ok' : ' tls-warn')}>
+                                {tlsResults[o.id].ok ? (<>
+                                  <span className="clm-tls-icon">{tlsResults[o.id].expired ? '⚠' : tlsResults[o.id].expiringSoon ? '⚡' : '✓'}</span>
+                                  <div className="clm-tls-body">
+                                    <div className="clm-tls-title">{tlsResults[o.id].expired ? 'Certificate expired on domain' : tlsResults[o.id].expiringSoon ? `Expiring soon — ${tlsResults[o.id].daysLeft} days left` : `Certificate valid · ${tlsResults[o.id].daysLeft} days remaining`}</div>
+                                    <div className="clm-tls-meta">Issuer: {tlsResults[o.id].issuer} · Expires: {new Date(tlsResults[o.id].validTo).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+                                  </div>
+                                </>) : (<>
+                                  <span className="clm-tls-icon">✗</span>
+                                  <div className="clm-tls-body">
+                                    <div className="clm-tls-title">TLS probe failed — cert may not be installed yet</div>
+                                    <div className="clm-tls-meta">{tlsResults[o.id].error}</div>
+                                  </div>
+                                </>)}
+                              </div>
+                            )}
                             <PlanCard order={o} isReseller={false} servers={servers} noHead
                               onAssignServer={async (id, sid) => {
                                 await supabase.from('orders').update({ server_id: sid || null }).eq('id', id)
@@ -838,6 +882,21 @@ function ResellerDashboard({ session, profile }) {
     await refreshOrders([order])
     await load()
     setChecking(null)
+  }
+
+  async function checkTLS(order) {
+    const d = deliverables(order)
+    const dom = d.vendorDomains.map(v => typeof v === 'string' ? v : v?.name || '').filter(Boolean)[0]
+    if (!dom) return
+    setTlsChecking(order.id)
+    try {
+      const r = await fetch('/api/tlscheck?domain=' + encodeURIComponent(dom))
+      const body = await r.json()
+      setTlsResults(x => ({ ...x, [order.id]: body }))
+    } catch (_e) {
+      setTlsResults(x => ({ ...x, [order.id]: { ok: false, error: 'Network error' } }))
+    }
+    setTlsChecking(null)
   }
 
   async function assign(order) {
