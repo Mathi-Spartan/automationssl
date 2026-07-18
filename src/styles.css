@@ -1,12 +1,14 @@
 :root {
-  --mist: #f4f8f5;
+  /* SSLVault Design v2 palette (easysecurity.in): emerald signature green,
+     solid near-black actions, white cards on a neutral light canvas. */
+  --mist: #f7f8f8;
   --card: #ffffff;
-  --ink: #0f1e16;
-  --ink-soft: #44544b;
-  --pine: #135c3b;
-  --cert: #1e7a4c;
-  --cert-soft: #e3f0e8;
-  --line: #d7e3da;
+  --ink: #0a0a0a;
+  --ink-soft: #5b6663;
+  --pine: #0a0a0a;
+  --cert: #10b981;
+  --cert-soft: #e7f8f1;
+  --line: #e4e9e7;
   --amber: #b8862b;
   --amber-soft: #f7efdd;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -340,3 +342,34 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
   .sub-row-head { grid-template-columns: 1fr auto 18px; }
   .col-renew, .col-origin { display: none; }
 }
+
+
+/* ---------- SSLVault v2 theme layer ---------- */
+.btn.primary { background: #0a0a0a; border-color: #0a0a0a; }
+.btn.primary:hover { background: #10b981; border-color: #10b981; }
+.nav .cta { background: #0a0a0a; }
+.nav .cta:hover { background: #10b981; }
+.hero { position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; inset: -40% -20% auto; height: 120%; background: radial-gradient(60% 60% at 70% 20%, rgba(16,185,129,0.14), transparent 70%); pointer-events: none; }
+.hero .wrap { position: relative; }
+.loopword { color: #10b981; text-decoration: underline; text-decoration-color: rgba(16,185,129,0.35); text-decoration-thickness: 4px; text-underline-offset: 6px; }
+.card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(10,10,10,0.07); }
+.card.featured { border-color: #10b981; box-shadow: 0 0 0 1px #10b981; }
+.pill.brand { background: #e7f8f1; color: #0b7a57; border-color: #bfe9da; }
+.testing-note .dot { background: #10b981; }
+.stage-pill.ok { background: #e7f8f1; color: #0b7a57; border-color: #bfe9da; }
+.jstep.done .jdot { background: #10b981; border-color: #10b981; }
+.jstep.done .jlabel, .checklist li.done { color: #0b7a57; }
+.jstep.done .jline { background: #10b981; }
+.dot.ok { background: #10b981; }
+.plan-card.activated { border-left-color: #10b981; }
+.chip.lock { background: #e7f8f1; border-color: #bfe9da; }
+.section-h .count, .server-section-title .count { background: #e7f8f1; color: #0b7a57; }
+/* dashboard shell -> v2 dark */
+.dash-side { background: #0a0a0a; color: #e6ebe9; }
+.dash-logo em { color: #10b981; }
+.dash-nav a { color: #b9c4c0; }
+.dash-nav a.active { background: #10b981; color: #06281d; }
+.dash-user-role { color: #10b981; }
+.dash-user-mail { color: #8b9793; }

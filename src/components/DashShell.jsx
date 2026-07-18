@@ -18,8 +18,8 @@ export default function DashShell({ children }) {
       <aside className="dash-side">
         <Link to="/" className="dash-logo" aria-label="AutomationSSL home">
           <svg width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-            <circle cx="13" cy="13" r="10" stroke="#7fd6a4" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
-            <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#a9e8c4" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            <circle cx="13" cy="13" r="10" stroke="#10b981" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
+            <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#34d399" strokeWidth="2.4" strokeLinecap="round" fill="none" />
           </svg>
           Automation<em>SSL</em>
         </Link>

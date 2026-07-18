@@ -83,7 +83,10 @@ export default async function handler(req, res) {
     let endpoint, payload
     if (product.category === 'acme') {
       endpoint = `${GG2}/certificates/acme`
-      payload = { product: { id: Number(product_id) }, domains: domain.replace(/^\*\./, '') }
+      // The V2 API requires domains as an ARRAY of strings (verified against the
+      // official GoGetSSL WHMCS module's normalizeDomains) — a bare string is
+      // rejected with the generic GEX-3 error.
+      payload = { product: { id: Number(product_id) }, domains: [domain.replace(/^\*\./, '')] }
     } else {
       endpoint = `${GG2}/certificates/ais`
       payload = {

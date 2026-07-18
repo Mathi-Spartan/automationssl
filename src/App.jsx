@@ -15,8 +15,8 @@ function Logo() {
   return (
     <Link to="/" className="logo" aria-label="AutomationSSL home">
       <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-        <circle cx="13" cy="13" r="10" stroke="#135c3b" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
-        <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#1e7a4c" strokeWidth="2.4" strokeLinecap="round" strokeJoin="round" fill="none" />
+        <circle cx="13" cy="13" r="10" stroke="#10b981" strokeWidth="2.4" strokeDasharray="47 16" strokeLinecap="round" />
+        <path d="M9.5 13.2l2.4 2.4 4.6-4.8" stroke="#0b7a57" strokeWidth="2.4" strokeLinecap="round" strokeJoin="round" fill="none" />
       </svg>
       Automation<em>SSL</em>
     </Link>
