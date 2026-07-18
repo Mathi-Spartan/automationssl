@@ -1064,8 +1064,19 @@ function ResellerDashboard({ session, profile }) {
 
   return (
     <div className="dash-page">
-      <span className="eyebrow">Reseller dashboard</span>
-      <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>
+      <div className="dash-head-row">
+        <div>
+          <span className="eyebrow">Reseller dashboard</span>
+          <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>
+        </div>
+        <div className="dash-head-buy">
+          <Link to="/#plans" className="btn primary">
+            <i className="ti ti-shopping-cart" style={{fontSize:14,verticalAlign:-2,marginRight:6}} aria-hidden="true"/>
+            Buy now
+          </Link>
+          <span className="dash-head-hint">buys to your stock — assign to any customer</span>
+        </div>
+      </div>
 
       {/* KPI strip */}
       <div className="r-kpi-strip">

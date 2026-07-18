@@ -1545,3 +1545,9 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .fl-body { animation: none !important; }
   .fl-sp-dot, .fl-sp-fill, .fl-sp-label { transition: none !important; }
 }
+
+/* ── reseller header Buy now row ── */
+.dash-head-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dash-head-buy { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; padding-bottom: 4px; }
+.dash-head-buy .btn { text-decoration: none; display: inline-flex; align-items: center; }
+.dash-head-hint { font-size: 0.68rem; color: #9aa3b5; }
