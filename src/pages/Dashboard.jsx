@@ -712,8 +712,9 @@ function ResellerDashboard({ session, profile }) {
       ) : (
         <div className="panel">
           <div className="tbl-head">
+            <span>Order #</span>
             <span>Product</span>
-            <span>Owner</span>
+            <span>Customer</span>
             <span>Status</span>
             <span>Renews</span>
             <span />
@@ -730,9 +731,10 @@ function ResellerDashboard({ session, profile }) {
                   setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))
                   if (opening) refreshOrders([o]).then((r) => r && load())
                 }} aria-expanded={isOpen}>
-                  <span className="tbl-product">{o.product_name}<span className="sub-row-id">#{o.gogetssl_order_id}</span></span>
+                  <span className="tbl-id">#{o.gogetssl_order_id}</span>
+                  <span className="tbl-product">{o.product_name}</span>
                   <span className="tbl-owner">{customerName(o)}{o.assigned_at && <span className="lock" title="Permanently assigned"> 🔒</span>}</span>
-                  <span><StagePill d={d} /></span>
+                  <span className="tbl-status"><StagePill d={d} /></span>
                   <span className="sub-row-meta">{d.renewal ? fmtDate(d.renewal) : '—'}</span>
                   <span className="chev" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
                 </button>

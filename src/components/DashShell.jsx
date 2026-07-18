@@ -28,9 +28,11 @@ export default function DashShell({ children }) {
           <NavLink to="/dashboard" end>
             <span className="ic" aria-hidden="true">▦</span> Overview
           </NavLink>
-          <NavLink to="/dashboard/servers">
-            <span className="ic" aria-hidden="true">🖥</span> Servers
-          </NavLink>
+          {!isReseller && (
+            <NavLink to="/dashboard/servers">
+              <span className="ic" aria-hidden="true">🖥</span> Servers
+            </NavLink>
+          )}
           {isReseller && (
             <NavLink to="/dashboard/customers">
               <span className="ic" aria-hidden="true">👥</span> Customers
@@ -39,9 +41,11 @@ export default function DashShell({ children }) {
           <a href="/#plans">
             <span className="ic" aria-hidden="true">＋</span> Buy plans
           </a>
-          <Link to="/status">
-            <span className="ic" aria-hidden="true">☰</span> Order status
-          </Link>
+          {!isReseller && (
+            <Link to="/status">
+              <span className="ic" aria-hidden="true">☰</span> Order status
+            </Link>
+          )}
         </nav>
 
         <div className="dash-user">

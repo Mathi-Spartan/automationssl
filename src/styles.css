@@ -557,3 +557,14 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
   .tbl-row { grid-template-columns: 1fr auto 18px; }
   .tbl-row .tbl-owner, .tbl-row .sub-row-meta { display: none; }
 }
+
+/* table v2: dedicated order# column, no column overlap */
+.tbl-head, .tbl-row { grid-template-columns: 92px minmax(200px, 1.3fr) 130px minmax(210px, 1fr) 100px 18px; }
+.tbl-id { font-family: var(--mono); font-size: 0.76rem; color: var(--ink-soft); }
+.tbl-status { min-width: 0; }
+.tbl-status .stage-pill, .tbl-status > * { max-width: 100%; }
+.tbl-row .sub-row-meta { white-space: nowrap; }
+@media (max-width: 800px) {
+  .tbl-row { grid-template-columns: 1fr auto 18px; }
+  .tbl-row .tbl-id, .tbl-row .tbl-owner, .tbl-row .sub-row-meta { display: none; }
+}
