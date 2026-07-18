@@ -64,6 +64,12 @@ function CredRow({ label, value }) {
   )
 }
 
+function StatusVal({ value }) {
+  const v = String(value).toLowerCase()
+  const ok = ['active', 'complete', 'completed', 'installed', 'issued'].includes(v)
+  return <span className={'status-pill ' + (ok ? 'ok' : 'warn')}>{value}</span>
+}
+
 function fmtTime(ts) {
   try {
     return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -226,12 +232,12 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
         <div className="plan-note">
           {d.enrollReady ? (
             <>
-              <b>Your enrollment credentials are ready.</b>
-              <ol className="checklist">
-                <li className="done">Enrollment provisioned by the CA.</li>
-                <li>Register your ACME client with the credentials below (certbot, acme.sh, Caddy, Traefik, cert-manager…).</li>
-                <li>Request the certificate for your domain — renewals run on their own after that.</li>
-              </ol>
+              <b>Your enrollment credentials are ready — two steps left.</b>
+              <div className="todo-steps">
+                <div className="todo done"><span className="todo-dot">✓</span> Enrollment provisioned by the CA</div>
+                <div className="todo current"><span className="todo-dot">1</span> Register your ACME client with the credentials below <span className="todo-sub">certbot · acme.sh · Caddy · Traefik · cert-manager</span></div>
+                <div className="todo"><span className="todo-dot">2</span> Request the certificate for your domain <span className="todo-sub">renewals run on their own after that</span></div>
+              </div>
               <div className="cred-card">
                 <div className="cred-card-title">Your ACME credentials <span className="cred-live">live from the CA</span></div>
                 <CredRow label="ACME server URL" value={d.acme.server_url} />
@@ -271,18 +277,19 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
         </div>
       )}
 
-      <div className="kv" style={{ marginTop: 8 }}>
-        <div><b>Order ID</b> {order.gogetssl_order_id}</div>
-        {d.begin && <div><b>Subscription began</b> {fmtDate(d.begin)}</div>}
-        {d.renewal && <div><b>Next renewal</b> {fmtDate(d.renewal)}</div>}
-        {d.caOrderStatus && <div><b>CA order status</b> {d.caOrderStatus}</div>}
-        {d.isAcme && d.acmeAccountStatus && <div><b>ACME account status</b> {d.acmeAccountStatus}</div>}
-        {d.aiStatus && <div><b>AutoInstall status</b> {d.aiStatus}</div>}
-        {order.last_synced_at && <div><b>Synced from CA</b> today {fmtTime(order.last_synced_at)}</div>}
+      <div className="meta-grid">
+        <div className="meta-cell"><span className="meta-label">Order ID</span><span className="meta-value mono-v">{order.gogetssl_order_id}</span></div>
+        {d.begin && <div className="meta-cell"><span className="meta-label">Subscription began</span><span className="meta-value">{fmtDate(d.begin)}</span></div>}
+        {d.renewal && <div className="meta-cell"><span className="meta-label">Next renewal</span><span className="meta-value">{fmtDate(d.renewal)}</span></div>}
+        {d.caOrderStatus && <div className="meta-cell"><span className="meta-label">CA order</span><StatusVal value={d.caOrderStatus} /></div>}
+        {d.isAcme && d.acmeAccountStatus && <div className="meta-cell"><span className="meta-label">ACME account</span><StatusVal value={d.acmeAccountStatus} /></div>}
+        {d.aiStatus && <div className="meta-cell"><span className="meta-label">AutoInstall</span><StatusVal value={d.aiStatus} /></div>}
       </div>
 
       {d.vendorDomains.length > 0 && (
-        <div className="chips" style={{ marginTop: 6 }}>
+        <div style={{ marginTop: 12 }}>
+        <div className="meta-label" style={{ marginBottom: 6 }}>Domains</div>
+        <div className="chips">
           {d.vendorDomains.map((dom) => {
             const name = typeof dom === 'string' ? dom : dom?.name || dom?.domain || ''
             return d.activated ? (
@@ -291,6 +298,7 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
               <span className="chip" key={name} title="Registered with the CA — no certificate issued yet">{name} · awaiting cert</span>
             )
           })}
+        </div>
         </div>
       )}
 
@@ -306,6 +314,10 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
           </button>
         )}
       </div>
+
+      {order.last_synced_at && (
+        <p className="sync-line">⟳ Synced from the CA today at {fmtTime(order.last_synced_at)} — updates automatically.</p>
+      )}
 
       {d.acme && d.activated && (
         <details style={{ marginTop: 10 }}>
