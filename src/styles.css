@@ -535,3 +535,25 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .dash-page .stat { padding: 12px 14px; }
 .dash-page .stat-value { font-size: 1.4rem; }
 .alert { font-size: 0.85rem; }
+
+/* ---------- unified subscriptions table ---------- */
+.r-kpi { cursor: pointer; text-align: left; font: inherit; }
+.r-kpi:hover { border-color: #3375b1; }
+.r-head-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-chip { font: inherit; font-size: 0.78rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; }
+.filter-chip:hover { border-color: #3375b1; color: #235581; }
+.filter-chip.on { background: #0a2540; border-color: #0a2540; color: #fff; }
+.tbl-head { display: grid; grid-template-columns: minmax(220px, 1.4fr) 140px 190px 110px 18px; gap: 12px; padding: 9px 16px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft); background: #fafbfd; border-bottom: 1px solid var(--line); }
+.tbl-row { display: grid; grid-template-columns: minmax(220px, 1.4fr) 140px 190px 110px 18px; gap: 12px; align-items: center; width: 100%; padding: 12px 16px; border: none; background: none; cursor: pointer; text-align: left; font: inherit; }
+.tbl-row:hover { background: #fafaf8; }
+.tbl-product { font-weight: 700; font-size: 0.9rem; }
+.tbl-owner { font-size: 0.85rem; }
+.cust-detail { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding-top: 4px; }
+.caas-inline { margin-top: 12px; padding: 12px 14px; background: #f7fafd; border: 1px solid #d6e3f2; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; }
+.caas-note { font-style: normal; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.75rem; color: var(--ink-soft); }
+@media (max-width: 800px) {
+  .tbl-head { display: none; }
+  .tbl-row { grid-template-columns: 1fr auto 18px; }
+  .tbl-row .tbl-owner, .tbl-row .sub-row-meta { display: none; }
+}

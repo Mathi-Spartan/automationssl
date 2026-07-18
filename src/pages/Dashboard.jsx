@@ -496,82 +496,54 @@ function CustomerDashboard({ session, profile }) {
 
 // ---------- reseller: Sectigo CaaS multi-domain management ----------
 
-function CaasDomainManager({ caasOrders, ownerName, onChanged }) {
-  const [inputs, setInputs] = useState({})
-  const [busy, setBusy] = useState(null)
+function CaasInline({ order, onChanged }) {
+  const [value, setValue] = useState('')
+  const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
+  const d = deliverables(order)
 
-  if (caasOrders.length === 0) return null
-
-  async function addDomain(o) {
-    const value = (inputs[o.id] || '').trim().toLowerCase()
-    if (!value) return
-    if (!confirm(`Add ${value} to CaaS subscription #${o.gogetssl_order_id}?\n\nThe CA bills this pro-rated to the subscription's renewal date.`)) return
-    setBusy(o.id)
-    setErr(null)
-    setMsg(null)
+  async function addDomain() {
+    const v = value.trim().toLowerCase()
+    if (!v) return
+    if (!confirm(`Add ${v} to CaaS subscription #${order.gogetssl_order_id}?\n\nThe CA bills this pro-rated to the subscription's renewal date.`)) return
+    setBusy(true); setErr(null); setMsg(null)
     try {
       const { data: sess } = await supabase.auth.getSession()
       const res = await fetch('/api/domains', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
-        body: JSON.stringify({ order_id: o.id, domain: value }),
+        body: JSON.stringify({ order_id: order.id, domain: v }),
       })
       const body = await res.json()
       if (!res.ok || body.error) throw new Error(body.message || 'Domain addition failed.')
-      setMsg(`${body.added} added to #${o.gogetssl_order_id} — credentials and domains re-synced from the CA.`)
-      setInputs((x) => ({ ...x, [o.id]: '' }))
+      setMsg(`${body.added} added — domains and credentials re-synced from the CA.`)
+      setValue('')
       onChanged()
-    } catch (e) {
-      setErr(e.message)
-    } finally {
-      setBusy(null)
-    }
+    } catch (e) { setErr(e.message) } finally { setBusy(false) }
   }
 
   return (
-    <>
-      <div className="r-section-head" style={{ marginTop: 8 }}>
-        <div>
-          <h2 className="r-section-title">Sectigo CaaS — domain management</h2>
-          <p className="r-section-desc">
-            One CaaS subscription can secure many domains — billed by the CA <b>pro-rated to the renewal date</b>.
-            Only you (the reseller) can add domains. Customers see updated domains and credentials instantly.
-          </p>
-        </div>
-      </div>
+    <div className="caas-inline">
+      <span className="assign-label">Secured domains <em className="caas-note">(one CaaS plan covers many — added domains are billed pro-rated by the CA)</em></span>
       {msg && <div className="alert ok">{msg}</div>}
       {err && <div className="alert error">{err}</div>}
-      <div className="panel">
-        {caasOrders.map((o) => {
-          const d = deliverables(o)
-          return (
-            <div className="caas-row" key={o.id}>
-              <div className="caas-head">
-                <span><b>#{o.gogetssl_order_id}</b> · {ownerName(o)}</span>
-                {d.acmeAccountStatus && <StatusVal value={d.acmeAccountStatus} />}
-              </div>
-              <div className="chips" style={{ margin: '8px 0' }}>
-                {d.vendorDomains.length === 0 && <span className="muted-line">No domains yet.</span>}
-                {d.vendorDomains.map((dom) => {
-                  const name = typeof dom === 'string' ? dom : dom?.name || ''
-                  return <span className="chip" key={name}>{name}</span>
-                })}
-              </div>
-              <div className="chip-add">
-                <input placeholder="add domain e.g. shop.example.com" value={inputs[o.id] || ''}
-                  onChange={(e) => setInputs((x) => ({ ...x, [o.id]: e.target.value }))}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain(o))} />
-                <button className="btn primary" type="button" disabled={busy === o.id} onClick={() => addDomain(o)}>
-                  {busy === o.id ? 'Adding…' : 'Add domain (pro-rated)'}
-                </button>
-              </div>
-            </div>
-          )
+      <div className="chips" style={{ margin: '6px 0' }}>
+        {d.vendorDomains.length === 0 && <span className="muted-line">No domains yet.</span>}
+        {d.vendorDomains.map((dom) => {
+          const name = typeof dom === 'string' ? dom : dom?.name || ''
+          return <span className="chip" key={name}>{name}</span>
         })}
       </div>
-    </>
+      <div className="chip-add">
+        <input placeholder="add domain e.g. shop.example.com" value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain())} />
+        <button className="btn primary" type="button" disabled={busy} onClick={addDomain}>
+          {busy ? 'Adding…' : 'Add domain'}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -590,6 +562,7 @@ function ResellerDashboard({ session, profile }) {
   const [err, setErr] = useState(null)
   const [notice, setNotice] = useState(null)
   const [open, setOpen] = useState({})
+  const [filter, setFilter] = useState('all')
 
   const load = useCallback(async () => {
     const uid = session.user.id
@@ -662,136 +635,150 @@ function ResellerDashboard({ session, profile }) {
   const ownActivated = inventory.filter((o) => deliverables(o).activated)
   const assigned = subOrders.filter((o) => o.assigned_by === session.user.id)
 
+  const customerName = (o) =>
+    o.user_id === session.user.id ? 'You' : (subs.find((c) => c.id === o.user_id)?.full_name || 'Customer')
+
+  const rows = (allOrders || []).filter((o) => {
+    if (filter === 'inventory') return o.user_id === session.user.id && !o.assigned_at
+    if (filter === 'assigned') return o.user_id !== session.user.id
+    if (filter === 'attention') return !deliverables(o).activated
+    return true
+  })
+
+  const filters = [
+    ['all', `All · ${(allOrders || []).length}`],
+    ['inventory', `Inventory · ${inventory.length}`],
+    ['assigned', `Customers · ${assigned.length + subOrders.filter((o) => !o.assigned_by).length}`],
+    ['attention', `Needs attention · ${(allOrders || []).filter((o) => !deliverables(o).activated).length}`],
+  ]
+
   return (
     <div className="dash-page">
       <span className="eyebrow">Reseller dashboard</span>
       <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>
-      <p className="sub">
-        Stock inventory by buying from the{' '}
-        <Link to="/#plans">Plans page</Link>, then activate for yourself or assign to a customer.
-      </p>
 
       {/* ---- KPI strip ---- */}
       <div className="r-kpi-strip">
-        <div className="r-kpi">
+        <button type="button" className={'r-kpi' + (filter === 'inventory' ? ' accent' : '')} onClick={() => setFilter('inventory')}>
           <span className="r-kpi-num">{own ? inventory.length : '—'}</span>
           <span className="r-kpi-label">Inventory</span>
           <span className="r-kpi-sub">unassigned plans</span>
-        </div>
-        <div className="r-kpi">
+        </button>
+        <button type="button" className={'r-kpi' + (filter === 'assigned' ? ' accent' : '')} onClick={() => setFilter('assigned')}>
           <span className="r-kpi-num">{assigned.length}</span>
           <span className="r-kpi-label">Assigned</span>
           <span className="r-kpi-sub">to customers</span>
-        </div>
-        <div className="r-kpi accent">
-          <span className="r-kpi-num">{ownActivated.length}</span>
-          <span className="r-kpi-label">Active on your servers</span>
-          <span className="r-kpi-sub">running automatically</span>
-        </div>
-        <div className="r-kpi">
+        </button>
+        <button type="button" className={'r-kpi' + (filter === 'attention' ? ' accent' : '')} onClick={() => setFilter('attention')}>
+          <span className="r-kpi-num">{(allOrders || []).filter((o) => !deliverables(o).activated).length}</span>
+          <span className="r-kpi-label">Needs attention</span>
+          <span className="r-kpi-sub">not yet automated</span>
+        </button>
+        <button type="button" className="r-kpi" onClick={() => setFilter('all')}>
           <span className="r-kpi-num">{subs.length}</span>
           <span className="r-kpi-label">Customers</span>
           <span className="r-kpi-sub">{subServers.length} server{subServers.length !== 1 ? 's' : ''} · {subDomains.length} domain{subDomains.length !== 1 ? 's' : ''}</span>
-        </div>
+        </button>
       </div>
 
       {celebrate && <div className="alert ok celebrate">{celebrate}</div>}
       {err && <div className="alert error">{err}</div>}
       {notice && <div className="alert ok">{notice}</div>}
 
-      {/* ---- inventory ---- */}
+      {/* ---- unified subscriptions table ---- */}
       <div className="r-section-head">
         <div>
-          <h2 className="r-section-title">Your inventory</h2>
-          <p className="r-section-desc">Plans you've purchased — activate yourself or assign to a customer (permanent).</p>
+          <h2 className="r-section-title">All subscriptions</h2>
         </div>
-        <Link to="/#plans" className="btn primary" style={{ alignSelf: 'flex-start' }}>+ Buy plans</Link>
+        <div className="r-head-actions">
+          <div className="filter-bar">
+            {filters.map(([key, label]) => (
+              <button key={key} type="button" className={'filter-chip' + (filter === key ? ' on' : '')} onClick={() => setFilter(key)}>{label}</button>
+            ))}
+          </div>
+          <Link to="/#plans" className="btn primary">+ Buy plans</Link>
+        </div>
       </div>
 
-      {own && inventory.length === 0 ? (
+      {own && (allOrders || []).length === 0 ? (
         <div className="r-empty">
           <span className="r-empty-icon">📦</span>
           <div className="r-empty-text">
-            <h3>No inventory yet</h3>
+            <h3>No subscriptions yet</h3>
             <p>Purchase plans to stock your inventory — they'll appear here ready to activate or assign.</p>
           </div>
           <Link to="/#plans" className="btn primary">Browse plans →</Link>
         </div>
       ) : (
         <div className="panel">
-          {inventory.map((o) => (
-            <SubRow key={o.id} order={o} isReseller open={!!open[o.id]}
-              onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
-              <PlanCard order={o} isReseller servers={servers} noHead
-                onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
-                {subs.length > 0 && (
-                  <div className="assign-row">
-                    <span className="assign-label">Assign to customer</span>
-                    <select value={assignTo[o.id] || ''} onChange={(e) => setAssignTo({ ...assignTo, [o.id]: e.target.value })}>
-                      <option value="">— choose customer —</option>
-                      {subs.map((c) => (
-                        <option key={c.id} value={c.id}>{c.full_name || c.id.slice(0, 8)}</option>
-                      ))}
-                    </select>
-                    <button className="btn primary" type="button"
-                      disabled={!assignTo[o.id] || busyAssign === o.id}
-                      onClick={() => assign(o)}>
-                      {busyAssign === o.id ? 'Assigning…' : 'Assign permanently →'}
-                    </button>
-                    <p className="assign-warn">⚠ Assignment is permanent and cannot be undone.</p>
+          <div className="tbl-head">
+            <span>Product</span>
+            <span>Owner</span>
+            <span>Status</span>
+            <span>Renews</span>
+            <span />
+          </div>
+          {rows.length === 0 && <p className="muted-line" style={{ padding: '14px 16px' }}>Nothing matches this filter.</p>}
+          {rows.map((o) => {
+            const d = deliverables(o)
+            const mine = o.user_id === session.user.id && !o.assigned_at
+            const isOpen = !!open[o.id]
+            return (
+              <div className={'sub-row' + (isOpen ? ' open' : '')} key={o.id}>
+                <button type="button" className="tbl-row" onClick={() => {
+                  const opening = !isOpen
+                  setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))
+                  if (opening) refreshOrders([o]).then((r) => r && load())
+                }} aria-expanded={isOpen}>
+                  <span className="tbl-product">{o.product_name}<span className="sub-row-id">#{o.gogetssl_order_id}</span></span>
+                  <span className="tbl-owner">{customerName(o)}{o.assigned_at && <span className="lock" title="Permanently assigned"> 🔒</span>}</span>
+                  <span><StagePill d={d} /></span>
+                  <span className="sub-row-meta">{d.renewal ? fmtDate(d.renewal) : '—'}</span>
+                  <span className="chev" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
+                </button>
+                {isOpen && (
+                  <div className="sub-row-body">
+                    {mine ? (
+                      <PlanCard order={o} isReseller servers={servers} noHead
+                        onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
+                        {Number(o.product_id) === 300 && <CaasInline order={o} onChanged={load} />}
+                        {subs.length > 0 && (
+                          <div className="assign-row">
+                            <span className="assign-label">Assign to customer</span>
+                            <select value={assignTo[o.id] || ''} onChange={(e) => setAssignTo({ ...assignTo, [o.id]: e.target.value })}>
+                              <option value="">— choose customer —</option>
+                              {subs.map((c) => (
+                                <option key={c.id} value={c.id}>{c.full_name || c.id.slice(0, 8)}</option>
+                              ))}
+                            </select>
+                            <button className="btn primary" type="button"
+                              disabled={!assignTo[o.id] || busyAssign === o.id}
+                              onClick={() => assign(o)}>
+                              {busyAssign === o.id ? 'Assigning…' : 'Assign permanently →'}
+                            </button>
+                            <p className="assign-warn">⚠ Assignment is permanent and cannot be undone.</p>
+                          </div>
+                        )}
+                      </PlanCard>
+                    ) : (
+                      <div className="cust-detail">
+                        <p className="muted-line">
+                          {o.assigned_at ? 'Permanently assigned to ' : 'Purchased by '}<b>{customerName(o)}</b>
+                          {o.assigned_at ? ' — locked, cannot be reassigned.' : '.'}
+                          {' '}CA status: <StatusVal value={d.activated ? 'activated' : 'pending setup'} />
+                        </p>
+                        {Number(o.product_id) === 300 && <CaasInline order={o} onChanged={load} />}
+                        <button className="btn ghost" type="button" disabled={checking === o.id} onClick={() => checkNow(o)}>
+                          {checking === o.id ? 'Checking…' : '⟳ Re-sync from CA'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </PlanCard>
-            </SubRow>
-          ))}
+              </div>
+            )
+          })}
         </div>
-      )}
-
-      {/* ---- CaaS domain management ---- */}
-      <CaasDomainManager
-        caasOrders={[...(own || []), ...subOrders].filter((o) => Number(o.product_id) === 300)}
-        ownerName={(o) => o.user_id === session.user.id ? 'your subscription' : (subs.find((c) => c.id === o.user_id)?.full_name || 'customer')}
-        onChanged={load}
-      />
-
-      {/* ---- assigned to customers ---- */}
-      {assigned.length > 0 && (
-        <>
-          <div className="r-section-head">
-            <div>
-              <h2 className="r-section-title">Assigned to customers</h2>
-              <p className="r-section-desc">These subscriptions are permanently locked to the customer they were assigned to.</p>
-            </div>
-          </div>
-          <div className="panel">
-            {subs.map((c) => {
-              const co = assigned.filter((o) => o.user_id === c.id)
-              if (co.length === 0) return null
-              return (
-                <div className="assigned-customer-row" key={c.id}>
-                  <div className="assigned-customer-head">
-                    <span className="assigned-customer-name">👤 {c.full_name || 'Customer'}</span>
-                    <span className="assigned-count">{co.length} plan{co.length !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="assigned-plans">
-                    {co.map((o) => {
-                      const d = deliverables(o)
-                      return (
-                        <div className="assigned-plan-row" key={o.id}>
-                          <span className={'dot ' + (d.activated ? 'ok' : 'warn')} />
-                          <span className="assigned-plan-name">{o.product_name}</span>
-                          <span className="mono-v" style={{ fontSize: '0.76rem', color: 'var(--ink-soft)' }}>#{o.gogetssl_order_id}</span>
-                          <StatusVal value={d.activated ? 'activated' : 'pending setup'} />
-                          <span className="badge" style={{ marginLeft: 'auto' }}>locked</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </>
       )}
     </div>
   )
