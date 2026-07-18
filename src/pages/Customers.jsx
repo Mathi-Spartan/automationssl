@@ -139,37 +139,27 @@ export default function Customers() {
           const joined = new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
           return (
-            <div className="cust-row" key={c.id}>
-              <div className="cust-row-left">
-                <div className="cust-avatar">{(c.full_name || '?')[0].toUpperCase()}</div>
-                <div>
-                  <div className="cust-name">{c.full_name || 'Unnamed customer'}{c.customer_code && <span className="cust-code">{c.customer_code}</span>}</div>
-                  <div className="cust-meta">Joined {joined}{c.company_name && <span className="cust-company"> · {c.company_name}</span>}</div>
-                  {c.email && <div className="cust-email">{c.email}</div>}
+            <div className="cust-row-v2" key={c.id}>
+              <div className="cust-avatar-sm">{(c.full_name || '?')[0].toUpperCase()}</div>
+              <div className="cust-info">
+                <div className="cust-info-top">
+                  <span className="cust-name-v2">{c.full_name || 'Unnamed customer'}</span>
+                  {c.customer_code && <span className="cust-code">{c.customer_code}</span>}
+                  {c.company_name && <span className="cust-company-v2">{c.company_name}</span>}
+                </div>
+                <div className="cust-info-sub">
+                  {c.email && <span className="cust-email-v2">{c.email}</span>}
+                  <span className="cust-joined-v2">Joined {joined}</span>
                 </div>
               </div>
-              <div className="cust-row-stats">
-                <div className="cust-stat">
-                  <span className="cust-stat-num">{co.length}</span>
-                  <span className="cust-stat-label">Plans</span>
-                </div>
-                <div className={'cust-stat' + (activated > 0 ? ' ok' : '')}>
-                  <span className="cust-stat-num">{activated}</span>
-                  <span className="cust-stat-label">Automated</span>
-                </div>
-                <div className={'cust-stat' + (pending > 0 ? ' warn' : '')}>
-                  <span className="cust-stat-num">{pending}</span>
-                  <span className="cust-stat-label">Pending</span>
-                </div>
+              <div className="cust-stats-v2">
+                <span className="cust-stat-v2"><strong>{co.length}</strong> plans</span>
+                <span className={'cust-stat-v2' + (pending > 0 ? ' warn' : '')}><strong>{pending}</strong> pending</span>
+                <span className={'cust-stat-v2' + (activated > 0 ? ' ok' : '')}><strong>{activated}</strong> automated</span>
               </div>
-              <div className="cust-row-actions">
-                <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
-                  + Buy plan
-                </Link>
-                <Link to={`/dashboard?customer=${c.id}`} className="btn ghost" style={{ fontSize: '0.8rem', padding: '6px 14px' }}
-                  onClick={e => { e.preventDefault(); window.location.href = '/dashboard' }}>
-                  View orders
-                </Link>
+              <div className="cust-row-actions-v2">
+                <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>+ Buy plan</Link>
+                <Link to="/dashboard" className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>View orders</Link>
               </div>
             </div>
           )

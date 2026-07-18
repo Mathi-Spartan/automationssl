@@ -1135,21 +1135,24 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .cust-empty h3 { font-family: var(--display); font-weight: 700; font-size: 1.1rem; color: #0a2540; }
 .cust-empty p { color: var(--ink-soft); font-size: 0.9rem; max-width: 380px; }
 
-.cust-list { display: flex; flex-direction: column; gap: 8px; }
-.cust-row { background: #fff; border: 1.5px solid #dde5ef; border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; transition: border-color 0.15s; }
-.cust-row:hover { border-color: #3375b1; }
-.cust-row-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 180px; }
-.cust-avatar { width: 38px; height: 38px; border-radius: 50%; background: #e8f2ff; color: #2e6ba2; font-size: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.cust-name { font-size: 0.92rem; font-weight: 700; color: #0a2540; }
-.cust-meta { font-size: 0.74rem; color: #9aa8b5; margin-top: 1px; }
-
-.cust-row-stats { display: flex; gap: 16px; }
-.cust-stat { text-align: center; }
-.cust-stat-num { display: block; font-family: var(--display); font-weight: 800; font-size: 1.2rem; color: #0a2540; line-height: 1; }
-.cust-stat-label { display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #9aa8b5; margin-top: 2px; }
-.cust-stat.ok .cust-stat-num { color: #1a7a4c; }
-.cust-stat.warn .cust-stat-num { color: #b8862b; }
-
+.cust-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+.cust-row-v2 { display: flex; align-items: center; gap: 14px; padding: 11px 16px; border-bottom: 0.5px solid var(--line); transition: background 0.12s; }
+.cust-row-v2:last-child { border-bottom: none; }
+.cust-row-v2:hover { background: #f7f9fd; }
+.cust-avatar-sm { width: 32px; height: 32px; border-radius: 50%; background: #e8f2ff; color: #2e6ba2; font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cust-info { flex: 1; min-width: 0; }
+.cust-info-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.cust-name-v2 { font-size: 0.88rem; font-weight: 600; color: #0a2540; }
+.cust-company-v2 { font-size: 0.72rem; color: #9aa8b5; }
+.cust-info-sub { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.cust-email-v2 { font-family: var(--mono); font-size: 0.71rem; color: #66738a; }
+.cust-joined-v2 { font-size: 0.71rem; color: #b0bac8; }
+.cust-stats-v2 { display: flex; gap: 14px; flex-shrink: 0; }
+.cust-stat-v2 { font-size: 0.78rem; color: #66738a; white-space: nowrap; }
+.cust-stat-v2 strong { font-weight: 700; color: #0a2540; margin-right: 2px; }
+.cust-stat-v2.warn strong { color: #b8862b; }
+.cust-stat-v2.ok strong { color: #1a7a4c; }
+.cust-row-actions-v2 { display: flex; gap: 7px; flex-shrink: 0; }
 .cust-row-actions { display: flex; gap: 8px; margin-left: auto; }
 
 /* ── Add server form ── */
@@ -1301,10 +1304,10 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .btn.primary:hover { box-shadow: 0 6px 18px rgba(51,117,177,.26); }
 
 /* cards lift consistently */
-.srv-card, .cust-row, .rd-main, .rd-sidebar, .wizard-card, .of-plan-card, .srv-kpi, .r-kpi {
+.srv-card, .rd-main, .rd-sidebar, .wizard-card, .of-plan-card, .srv-kpi, .r-kpi {
   transition: transform .28s cubic-bezier(.22,1,.36,1), border-color .28s, box-shadow .28s;
 }
-.srv-card:hover, .cust-row:hover, .of-plan-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(10,37,64,.07); }
+.srv-card:hover, .of-plan-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(10,37,64,.07); }
 .srv-kpi:hover, .r-kpi:hover { transform: translateY(-2px); }
 
 /* KPI numbers get a subtle pop when they mount */
@@ -1350,8 +1353,8 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .rsrv-server-detail, .srv-health-dot.ok, .rsrv-health.ok, .clm-ca-dot {
     animation: none !important;
   }
-  .btn, .srv-card, .cust-row, .of-plan-card, .srv-kpi, .r-kpi { transition: none !important; }
-  .btn:hover, .srv-card:hover, .cust-row:hover, .of-plan-card:hover { transform: none !important; }
+  .btn, .srv-card, .of-plan-card, .srv-kpi, .r-kpi { transition: none !important; }
+  .btn:hover, .srv-card:hover, .of-plan-card:hover { transform: none !important; }
 }
 
 /* ══════════════════════════════════════════════════

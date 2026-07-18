@@ -214,12 +214,11 @@ function StagePill({ d }) {
   if (d.activated) return <span className="stage-pill ok">Automated ✓</span>
   if (d.isAcme) {
     return d.enrollReady
-      ? <span className="stage-pill warn">Step 3 of 4 — configure ACME client</span>
-      : <span className="stage-pill warn">Step 2 of 4 — enrollment provisioning</span>
+      ? <span className="stage-pill warn">Configure ACME client</span>
+      : <span className="stage-pill warn">Enrollment provisioning</span>
   }
-  const step = !d.agentInstalled ? 2 : 3
-  const label = !d.agentInstalled ? 'install agent' : 'add your domain'
-  return <span className="stage-pill warn">Step {step} of {4} — {label}</span>
+  const label = !d.agentInstalled ? 'Install agent' : 'Add your domain'
+  return <span className="stage-pill warn">{label}</span>
 }
 
 export function SubRow({ order, isReseller, open, onToggle, children }) {
