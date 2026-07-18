@@ -859,3 +859,26 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .clm-inline-hint { font-size: 0.76rem; color: #9aa8b5; font-style: italic; }
 .clm-action-sync { font-size: 0.72rem; padding: 3px 8px; background: #f4f6f8; border-color: #e0e8f4; color: #7a8fa0; }
 .clm-action-sync:hover { background: #e8f2ff; color: #3375b1; border-color: #c3d5eb; }
+
+/* CLM compact row pass */
+.clm-row td { padding: 7px 10px; }
+.clm-row-top { display: flex; align-items: center; gap: 7px; }
+.clm-cert-name { font-size: 0.83rem; font-weight: 600; color: #0a2540; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clm-cert-meta { font-size: 0.7rem; color: #b0bec9; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clm-method-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+.clm-method-acme { background: #e8f2ff; color: #2e6ba2; }
+.clm-method-agent { background: #eaf3ec; color: #1a5e2a; }
+
+/* compact action row */
+.clm-action-row { display: flex; align-items: center; gap: 6px; }
+.clm-act-primary { font-size: 0.76rem; font-weight: 700; color: #fff; background: #3375b1; border-radius: 6px; padding: 4px 10px; text-decoration: none; white-space: nowrap; }
+.clm-act-primary:hover { background: #296194; color: #fff; }
+.clm-act-ghost { font-size: 0.72rem; font-weight: 600; color: #7a8fa0; background: #f4f6f8; border: 1px solid #e0e8f4; border-radius: 6px; padding: 4px 8px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.clm-act-ghost:hover { color: #3375b1; background: #e8f2ff; border-color: #c3d5eb; }
+.clm-act-ghost:disabled { opacity: 0.5; cursor: wait; }
+.clm-act-muted { font-size: 0.72rem; color: #b0bec9; font-style: italic; }
+
+/* remove old verbose action styles */
+.clm-inline-action { display: none; }
+.clm-cta-primary { display: none; }
+.clm-inline-tag { display: none; }
