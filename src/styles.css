@@ -1107,3 +1107,28 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .of-selected-plan .of-plan-name { font-size: 0.9rem; font-weight: 700; color: #0a2540; flex: 1; }
 .of-selected-plan .of-plan-meta { font-size: 0.75rem; color: #7a8fa0; }
 .of-change-btn { font-size: 0.76rem; font-weight: 600; color: #3375b1; background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; }
+
+/* ── Customers page ── */
+.cust-page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.cust-create-form { background: #fff; border: 1.5px solid #dde5ef; border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+.cust-form-title { font-family: var(--display); font-weight: 700; font-size: 1rem; color: #0a2540; margin-bottom: 14px; }
+.cust-empty { text-align: center; padding: 60px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.cust-empty h3 { font-family: var(--display); font-weight: 700; font-size: 1.1rem; color: #0a2540; }
+.cust-empty p { color: var(--ink-soft); font-size: 0.9rem; max-width: 380px; }
+
+.cust-list { display: flex; flex-direction: column; gap: 8px; }
+.cust-row { background: #fff; border: 1.5px solid #dde5ef; border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; transition: border-color 0.15s; }
+.cust-row:hover { border-color: #3375b1; }
+.cust-row-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 180px; }
+.cust-avatar { width: 38px; height: 38px; border-radius: 50%; background: #e8f2ff; color: #2e6ba2; font-size: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cust-name { font-size: 0.92rem; font-weight: 700; color: #0a2540; }
+.cust-meta { font-size: 0.74rem; color: #9aa8b5; margin-top: 1px; }
+
+.cust-row-stats { display: flex; gap: 16px; }
+.cust-stat { text-align: center; }
+.cust-stat-num { display: block; font-family: var(--display); font-weight: 800; font-size: 1.2rem; color: #0a2540; line-height: 1; }
+.cust-stat-label { display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #9aa8b5; margin-top: 2px; }
+.cust-stat.ok .cust-stat-num { color: #1a7a4c; }
+.cust-stat.warn .cust-stat-num { color: #b8862b; }
+
+.cust-row-actions { display: flex; gap: 8px; margin-left: auto; }

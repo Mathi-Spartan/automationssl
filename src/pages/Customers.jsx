@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { deliverables } from './Dashboard.jsx'
@@ -7,30 +7,25 @@ import { deliverables } from './Dashboard.jsx'
 export default function Customers() {
   const { session, profile, loading } = useAuth()
   const [subs, setSubs] = useState(null)
-  const [servers, setServers] = useState([])
   const [orders, setOrders] = useState([])
-  const [domains, setDomains] = useState([])
   const [form, setForm] = useState({ email: '', password: '', full_name: '' })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
+  const [showForm, setShowForm] = useState(false)
 
   async function reload() {
-    const [p, s, o, d] = await Promise.all([
+    const [p, o] = await Promise.all([
       supabase.from('profiles').select('id, full_name, created_at').eq('parent_reseller_id', session.user.id).order('created_at'),
-      supabase.from('servers').select('id, owner_id, name, environment').neq('owner_id', session.user.id),
-      supabase.from('orders').select('id, user_id, server_id, product_name, status, product_id, api_response, assigned_at').neq('user_id', session.user.id),
-      supabase.from('tracked_domains').select('id, owner_id, server_id, domain').neq('owner_id', session.user.id),
+      supabase.from('orders').select('id, user_id, product_name, product_id, api_response, assigned_at, status').neq('user_id', session.user.id),
     ])
     setSubs(p.data || [])
-    setServers(s.data || [])
     setOrders(o.data || [])
-    setDomains(d.data || [])
     setErr(p.error?.message || null)
   }
 
   useEffect(() => {
-    if (session?.user && supabase && profile?.account_type === 'reseller') reload()
+    if (session?.user && profile?.account_type === 'reseller') reload()
   }, [session?.user?.id, profile?.account_type])
 
   if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
@@ -39,9 +34,7 @@ export default function Customers() {
 
   async function createSub(e) {
     e.preventDefault()
-    setBusy(true)
-    setMsg(null)
-    setErr(null)
+    setBusy(true); setMsg(null); setErr(null)
     try {
       const { data: sess } = await supabase.auth.getSession()
       const res = await fetch('/api/subaccount', {
@@ -51,8 +44,9 @@ export default function Customers() {
       })
       const body = await res.json()
       if (!res.ok || body.error) throw new Error(body.message || 'Could not create the account.')
-      setMsg(`Account created for ${form.email}. Share the credentials with your customer — they can sign in right away.`)
+      setMsg(`Account created for ${form.email}. Share these credentials with your customer — they can sign in right away.`)
       setForm({ email: '', password: '', full_name: '' })
+      setShowForm(false)
       reload()
     } catch (e2) {
       setErr(e2.message)
@@ -61,65 +55,104 @@ export default function Customers() {
     }
   }
 
+  const set = k => e => setForm({ ...form, [k]: e.target.value })
+
   return (
     <div className="dash-page">
-      <span className="eyebrow">Reseller console</span>
-      <h1>Your customers</h1>
-      <p className="sub">Create customer accounts under your umbrella and see everything they run, rolled up per customer.</p>
-
-      <form onSubmit={createSub} className="order-summary" style={{ marginBottom: 20 }}>
-        <div className="field-row">
-          <div className="field">
-            <label htmlFor="cname">Customer name</label>
-            <input id="cname" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-          </div>
-          <div className="field">
-            <label htmlFor="cemail">Email</label>
-            <input id="cemail" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-          <div className="field">
-            <label htmlFor="cpass">Temporary password</label>
-            <input id="cpass" required minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          </div>
+      <div className="cust-page-header">
+        <div>
+          <span className="eyebrow">Customers</span>
+          <h1>Your customers</h1>
         </div>
-        <button className="btn primary" type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create customer account'}</button>
-      </form>
+        <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
+          {showForm ? 'Cancel' : '+ New customer'}
+        </button>
+      </div>
+
+      {/* Create form */}
+      {showForm && (
+        <form onSubmit={createSub} className="cust-create-form">
+          <h3 className="cust-form-title">Create customer account</h3>
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="cname">Full name</label>
+              <input id="cname" required placeholder="Acme Corp / John Smith" autoFocus
+                value={form.full_name} onChange={set('full_name')} />
+            </div>
+            <div className="field">
+              <label htmlFor="cemail">Email</label>
+              <input id="cemail" type="email" required placeholder="customer@example.com"
+                value={form.email} onChange={set('email')} />
+            </div>
+            <div className="field">
+              <label htmlFor="cpass">Temporary password</label>
+              <input id="cpass" type="password" required minLength={8}
+                value={form.password} onChange={set('password')} />
+              <p className="hint">Share this with your customer — they can change it after signing in.</p>
+            </div>
+          </div>
+          <button className="btn primary" type="submit" disabled={busy}>
+            {busy ? 'Creating…' : 'Create account'}
+          </button>
+        </form>
+      )}
 
       {msg && <div className="alert ok">{msg}</div>}
       {err && <div className="alert error">{err}</div>}
-      {subs && subs.length === 0 && <div className="alert ok">No customer accounts yet — create the first one above.</div>}
 
-      {(subs || []).map((c) => {
-        const cs = servers.filter((s) => s.owner_id === c.id)
-        const co = orders.filter((o) => o.user_id === c.id)
-        const cd = domains.filter((d) => d.owner_id === c.id)
-        const activated = co.filter((o) => deliverables(o).activated).length
-        return (
-          <div className="alert ok" key={c.id} style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <strong>{c.full_name || 'Unnamed customer'}</strong>
-              <span className="mono" style={{ fontSize: '0.78rem' }}>
-                {cs.length} server{cs.length === 1 ? '' : 's'} · {co.length} plan{co.length === 1 ? '' : 's'} ({activated} activated, {co.length - activated} pending) · {cd.length} domain{cd.length === 1 ? '' : 's'}
-              </span>
-            </div>
-            {cs.map((s) => {
-              const so = co.filter((o) => o.server_id === s.id)
-              const sd = cd.filter((d) => d.server_id === s.id)
-              return (
-                <div key={s.id} className="kv" style={{ marginTop: 8, paddingLeft: 10, borderLeft: '3px solid var(--line)' }}>
-                  <div><b>{s.name}</b> ({s.environment}) — {so.map((o) => o.product_name).join(', ') || 'no plans attached'}</div>
-                  {sd.length > 0 && <div className="mono" style={{ fontSize: '0.78rem' }}>{sd.map((d) => d.domain).join(' · ')}</div>}
+      {/* Customer list */}
+      {subs && subs.length === 0 && !showForm && (
+        <div className="cust-empty">
+          <i className="ti ti-users" style={{ fontSize: 36, color: '#b4dffc' }} aria-hidden="true" />
+          <h3>No customers yet</h3>
+          <p>Create a customer account to get started. They can sign in, view their certificates, and set up automation themselves.</p>
+          <button className="btn primary" type="button" onClick={() => setShowForm(true)}>+ New customer</button>
+        </div>
+      )}
+
+      <div className="cust-list">
+        {(subs || []).map(c => {
+          const co = orders.filter(o => o.user_id === c.id)
+          const activated = co.filter(o => deliverables(o).activated).length
+          const pending = co.length - activated
+          const joined = new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+
+          return (
+            <div className="cust-row" key={c.id}>
+              <div className="cust-row-left">
+                <div className="cust-avatar">{(c.full_name || '?')[0].toUpperCase()}</div>
+                <div>
+                  <div className="cust-name">{c.full_name || 'Unnamed customer'}</div>
+                  <div className="cust-meta">Joined {joined}</div>
                 </div>
-              )
-            })}
-            {co.filter((o) => !o.server_id).length > 0 && (
-              <div className="kv" style={{ marginTop: 8 }}>
-                <div><b>Unassigned plans</b> {co.filter((o) => !o.server_id).map((o) => `${o.product_name} (${o.status})`).join(', ')}</div>
               </div>
-            )}
-          </div>
-        )
-      })}
+              <div className="cust-row-stats">
+                <div className="cust-stat">
+                  <span className="cust-stat-num">{co.length}</span>
+                  <span className="cust-stat-label">Plans</span>
+                </div>
+                <div className={'cust-stat' + (activated > 0 ? ' ok' : '')}>
+                  <span className="cust-stat-num">{activated}</span>
+                  <span className="cust-stat-label">Automated</span>
+                </div>
+                <div className={'cust-stat' + (pending > 0 ? ' warn' : '')}>
+                  <span className="cust-stat-num">{pending}</span>
+                  <span className="cust-stat-label">Pending</span>
+                </div>
+              </div>
+              <div className="cust-row-actions">
+                <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
+                  + Buy plan
+                </Link>
+                <Link to={`/dashboard?customer=${c.id}`} className="btn ghost" style={{ fontSize: '0.8rem', padding: '6px 14px' }}
+                  onClick={e => { e.preventDefault(); window.location.href = '/dashboard' }}>
+                  View orders
+                </Link>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
