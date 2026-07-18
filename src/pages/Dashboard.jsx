@@ -866,39 +866,55 @@ function ExportDropdown({ rows, custLabel, inclCust, custName }) {
     setOpen(false)
   }
   const presets = [
-    ['Today', 0], ['Last 7 days', 7], ['Last 30 days', 30],
-    ['Last 90 days', 90], ['Last 6 months', 180], ['Last 12 months', 365],
+    ['Today', 0, 'ti-calendar-event'],
+    ['Last 7 days', 7, 'ti-calendar-week'],
+    ['Last 30 days', 30, 'ti-calendar-month'],
+    ['Last 90 days', 90, 'ti-calendar-stats'],
+    ['Last 6 months', 180, 'ti-calendar'],
+    ['Last 12 months', 365, 'ti-calendar'],
   ]
   return (
     <div className="export-wrap" ref={ref}>
       <button type="button" className="clm-export-btn" onClick={() => setOpen(o => !o)}>
-        <i className="ti ti-file-spreadsheet" style={{fontSize:13,verticalAlign:-1,marginRight:4}} aria-hidden="true"/>
+        <i className="ti ti-download" style={{fontSize:13,verticalAlign:-1,marginRight:4}} aria-hidden="true"/>
         Export <i className="ti ti-chevron-down" style={{fontSize:11,verticalAlign:-1,marginLeft:2}} aria-hidden="true"/>
       </button>
       {open && (
         <div className="export-panel">
           <div className="export-panel-head">Quick range</div>
-          {presets.map(([label, days]) => (
+          {presets.map(([label, days, icon]) => (
             <button key={label} type="button" className="export-preset" onClick={() => {
               const t = new Date(); t.setHours(23,59,59,999)
-              const f = new Date(); f.setDate(f.getDate() - (days === 0 ? 0 : days)); f.setHours(0,0,0,0)
+              const f = new Date(); f.setDate(f.getDate() - days); f.setHours(0,0,0,0)
               run(label.toLowerCase().replace(/\s+/g,'-'), f, t)
-            }}>{label}</button>
+            }}>
+              <i className={'ti ' + icon} style={{fontSize:13,color:'#3375b1',flexShrink:0}} aria-hidden="true"/>
+              {label}
+            </button>
           ))}
-          <button type="button" className="export-preset" onClick={() => run('all', null, null)}>All time</button>
+          <button type="button" className="export-preset" onClick={() => run('all', null, null)}>
+            <i className="ti ti-infinity" style={{fontSize:13,color:'#3375b1',flexShrink:0}} aria-hidden="true"/>
+            All time
+          </button>
           <div className="export-divider"/>
-          <div className="export-panel-head">Custom range</div>
           <div className="export-custom">
-            <input type="date" value={from} onChange={e => setFrom(e.target.value)}/>
-            <span style={{color:'#9aa3b5',fontSize:12}}>to</span>
-            <input type="date" value={to} onChange={e => setTo(e.target.value)}/>
-            <button type="button" className="btn primary" style={{fontSize:'0.75rem',padding:'5px 10px'}}
+            <div className="export-panel-head" style={{padding:'0 0 3px'}}>Custom range</div>
+            <div className="export-custom-row">
+              <input type="date" value={from} onChange={e => setFrom(e.target.value)}/>
+            </div>
+            <div className="export-custom-row">
+              <input type="date" value={to} onChange={e => setTo(e.target.value)}/>
+            </div>
+            <button type="button" className="btn primary" style={{fontSize:'0.75rem',padding:'5px 0',width:'100%',marginTop:2}}
               disabled={!from||!to} onClick={() => {
                 const f=new Date(from); f.setHours(0,0,0,0)
                 const t=new Date(to); t.setHours(23,59,59,999)
                 if(f>t){alert('Start must be before end date.');return}
                 run(`${from}-to-${to}`, f, t)
-              }}>Export</button>
+              }}>
+              <i className="ti ti-download" style={{fontSize:12,marginRight:4}} aria-hidden="true"/>
+              Export range
+            </button>
           </div>
         </div>
       )}
