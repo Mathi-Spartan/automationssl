@@ -1435,3 +1435,33 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .pb-card:hover { transform: none !important; }
   .pb-card::before { display: none; }
 }
+
+/* ── theatre: agent sub-tabs (Apache / IIS) ── */
+.th-subtabs { display: flex; gap: 4px; justify-content: center; margin: -12px 0 20px; }
+.th-subtab { font-family: inherit; font-size: 0.76rem; font-weight: 600; padding: 5px 14px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: #7a8fa0; cursor: pointer; transition: background .18s, color .18s, border-color .18s; }
+.th-subtab:hover { color: #0a2540; background: #eef3f9; }
+.th-subtab.on { background: #fff; border-color: #c9d9e8; color: #0a2540; box-shadow: 0 1px 2px rgba(10,37,64,.06); }
+
+/* ── theatre: brighter, sharper CA panel ── */
+.th-ca { background: #fff; border: 1px solid #d3e0ed; border-radius: 12px; padding: 17px 18px; box-shadow: 0 2px 10px rgba(10,37,64,.05); }
+.th-ca-head { padding-bottom: 13px; border-bottom: 1px solid #e3ecf5; margin-bottom: 12px; }
+.th-ca-mark { width: 32px; height: 32px; border-radius: 9px; }
+.th-ca-name { font-size: 0.88rem; font-weight: 800; color: #06182c; letter-spacing: -.015em; }
+.th-ca-meta { font-size: 0.68rem; color: #7d93a6; margin-top: 3px; }
+
+.th-row { padding: 8px 0; opacity: 1; }
+.th-row + .th-row { border-top: 1px solid #f0f5fa; }
+.th-row-text { font-size: 0.79rem; font-weight: 600; color: #c3d0db; transition: color .38s cubic-bezier(.22,1,.36,1); }
+.th-row-val { font-size: 0.7rem; font-weight: 600; color: #d5dfe8; transition: color .38s cubic-bezier(.22,1,.36,1); }
+.th-row-dot { width: 8px; height: 8px; background: #e3ecf5; box-shadow: none; transition: background .38s, box-shadow .38s; }
+.th-row.on .th-row-text { color: #06182c; }
+.th-row.on .th-row-val { color: #55708a; }
+.th-row.on .th-row-dot { background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.16); }
+
+/* terminal contrast bump to match */
+.th-term-body { font-size: 0.76rem; }
+.th-line { color: #a9c2d6; }
+.th-p { color: #57a8f0; font-weight: 700; }
+.th-ok { color: #4ade80; font-weight: 800; }
+.th-dim { color: #55738f; }
+.th-term-host { color: #6d89a3; }

@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 const CA_BLUE = '#1a6bb5'
 const CA_RED = '#b8001a'
+const CA_AMBER = '#c26a00'
 
-const PATHS = {
-  agent: {
-    tabLabel: 'AutoInstall agent',
+const SCENARIOS = {
+  'agent-apache': {
+    group: 'agent',
+    host: 'api.example.com',
     caName: 'RapidSSL certificate authority',
     caMeta: 'api.example.com · DV',
     color: CA_BLUE,
@@ -19,19 +21,50 @@ const PATHS = {
     ],
     beats: [
       { t: 'term', html: '<span class="th-p">$</span> curl -sSL https://autoinstall.easysecurity.in/s.sh | sh', s: 'Running the one-line installer' },
-      { t: 'term', html: '<span class="th-dim">agent v2.4 installed — detected nginx 1.24</span>', s: 'Agent detects your web server' },
+      { t: 'term', html: '<span class="th-dim">agent v2.4 installed — detected Apache 2.4.58</span>', s: 'Agent detects Apache' },
       { t: 'pkt', dir: 'r', label: 'agent registers', row: 0, s: 'Agent authenticates with the CA' },
       { t: 'row', row: 1, s: 'Mutual TLS handshake complete' },
       { t: 'pkt', dir: 'r', label: 'HTTP-01 challenge', row: 2, s: 'CA verifies you control the domain' },
       { t: 'term', html: '<span class="th-dim">serving /.well-known/acme-challenge/</span>', s: 'Challenge served without your input' },
       { t: 'pkt', dir: 'l', label: 'certificate', row: 3, s: 'Certificate issued and returned' },
-      { t: 'term', html: '<span class="th-ok">OK</span> installed to /etc/nginx/ssl — nginx reloaded', s: 'Installed and web server reloaded' },
+      { t: 'term', html: '<span class="th-ok">OK</span> written to /etc/ssl/api.example.com/', s: 'Certificate and key written to disk' },
+      { t: 'term', html: '<span class="th-ok">OK</span> apachectl graceful — vhost :443 live', s: 'Apache reloaded with no dropped connections' },
       { t: 'row', row: 4, s: 'Renewal scheduled automatically' },
       { t: 'term', html: '<span class="th-ok">Done.</span> <span class="th-dim">every future renewal runs without you</span>', s: 'Fully automated' },
     ],
   },
+  'agent-iis': {
+    group: 'agent',
+    host: 'WIN-APP01',
+    prompt: 'PS',
+    caName: 'GeoTrust certificate authority',
+    caMeta: 'portal.example.com · DV',
+    color: CA_AMBER,
+    tint: '#fff2e2',
+    rows: [
+      ['Subscription registered', 'order #3575681'],
+      ['Agent enrolled', 'mutual TLS'],
+      ['HTTP-01 validation', 'portal.example.com'],
+      ['Certificate issued', 'valid 47 days'],
+      ['Binding updated', 'IIS site :443'],
+    ],
+    beats: [
+      { t: 'term', html: '<span class="th-p">PS></span> iwr https://autoinstall.easysecurity.in/s.ps1 -UseB | iex', s: 'Running the PowerShell installer' },
+      { t: 'term', html: '<span class="th-dim">agent v2.4 installed — detected IIS 10.0</span>', s: 'Agent detects IIS' },
+      { t: 'pkt', dir: 'r', label: 'agent registers', row: 0, s: 'Agent authenticates with the CA' },
+      { t: 'row', row: 1, s: 'Mutual TLS handshake complete' },
+      { t: 'pkt', dir: 'r', label: 'HTTP-01 challenge', row: 2, s: 'CA verifies you control the domain' },
+      { t: 'term', html: '<span class="th-dim">temporary handler added to Default Web Site</span>', s: 'Challenge served without your input' },
+      { t: 'pkt', dir: 'l', label: 'certificate', row: 3, s: 'Certificate issued and returned' },
+      { t: 'term', html: '<span class="th-ok">OK</span> imported to LocalMachine\\WebHosting', s: 'Certificate imported to the Windows store' },
+      { t: 'term', html: '<span class="th-ok">OK</span> HTTPS binding updated — old cert unbound', s: 'IIS binding switched to the new certificate' },
+      { t: 'row', row: 4, s: 'Binding updated on the IIS site' },
+      { t: 'term', html: '<span class="th-ok">Done.</span> <span class="th-dim">every future renewal runs without you</span>', s: 'Fully automated' },
+    ],
+  },
   acme: {
-    tabLabel: 'ACME / certbot',
+    group: 'acme',
+    host: 'shop.io',
     caName: 'Sectigo ACME certificate-as-a-service',
     caMeta: 'shop.io + wildcard · DV',
     color: CA_RED,
@@ -41,26 +74,36 @@ const PATHS = {
       ['ACME account bound', 'RFC 8555'],
       ['DNS-01 validation', '*.shop.io'],
       ['Certificate issued', 'valid 47 days'],
-      ['Renewal timer armed', 'certbot.timer'],
+      ['Renewal timer armed', 'systemd timer'],
     ],
     beats: [
       { t: 'term', html: '<span class="th-p">$</span> certbot register \\', s: 'Register against the ACME endpoint' },
-      { t: 'term', html: '    --server https://acme.sectigo.com/v2/DV \\', s: 'Point certbot at Sectigo' },
+      { t: 'term', html: '    --server https://acme.sectigo.com/v2/DV \\', s: 'Point your client at Sectigo' },
+      { t: 'term', html: '    --config-dir /etc/ssl/acme \\', s: 'Keep everything under your own path' },
       { t: 'term', html: '    --eab-kid 8f2a4c1e --eab-hmac-key ********', s: 'External account binding credentials' },
       { t: 'pkt', dir: 'r', label: 'EAB binding', row: 0, s: 'CA verifies your binding key' },
       { t: 'row', row: 1, s: 'ACME account bound to your plan' },
       { t: 'term', html: '<span class="th-p">$</span> certbot certonly -d shop.io -d *.shop.io', s: 'Request the certificate' },
       { t: 'pkt', dir: 'r', label: 'DNS-01 order', row: 2, s: 'DNS challenge published and checked' },
       { t: 'pkt', dir: 'l', label: 'fullchain.pem', row: 3, s: 'Certificate issued and returned' },
-      { t: 'term', html: '<span class="th-ok">OK</span> saved to /etc/letsencrypt/live/shop.io/', s: 'Certificate written to disk' },
-      { t: 'row', row: 4, s: 'certbot.timer handles every renewal' },
+      { t: 'term', html: '<span class="th-ok">OK</span> saved to /etc/ssl/acme/live/shop.io/', s: 'Certificate written to your own path' },
+      { t: 'row', row: 4, s: 'The renewal timer handles every cycle' },
       { t: 'term', html: '<span class="th-ok">Done.</span> <span class="th-dim">renews itself every cycle</span>', s: 'Fully automated' },
     ],
   },
 }
 
+const GROUPS = [
+  { key: 'agent', label: 'AutoInstall agent', first: 'agent-apache' },
+  { key: 'acme', label: 'ACME / certbot', first: 'acme' },
+]
+const AGENT_TABS = [
+  { key: 'agent-apache', label: 'Apache · Linux' },
+  { key: 'agent-iis', label: 'IIS · Windows' },
+]
+
 export default function AutomationTheatre() {
-  const [path, setPath] = useState('agent')
+  const [scene, setScene] = useState('agent-apache')
   const [lines, setLines] = useState([])
   const [litRows, setLitRows] = useState([])
   const [pkt, setPkt] = useState(null)
@@ -77,7 +120,7 @@ export default function AutomationTheatre() {
   const play = useCallback((key) => {
     clearTimers()
     setLines([]); setLitRows([]); setPkt(null); setPct(0); setPlaying(true)
-    const d = PATHS[key]
+    const d = SCENARIOS[key]
     const reduce = typeof window !== 'undefined' && window.matchMedia
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -113,10 +156,10 @@ export default function AutomationTheatre() {
 
   useEffect(() => {
     const el = stageRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') { play('agent'); return }
+    if (!el || typeof IntersectionObserver === 'undefined') { play('agent-apache'); return }
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
-        if (e.isIntersecting && !started.current) { started.current = true; play('agent'); io.unobserve(e.target) }
+        if (e.isIntersecting && !started.current) { started.current = true; play('agent-apache'); io.unobserve(e.target) }
       })
     }, { threshold: 0.35 })
     io.observe(el)
@@ -125,11 +168,12 @@ export default function AutomationTheatre() {
 
   useEffect(() => () => clearTimers(), [])
 
-  const d = PATHS[path]
+  const d = SCENARIOS[scene]
+  const group = d.group
 
-  const switchPath = (key) => {
-    if (key === path) return
-    setPath(key)
+  const switchScene = (key) => {
+    if (key === scene) return
+    setScene(key)
     started.current = true
     play(key)
   }
@@ -137,18 +181,34 @@ export default function AutomationTheatre() {
   return (
     <div className="th" ref={stageRef}>
       <div className="th-tabs" role="tablist">
-        {Object.keys(PATHS).map((key) => (
+        {GROUPS.map((g) => (
           <button
-            key={key}
+            key={g.key}
             role="tab"
-            aria-selected={path === key}
-            className={'th-tab' + (path === key ? ' on' : '')}
-            onClick={() => switchPath(key)}
+            aria-selected={group === g.key}
+            className={'th-tab' + (group === g.key ? ' on' : '')}
+            onClick={() => switchScene(g.key === 'agent' ? 'agent-apache' : 'acme')}
           >
-            {PATHS[key].tabLabel}
+            {g.label}
           </button>
         ))}
       </div>
+
+      {group === 'agent' && (
+        <div className="th-subtabs" role="tablist">
+          {AGENT_TABS.map((t) => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={scene === t.key}
+              className={'th-subtab' + (scene === t.key ? ' on' : '')}
+              onClick={() => switchScene(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="th-stage">
         <div className="th-term">
@@ -156,7 +216,7 @@ export default function AutomationTheatre() {
             <span className="th-tdot" style={{ background: '#e05252' }} />
             <span className="th-tdot" style={{ background: '#e8a020' }} />
             <span className="th-tdot" style={{ background: '#2eb85c' }} />
-            <span className="th-term-host">root@{path === 'agent' ? 'api.example.com' : 'shop.io'}</span>
+            <span className="th-term-host">{d.prompt === 'PS' ? '' : 'root@'}{d.host}</span>
           </div>
           <div className="th-term-body">
             {lines.map((html, i) => (
@@ -204,7 +264,7 @@ export default function AutomationTheatre() {
       <div className="th-foot">
         <span className="th-status">{status}</span>
         <span className="th-prog"><span className="th-prog-fill" style={{ width: pct + '%' }} /></span>
-        <button type="button" className="th-replay" onClick={() => play(path)}>Replay</button>
+        <button type="button" className="th-replay" onClick={() => play(scene)}>Replay</button>
       </div>
     </div>
   )
