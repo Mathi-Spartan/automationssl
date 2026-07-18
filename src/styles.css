@@ -882,3 +882,7 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .clm-inline-action { display: none; }
 .clm-cta-primary { display: none; }
 .clm-inline-tag { display: none; }
+
+/* CLM action buttons — smaller, square-ish, not pill */
+.clm-act-primary { font-size: 0.72rem; padding: 3px 9px; border-radius: 5px; font-weight: 600; }
+.clm-act-ghost { font-size: 0.68rem; padding: 3px 7px; border-radius: 5px; width: 26px; text-align: center; }
