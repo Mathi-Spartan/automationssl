@@ -1,3 +1,4 @@
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { PRODUCTS } from '../catalog.js'
 
@@ -26,6 +27,92 @@ function PlanCard({ p }) {
         </div>
       </div>
     </article>
+  )
+}
+
+
+function HowItWorksFlow() {
+  const [active, setActive] = React.useState('agent')
+
+  const steps = {
+    agent: [
+      { icon: '🛒', tag: 'Order', title: 'Place your order', desc: 'Sign in, pick a RapidSSL or GeoTrust plan. The CA registers your subscription within minutes.' },
+      { icon: '🔗', tag: 'Setup portal', title: 'Open your AutoInstall portal', desc: 'Your dashboard shows a personal SSO link to autoinstallssl.app — click it once.' },
+      { icon: '⚡', tag: 'One command', title: 'Run the install script', desc: 'Copy the one-liner from the portal, paste it into your server. The agent installs and phones home.' },
+      { icon: '🔄', tag: 'Automated', title: 'Renewals happen on their own', desc: 'The agent validates, issues and renews every cycle. Your dashboard shows live CA status.' },
+    ],
+    acme: [
+      { icon: '🛒', tag: 'Order', title: 'Place your order', desc: 'Sign in, pick the Sectigo CaaS plan. Add as many domains as you need — billed pro-rated by the CA.' },
+      { icon: '🔑', tag: 'Credentials', title: 'Grab your EAB credentials', desc: 'Your dashboard hands you three values: ACME server URL, EAB Key ID, and HMAC key. Copy them.' },
+      { icon: '💻', tag: 'One command', title: 'Register with certbot or acme.sh', desc: 'Run certbot register with your EAB credentials. Works with Caddy, Traefik, and cert-manager too.' },
+      { icon: "🔄", tag: "Automated", title: "Your ACME client handles renewals", desc: "Certbot runs renewal automatically every 60 days. No manual work, ever." },
+    ],
+  }
+
+  const current = steps[active]
+
+  return (
+    <div className="flow-wrap">
+      {/* tab switcher */}
+      <div className="flow-tabs">
+        <button type="button" className={'flow-tab' + (active === 'agent' ? ' on' : '')} onClick={() => setActive('agent')}>
+          <span className="flow-tab-icon">⚡</span>
+          <span>
+            <strong>AutoInstall Agent</strong>
+            <em>RapidSSL · GeoTrust</em>
+          </span>
+        </button>
+        <div className="flow-tab-or">or</div>
+        <button type="button" className={'flow-tab' + (active === 'acme' ? ' on' : '')} onClick={() => setActive('acme')}>
+          <span className="flow-tab-icon">🔑</span>
+          <span>
+            <strong>ACME / certbot</strong>
+            <em>Sectigo CaaS · any ACME client</em>
+          </span>
+        </button>
+      </div>
+
+      {/* animated steps */}
+      <div className="flow-steps" key={active}>
+        {current.map((s, i) => (
+          <React.Fragment key={i}>
+            <div className="flow-step" style={{ animationDelay: `${i * 80}ms` }}>
+              <div className="flow-step-icon">{s.icon}</div>
+              <div className="flow-step-tag">{s.tag}</div>
+              <div className="flow-step-title">{s.title}</div>
+              <div className="flow-step-desc">{s.desc}</div>
+            </div>
+            {i < current.length - 1 && <div className="flow-arrow" style={{ animationDelay: `${i * 80 + 60}ms` }}>→</div>}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* live terminal — changes per tab */}
+      <div className="flow-terminal-wrap" key={active + '-term'}>
+        {active === 'acme' ? (
+          <div className="terminal flow-terminal" role="img" aria-label="ACME enrollment commands">
+            <div><span className="comment"># one-time enrollment with your EAB credentials</span></div>
+            <div><span className="prompt">$</span> certbot register <span className="flag">--server</span> https://acme.sectigo.com/v2/DV <span className="flag">--eab-kid</span> &lt;key-id&gt; <span className="flag">--eab-hmac-key</span> &lt;hmac&gt;</div>
+            <div><span className="prompt">$</span> certbot certonly <span className="flag">-d</span> example.com</div>
+            <div><span className="comment"># renewal is automatic — certbot cron handles it every 60 days</span></div>
+          </div>
+        ) : (
+          <div className="terminal flow-terminal" role="img" aria-label="AutoInstall agent setup">
+            <div><span className="comment"># from your dashboard → copy the one-line install command</span></div>
+            <div><span className="prompt">$</span> curl <span className="flag">-sL</span> https://autoinstallssl.app/install/&lt;your-token&gt; <span className="flag">|</span> bash</div>
+            <div><span className="comment"># agent installs, contacts the CA, issues your cert</span></div>
+            <div><span className="prompt">$</span> autoinstall-ssl <span className="flag">--status</span></div>
+            <div><span className="prompt output">✓</span> Certificate valid · renews automatically in 298 days</div>
+          </div>
+        )}
+      </div>
+
+      <div className="flow-footer">
+        <span className="flow-footer-dot ok" /> Certificate auto-renews every cycle &nbsp;·&nbsp;
+        <span className="flow-footer-dot ok" /> Dashboard shows live CA status &nbsp;·&nbsp;
+        <span className="flow-footer-dot ok" /> No manual work after setup
+      </div>
+    </div>
   )
 }
 
@@ -112,53 +199,13 @@ export default function Home() {
       {/* ---------- how it works ---------- */}
       <section className="block" id="how">
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head center">
             <span className="eyebrow">How it works</span>
-            <h2>Three steps, then never again.</h2>
-          </div>
-          <div className="steps">
-            <div className="step">
-              <span className="mono-tag">01 / order</span>
-              <h3>Place your free order</h3>
-              <p>
-                Sign in, choose a plan and tell us your contact details. Your
-                subscription is registered with the Certificate Authority within
-                minutes and appears in your dashboard.
-              </p>
-            </div>
-            <div className="step">
-              <span className="mono-tag">02 / connect</span>
-              <h3>Install the agent — or point ACME at the CA</h3>
-              <p>
-                AutoInstall plans give you a personal setup portal with a one-line
-                install command. The Sectigo plan hands you ACME credentials for
-                certbot, acme.sh, Caddy, Traefik or cert-manager.
-              </p>
-            </div>
-            <div className="step">
-              <span className="mono-tag">03 / forget</span>
-              <h3>Renewals happen on their own</h3>
-              <p>
-                Your server and the CA handle validation, issuance and renewal
-                between themselves for the full plan term. Your dashboard shows
-                live status the whole way.
-              </p>
-            </div>
+            <h2>Order once. Your server handles the rest.</h2>
+            <p>One order unlocks two paths — pick the one that fits your stack. Both end the same way: your certificate renews itself, forever.</p>
           </div>
 
-          <div style={{ marginTop: 28 }}>
-            <div className="terminal" role="img" aria-label="Terminal example showing an ACME client registering with the CA">
-              <div><span className="comment"># one-time enrollment — after this, renewals are automatic</span></div>
-              <div>
-                <span className="prompt">$</span> certbot register <span className="flag">--server</span> https://acme.sectigo.com/v2/DV{' '}
-                <span className="flag">--eab-kid</span> &lt;your-key-id&gt; <span className="flag">--eab-hmac-key</span> &lt;your-hmac&gt;
-              </div>
-              <div>
-                <span className="prompt">$</span> certbot certonly <span className="flag">-d</span> example.com <span className="flag">-d</span> '*.example.com'
-              </div>
-              <div><span className="comment"># done. certificate issued, renewal timer armed.</span></div>
-            </div>
-          </div>
+          <HowItWorksFlow />
         </div>
       </section>
 
