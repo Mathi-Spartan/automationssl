@@ -37,6 +37,7 @@ function buildTimeline(startISO) {
       startsOn: cursor.toISOString().slice(0, 10),
       days: life,
       shown: span,
+      endsOn: rawEnd.toISOString().slice(0, 10),
       clipped: rawEnd > end,
     })
     cursor = new Date(cursor.getTime() + life * DAY)
@@ -57,6 +58,11 @@ function fmt(iso) {
 function fmtShort(iso) {
   const d = new Date(iso + 'T00:00:00Z')
   return d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' })
+}
+
+function fmtSlice(iso) {
+  const d = new Date(iso + 'T00:00:00Z')
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
 const PRESETS = [
@@ -190,17 +196,18 @@ export default function AutomationTheatre() {
                 key={s.startsOn}
                 className={'lc-slice' + (i < drawn ? ' in' : '') + (i === 0 ? ' first' : '')}
                 style={{ flexGrow: s.shown, transitionDelay: (i * 40) + 'ms' }}
-                title={`${s.days}-day certificate issued ${fmt(s.startsOn)}`}
+                title={`${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)}`}
               >
                 <span className="lc-slice-days">{s.days}d</span>
+                <span className="lc-slice-exp">{fmtSlice(s.endsOn)}</span>
               </div>
             ))}
           </div>
 
           <div className="lc-legend">
-            <span className="lc-legend-item"><i className="lc-dot" aria-hidden="true" />renewal handled for you</span>
+            <span className="lc-legend-item"><i className="lc-dot" aria-hidden="true" />each block expires on the date shown</span>
             <span className="lc-legend-sep" />
-            <span className="lc-legend-note">{slices[0].days}-day maximum today</span>
+            <span className="lc-legend-note">{slices[0].days}-day maximum on {fmtSlice(startISO)} {new Date(startISO + 'T00:00:00Z').getUTCFullYear()}</span>
           </div>
         </div>
 

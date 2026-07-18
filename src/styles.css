@@ -1508,11 +1508,13 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 
 .lc-track-wrap { padding: 20px 24px 4px; }
 .lc-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; font-weight: 600; color: #9aacba; margin-bottom: 8px; }
-.lc-track { display: flex; gap: 3px; align-items: stretch; height: 46px; }
-.lc-slice { flex-basis: 0; min-width: 0; display: flex; align-items: center; justify-content: center; background: var(--cert); border-radius: 6px; opacity: 0; transform: scaleX(.4); transform-origin: left center; transition: opacity .34s cubic-bezier(.22,1,.36,1), transform .34s cubic-bezier(.22,1,.36,1); }
+.lc-track { display: flex; gap: 3px; align-items: stretch; height: 58px; }
+.lc-slice { flex-basis: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 4px; background: var(--cert); border-radius: 6px; opacity: 0; transform: scaleX(.4); transform-origin: left center; transition: opacity .34s cubic-bezier(.22,1,.36,1), transform .34s cubic-bezier(.22,1,.36,1); }
 .lc-slice.in { opacity: 1; transform: scaleX(1); }
 .lc-slice.first { background: #0a2540; }
-.lc-slice-days { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; }
+.lc-slice-days { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; line-height: 1.1; }
+.lc-slice-exp { font-family: var(--mono); font-size: 0.62rem; font-weight: 500; color: rgba(255,255,255,.72); white-space: nowrap; overflow: hidden; line-height: 1.1; }
+.lc-slice.first .lc-slice-exp { color: rgba(255,255,255,.62); }
 .lc-legend { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 0.76rem; color: #7c90a3; }
 .lc-legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .lc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cert); display: inline-block; }
@@ -1547,7 +1549,9 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .lc-methods { grid-template-columns: 1fr; }
   .lc-stats { grid-template-columns: 1fr; }
   .lc-controls { flex-direction: column; align-items: stretch; }
-  .lc-slice-days { font-size: 0.62rem; }
+  .lc-slice-days { font-size: 0.6rem; }
+  .lc-slice-exp { font-size: 0.54rem; }
+  .lc-track { height: 52px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lc-slice { transition: none !important; opacity: 1 !important; transform: none !important; }
