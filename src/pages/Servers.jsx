@@ -80,7 +80,7 @@ export default function Servers() {
   }
 
   return (
-    <div className="form-page wide">
+    <div className="dash-page">
       <div className="page-head">
         <div>
           <span className="eyebrow">Servers</span>

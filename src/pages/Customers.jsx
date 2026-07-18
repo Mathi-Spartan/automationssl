@@ -62,7 +62,7 @@ export default function Customers() {
   }
 
   return (
-    <div className="form-page wide">
+    <div className="dash-page">
       <span className="eyebrow">Reseller console</span>
       <h1>Your customers</h1>
       <p className="sub">Create customer accounts under your umbrella and see everything they run, rolled up per customer.</p>

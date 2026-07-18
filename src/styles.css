@@ -292,3 +292,51 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .stage-pill.warn { background: #fbf3e2; color: #9a6b12; border: 1px solid #ecd9ae; }
 .plan-card.embedded { border: none; border-left: none; padding: 4px 0 0; margin-bottom: 0; border-radius: 0; }
 .section-h .count { background: var(--cert-soft, #eaf5ee); color: var(--pine); border-radius: 999px; padding: 1px 9px; font-size: 0.75rem; vertical-align: middle; margin-left: 6px; }
+
+/* ---------- dashboard app shell ---------- */
+.dash-shell { display: flex; min-height: 100vh; background: #f5f6f4; }
+.dash-side { width: 232px; flex: none; background: #0e2f20; color: #dfeee5; display: flex; flex-direction: column; padding: 22px 16px; position: sticky; top: 0; height: 100vh; }
+.dash-logo { font-family: var(--display); font-weight: 800; font-size: 1.05rem; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 9px; margin-bottom: 28px; }
+.dash-logo em { font-style: normal; color: #7fd6a4; }
+.dash-nav { display: flex; flex-direction: column; gap: 4px; }
+.dash-nav a { color: #cfe4d8; text-decoration: none; font-size: 0.9rem; padding: 9px 12px; border-radius: 9px; display: flex; align-items: center; gap: 10px; }
+.dash-nav a:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.dash-nav a.active { background: #1e7a4c; color: #fff; font-weight: 600; }
+.dash-nav .ic { width: 18px; text-align: center; font-size: 0.85rem; opacity: 0.9; }
+.dash-user { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 14px; font-size: 0.78rem; }
+.dash-user-name { display: block; font-weight: 700; color: #fff; }
+.dash-user-mail { display: block; color: #a9c6b6; overflow: hidden; text-overflow: ellipsis; }
+.dash-user-role { display: block; color: #7fd6a4; font-size: 0.7rem; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 3px; }
+.dash-signout { display: inline-block; margin-top: 10px; color: #cfe4d8; text-decoration: underline; font-size: 0.78rem; }
+.dash-main { flex: 1; min-width: 0; padding: 34px 40px 70px; }
+.dash-page { max-width: 980px; }
+.dash-page h1 { font-family: var(--display); font-weight: 800; font-size: 1.55rem; letter-spacing: -0.02em; margin: 2px 0 4px; }
+.dash-page .sub { color: var(--ink-soft); margin-bottom: 22px; font-size: 0.92rem; }
+.dash-page .stat-strip { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0 0 18px; }
+.dash-page .stat { text-align: left; padding: 14px 16px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.dash-page .stat-value { font-size: 1.6rem; line-height: 1; }
+.dash-page .stat-label { margin-top: 0; }
+.dash-page .stat-sub { width: 100%; }
+.dash-page .overview-line { margin: 0 0 22px; }
+
+/* panel + aligned row columns */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 24px; }
+.panel .sub-row { border: none; border-radius: 0; margin: 0; }
+.panel .sub-row + .sub-row { border-top: 1px solid var(--line); }
+.panel .sub-row.open { box-shadow: none; background: #fbfcfa; }
+.sub-row-head { display: grid; grid-template-columns: minmax(200px, 1fr) 230px 170px 190px 18px; align-items: center; gap: 12px; }
+.sub-row-id { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); margin-left: 8px; font-weight: 400; }
+.col-stage, .col-origin { display: flex; }
+.col-renew { white-space: nowrap; }
+.sub-row-body { border-top: 1px dashed var(--line); margin-top: 0; padding-top: 12px; }
+@media (max-width: 900px) {
+  .dash-shell { flex-direction: column; }
+  .dash-side { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; gap: 12px; padding: 12px 16px; overflow-x: auto; }
+  .dash-logo { margin-bottom: 0; }
+  .dash-nav { flex-direction: row; }
+  .dash-user { margin-top: 0; border-top: none; padding-top: 0; margin-left: auto; }
+  .dash-user-mail, .dash-user-role { display: none; }
+  .dash-main { padding: 22px 16px 60px; }
+  .sub-row-head { grid-template-columns: 1fr auto 18px; }
+  .col-renew, .col-origin { display: none; }
+}

@@ -1,4 +1,5 @@
-import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
+import DashShell from './components/DashShell.jsx'
 import Home from './pages/Home.jsx'
 import Product from './pages/Product.jsx'
 import Order from './pages/Order.jsx'
@@ -118,10 +119,12 @@ export function RenewalLoop() {
   )
 }
 
-export default function App() {
+function Chrome() {
+  const { pathname } = useLocation()
+  const inDash = pathname.startsWith('/dashboard')
   return (
-    <AuthProvider>
-      <Header />
+    <>
+      {!inDash && <Header />}
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -130,12 +133,20 @@ export default function App() {
           <Route path="/status" element={<Status />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Navigate to="/login" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/servers" element={<Servers />} />
-          <Route path="/dashboard/customers" element={<Customers />} />
+          <Route path="/dashboard" element={<DashShell><Dashboard /></DashShell>} />
+          <Route path="/dashboard/servers" element={<DashShell><Servers /></DashShell>} />
+          <Route path="/dashboard/customers" element={<DashShell><Customers /></DashShell>} />
         </Routes>
       </main>
-      <Footer />
+      {!inDash && <Footer />}
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Chrome />
     </AuthProvider>
   )
 }

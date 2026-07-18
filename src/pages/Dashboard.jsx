@@ -128,10 +128,13 @@ export function SubRow({ order, isReseller, open, onToggle, children }) {
   return (
     <div className={'sub-row' + (open ? ' open' : '') + (d.activated ? ' activated' : '')}>
       <button type="button" className="sub-row-head" onClick={onToggle} aria-expanded={open}>
-        <span className="sub-row-name">{order.product_name}</span>
-        <StagePill d={d} />
-        {d.renewal && <span className="sub-row-meta">renews {fmtDate(d.renewal)}</span>}
-        <OriginBadge order={order} isReseller={isReseller} />
+        <span className="sub-row-name">
+          {order.product_name}
+          <span className="sub-row-id">#{order.gogetssl_order_id}</span>
+        </span>
+        <span className="col-stage"><StagePill d={d} /></span>
+        <span className="col-renew sub-row-meta">{d.renewal ? `renews ${fmtDate(d.renewal)}` : '—'}</span>
+        <span className="col-origin"><OriginBadge order={order} isReseller={isReseller} /></span>
         <span className="chev" aria-hidden="true">{open ? '▾' : '▸'}</span>
       </button>
       {open && <div className="sub-row-body">{children}</div>}
@@ -304,7 +307,7 @@ function CustomerDashboard({ session, profile }) {
   }, [orders])
 
   return (
-    <div className="form-page wide">
+    <div className="dash-page">
       <span className="eyebrow">Dashboard</span>
       <h1>Your plans{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}</h1>
       <p className="sub">
@@ -337,6 +340,7 @@ function CustomerDashboard({ session, profile }) {
       {pending.length > 0 && (
         <>
           <h2 className="section-h">Needs activation <span className="count">{pending.length}</span></h2>
+          <div className="panel">
           {pending.map((o) => (
             <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
               onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
@@ -344,17 +348,20 @@ function CustomerDashboard({ session, profile }) {
                 onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id} />
             </SubRow>
           ))}
+          </div>
         </>
       )}
       {active.length > 0 && (
         <>
           <h2 className="section-h">Active &amp; automated <span className="count">{active.length}</span></h2>
+          <div className="panel">
           {active.map((o) => (
             <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
               onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
               <PlanCard order={o} isReseller={false} servers={servers} noHead onAssignServer={assignServer} />
             </SubRow>
           ))}
+          </div>
         </>
       )}
     </div>
@@ -449,7 +456,7 @@ function ResellerDashboard({ session, profile }) {
   const assigned = subOrders.filter((o) => o.assigned_by === session.user.id)
 
   return (
-    <div className="form-page wide">
+    <div className="dash-page">
       <span className="eyebrow">Reseller dashboard</span>
       <h1>Your business{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}</h1>
       <p className="sub">
@@ -478,6 +485,7 @@ function ResellerDashboard({ session, profile }) {
           No unassigned plans. <Link to="/#plans" style={{ textDecoration: 'underline' }}>Buy a plan</Link> to stock inventory.
         </div>
       )}
+      <div className="panel">
       {inventory.map((o) => (
         <SubRow key={o.id} order={o} isReseller open={!!open[o.id]}
           onToggle={() => setOpen((x) => ({ ...x, [o.id]: !x[o.id] }))}>
@@ -500,6 +508,7 @@ function ResellerDashboard({ session, profile }) {
         </PlanCard>
         </SubRow>
       ))}
+      </div>
 
       {assigned.length > 0 && (
         <>
