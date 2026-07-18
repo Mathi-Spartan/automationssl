@@ -845,6 +845,67 @@ function CaasInline({ order, onChanged }) {
   )
 }
 
+/* ── Export dropdown ── */
+function ExportDropdown({ rows, custLabel, inclCust, custName }) {
+  const [open, setOpen] = React.useState(false)
+  const [from, setFrom] = React.useState('')
+  const [to, setTo] = React.useState('')
+  const ref = React.useRef(null)
+  React.useEffect(() => {
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+  function run(label, fromDate, toDate) {
+    const filtered = fromDate ? rows.filter(o => {
+      const d = new Date(o.created_at)
+      return d >= fromDate && d <= toDate
+    }) : rows
+    if (!filtered.length) { alert('No orders in this date range.'); return }
+    buildXLSX(ordersToRows(filtered, inclCust, custName), `orders-${custLabel}-${label}.xlsx`, 'Orders')
+    setOpen(false)
+  }
+  const presets = [
+    ['Today', 0], ['Last 7 days', 7], ['Last 30 days', 30],
+    ['Last 90 days', 90], ['Last 6 months', 180], ['Last 12 months', 365],
+  ]
+  return (
+    <div className="export-wrap" ref={ref}>
+      <button type="button" className="clm-export-btn" onClick={() => setOpen(o => !o)}>
+        <i className="ti ti-file-spreadsheet" style={{fontSize:13,verticalAlign:-1,marginRight:4}} aria-hidden="true"/>
+        Export <i className="ti ti-chevron-down" style={{fontSize:11,verticalAlign:-1,marginLeft:2}} aria-hidden="true"/>
+      </button>
+      {open && (
+        <div className="export-panel">
+          <div className="export-panel-head">Quick range</div>
+          {presets.map(([label, days]) => (
+            <button key={label} type="button" className="export-preset" onClick={() => {
+              const t = new Date(); t.setHours(23,59,59,999)
+              const f = new Date(); f.setDate(f.getDate() - (days === 0 ? 0 : days)); f.setHours(0,0,0,0)
+              run(label.toLowerCase().replace(/\s+/g,'-'), f, t)
+            }}>{label}</button>
+          ))}
+          <button type="button" className="export-preset" onClick={() => run('all', null, null)}>All time</button>
+          <div className="export-divider"/>
+          <div className="export-panel-head">Custom range</div>
+          <div className="export-custom">
+            <input type="date" value={from} onChange={e => setFrom(e.target.value)}/>
+            <span style={{color:'#9aa3b5',fontSize:12}}>to</span>
+            <input type="date" value={to} onChange={e => setTo(e.target.value)}/>
+            <button type="button" className="btn primary" style={{fontSize:'0.75rem',padding:'5px 10px'}}
+              disabled={!from||!to} onClick={() => {
+                const f=new Date(from); f.setHours(0,0,0,0)
+                const t=new Date(to); t.setHours(23,59,59,999)
+                if(f>t){alert('Start must be before end date.');return}
+                run(`${from}-to-${to}`, f, t)
+              }}>Export</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---------- reseller view ----------
 
 function ResellerDashboard({ session, profile }) {
@@ -1284,19 +1345,12 @@ function ResellerDashboard({ session, profile }) {
                   </Link>
                 </div>
               )}
-              {visibleRows.length > 0 && (
-                <a href="#" className="clm-export-btn" onClick={e => {
-                  e.preventDefault()
-                  const custLabel = selCustomer === '__all__' ? 'all' : selCustomer === '__mine__' ? 'inventory' : (subs.find(c=>c.id===selCustomer)?.full_name||'customer').replace(/\s+/g,'-').toLowerCase()
-                  const filename = `orders-${custLabel}.xlsx`
-                  const inclCust = selCustomer === '__all__'
-                  const custName = selCustomer !== '__all__' && selCustomer !== '__mine__' ? (subs.find(c=>c.id===selCustomer)?.full_name||null) : null
-                  buildXLSX(ordersToRows(visibleRows, inclCust, custName), filename, 'Orders')
-                }}>
-                  <i className="ti ti-file-spreadsheet" style={{fontSize:13,verticalAlign:-1,marginRight:4}} aria-hidden="true"/>
-                  Export Excel
-                </a>
-              )}
+              {visibleRows.length > 0 && (() => {
+                const custLabel = selCustomer === '__all__' ? 'all' : selCustomer === '__mine__' ? 'inventory' : (subs.find(c=>c.id===selCustomer)?.full_name||'customer').replace(/\s+/g,'-').toLowerCase()
+                const inclCust = selCustomer === '__all__'
+                const custName = selCustomer !== '__all__' && selCustomer !== '__mine__' ? (subs.find(c=>c.id===selCustomer)?.full_name||null) : null
+                return <ExportDropdown rows={visibleRows} custLabel={custLabel} inclCust={inclCust} custName={custName}/>
+              })()}
             </div>
           </div>
 

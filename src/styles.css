@@ -1599,3 +1599,13 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .rd-cancel-icon { color: #c0392b; opacity: .6; transition: opacity .12s; }
 .rd-cancel-icon:hover { opacity: 1; }
 .rd-tbl-footer { display: flex; justify-content: space-between; padding: 8px 14px; font-size: 0.75rem; color: var(--ink-soft); background: #f8f9fc; border-top: 0.5px solid var(--line); }
+
+/* ── Export dropdown ── */
+.export-wrap { position: relative; display: inline-block; }
+.export-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px; min-width: 210px; box-shadow: 0 4px 16px rgba(10,37,64,.10); }
+.export-panel-head { font-size: 0.67rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #9aa3b5; padding: 5px 8px 3px; }
+.export-preset { display: block; width: 100%; text-align: left; background: none; border: none; font: inherit; font-size: 0.82rem; color: #0a2540; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.export-preset:hover { background: #eef4fb; color: #3375b1; }
+.export-divider { height: 0.5px; background: var(--line); margin: 6px 4px; }
+.export-custom { display: flex; align-items: center; gap: 6px; padding: 6px 8px; flex-wrap: wrap; }
+.export-custom input[type="date"] { flex: 1; min-width: 110px; font-size: 0.78rem; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-family: inherit; color: #0a2540; }
