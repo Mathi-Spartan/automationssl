@@ -848,7 +848,7 @@ function ResellerDashboard({ session, profile }) {
     const [o, so, p, s, ss, sd] = await Promise.all([
       supabase.from('orders').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
       supabase.from('orders').select('*').neq('user_id', uid).order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, full_name').eq('parent_reseller_id', uid).order('created_at'),
+      supabase.from('profiles').select('id, full_name, customer_code').eq('parent_reseller_id', uid).order('created_at'),
       supabase.from('servers').select('id, name, environment').eq('owner_id', uid).order('name'),
       supabase.from('servers').select('id, owner_id').neq('owner_id', uid),
       supabase.from('tracked_domains').select('id, owner_id').neq('owner_id', uid),
@@ -976,6 +976,7 @@ function ResellerDashboard({ session, profile }) {
       return {
         id: c.id,
         label: c.full_name || 'Customer',
+        code: c.customer_code || null,
         initials: initialsOf(c.full_name),
         count: theirs.length,
         pending: pendingOrders.length,
@@ -1134,7 +1135,7 @@ function ResellerDashboard({ session, profile }) {
             ))}
             <div className="rd-cust-section">Customers · {subs.length}</div>
             {custList.filter(c => c.id !== '__all__' && c.id !== '__mine__')
-              .filter(c => !custSearch || c.label.toLowerCase().includes(custSearch.toLowerCase()))
+              .filter(c => !custSearch || c.label.toLowerCase().includes(custSearch.toLowerCase()) || (c.code || '').toLowerCase().includes(custSearch.toLowerCase()))
               .map(c => {
                 const tone = c.count === 0 ? 'none' : c.pending > 0 ? 'warn' : 'ok'
                 const sub = c.count === 0 ? 'no plans yet'
@@ -1160,7 +1161,7 @@ function ResellerDashboard({ session, profile }) {
         <div className="rd-main">
           <div className="rd-main-head">
             <div>
-              <div className="rd-main-title">{selInfo?.label || 'Subscriptions'}</div>
+              <div className="rd-main-title">{selInfo?.label || 'Subscriptions'}{selInfo?.code && <span className="cust-code">{selInfo.code}</span>}</div>
               <div className="rd-main-sub">{selInfo?.count ?? 0} subscription{selInfo?.count!==1?'s':''}{selInfo?.pending>0 ? ` · ${selInfo.pending} need action` : ''}</div>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>

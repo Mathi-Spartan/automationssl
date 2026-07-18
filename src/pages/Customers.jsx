@@ -14,10 +14,11 @@ export default function Customers() {
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [search, setSearch] = useState('')
 
   async function reload() {
     const [p, o] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, created_at').eq('parent_reseller_id', session.user.id).order('created_at'),
+      supabase.from('profiles').select('id, full_name, created_at, customer_code').eq('parent_reseller_id', session.user.id).order('created_at'),
       supabase.from('orders').select('id, user_id, product_name, product_id, api_response, assigned_at, status').neq('user_id', session.user.id),
     ])
     setSubs(p.data || [])
@@ -111,8 +112,22 @@ export default function Customers() {
         </div>
       )}
 
+      {subs && subs.length > 0 && (
+        <div className="cust-search">
+          <i className="ti ti-search" aria-hidden="true"/>
+          <input type="text" placeholder="Search by name or ID (e.g. AS-1001)" value={search}
+            onChange={e => setSearch(e.target.value)} aria-label="Search customers"/>
+        </div>
+      )}
+
       <Stagger className="cust-list" step={70}>
-        {(subs || []).map(c => {
+        {(subs || [])
+          .filter(c => {
+            if (!search.trim()) return true
+            const q = search.trim().toLowerCase()
+            return (c.full_name || '').toLowerCase().includes(q) || (c.customer_code || '').toLowerCase().includes(q)
+          })
+          .map(c => {
           const co = orders.filter(o => o.user_id === c.id)
           const activated = co.filter(o => deliverables(o).activated).length
           const pending = co.length - activated
@@ -123,7 +138,7 @@ export default function Customers() {
               <div className="cust-row-left">
                 <div className="cust-avatar">{(c.full_name || '?')[0].toUpperCase()}</div>
                 <div>
-                  <div className="cust-name">{c.full_name || 'Unnamed customer'}</div>
+                  <div className="cust-name">{c.full_name || 'Unnamed customer'}{c.customer_code && <span className="cust-code">{c.customer_code}</span>}</div>
                   <div className="cust-meta">Joined {joined}</div>
                 </div>
               </div>

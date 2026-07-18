@@ -1551,3 +1551,10 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .dash-head-buy { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; padding-bottom: 4px; }
 .dash-head-buy .btn { text-decoration: none; display: inline-flex; align-items: center; }
 .dash-head-hint { font-size: 0.68rem; color: #9aa3b5; }
+
+/* ── customer code + customers search ── */
+.cust-code { font-family: var(--mono); font-size: 0.68rem; font-weight: 500; color: #3375b1; background: #e8f2ff; border-radius: 5px; padding: 1px 7px; margin-left: 8px; vertical-align: 1px; white-space: nowrap; }
+.cust-search { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding: 8px 12px; background: #fff; border: 1px solid #dde5ef; border-radius: 10px; color: #9aa3b5; max-width: 380px; }
+.cust-search .ti { font-size: 14px; flex-shrink: 0; }
+.cust-search input { flex: 1; min-width: 0; border: none; background: none; outline: none; font: inherit; font-size: 0.85rem; color: #0a2540; padding: 0; }
+.cust-search input::placeholder { color: #9aa3b5; }
