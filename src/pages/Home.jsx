@@ -205,6 +205,18 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------- plans ---------- */}
+      <section className="block alt" id="plans">
+        <div className="wrap">
+          <div className="section-head">
+            <span className="eyebrow">Plans</span>
+            <h2>Five automation plans. One outcome: always valid.</h2>
+            <p>Pick the CA brand and coverage that fits your stack. Every plan includes full lifecycle automation.</p>
+          </div>
+          <PlansTable />
+        </div>
+      </section>
+
       {/* ---------- why now: 47-day narrative ---------- */}
       <section className="block" id="why">
         <div className="wrap">
@@ -233,18 +245,6 @@ export default function Home() {
               <p>Built-in monitoring watches every renewal. If anything needs attention, you hear about it before your visitors ever could.</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ---------- plans ---------- */}
-      <section className="block alt" id="plans">
-        <div className="wrap">
-          <div className="section-head">
-            <span className="eyebrow">Plans</span>
-            <h2>Five automation plans. One outcome: always valid.</h2>
-            <p>Pick the CA brand and coverage that fits your stack. Every plan includes full lifecycle automation.</p>
-          </div>
-          <PlansTable />
         </div>
       </section>
 
