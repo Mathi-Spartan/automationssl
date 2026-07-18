@@ -59,8 +59,9 @@ export default async function handler(req, res) {
     // ACME EAB credentials (Sectigo CaaS)
     const acme = {}
     const scan = (obj) => {
+      if (Array.isArray(obj)) return obj.forEach(scan)
       for (const [k, v] of Object.entries(obj || {})) {
-        if (v && typeof v === 'object' && !Array.isArray(v)) scan(v)
+        if (v && typeof v === 'object') scan(v)
         else if (/eab|server_url|acme_account|directory/i.test(k) && v) acme[k] = v
       }
     }
