@@ -381,37 +381,29 @@ function usePendingPoll(orders, reload) {
 function CustomerDashboard({ session, profile }) {
   const [orders, setOrders] = useState(null)
   const [servers, setServers] = useState([])
-  const [domains, setDomains] = useState([])
   const [checking, setChecking] = useState(null)
   const [err, setErr] = useState(null)
-  const [open, setOpen] = useState({})
-  const autoOpened = useRef(false)
+  const [open, setOpen] = useState(null)   // order.id or null
+  const [tab, setTab] = useState('all')    // all | action | automated | expiring
+  const [search, setSearch] = useState('')
+  const [sortCol, setSortCol] = useState('renewal')
+  const [sortDir, setSortDir] = useState('asc')
+  const [page, setPage] = useState(0)
+  const PAGE = 25
 
   const load = useCallback(async () => {
-    const [o, s, d] = await Promise.all([
+    const [o, s] = await Promise.all([
       supabase.from('orders').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
       supabase.from('servers').select('id, name, environment').eq('owner_id', session.user.id).order('name'),
-      supabase.from('tracked_domains').select('id').eq('owner_id', session.user.id),
     ])
     setOrders(o.data || [])
     setServers(s.data || [])
-    setDomains(d.data || [])
     setErr(o.error?.message || null)
     return o.data || []
   }, [session.user.id])
 
-  useEffect(() => {
-    load().then(async (data) => {
-      if (await refreshPending(data)) load()
-    })
-  }, [load])
-
+  useEffect(() => { load().then(async (data) => { if (await refreshPending(data)) load() }) }, [load])
   const celebrate = usePendingPoll(orders, load)
-
-  async function assignServer(orderId, serverId) {
-    const { error } = await supabase.from('orders').update({ server_id: serverId || null }).eq('id', orderId)
-    if (!error) setOrders((os) => os.map((o) => (o.id === orderId ? { ...o, server_id: serverId || null } : o)))
-  }
 
   async function checkNow(order) {
     setChecking(order.id)
@@ -420,75 +412,251 @@ function CustomerDashboard({ session, profile }) {
     setChecking(null)
   }
 
-  const pending = (orders || []).filter((o) => !deliverables(o).activated)
-  const active = (orders || []).filter((o) => deliverables(o).activated)
-  const renewals = (orders || []).map((o) => deliverables(o).renewal).filter(Boolean).sort()
-  const securedDomains = (orders || []).reduce((n, o) => n + deliverables(o).vendorDomains.length, 0)
+  const all = orders || []
+  const pending = all.filter((o) => !deliverables(o).activated)
+  const active  = all.filter((o) =>  deliverables(o).activated)
+  const expiring = all.filter((o) => { const d = deliverables(o); if (!d.renewal) return false; return daysUntil(d.renewal) <= 60 })
+  const securedDomains = all.reduce((n, o) => n + deliverables(o).vendorDomains.length, 0)
+  const renewals = all.map((o) => deliverables(o).renewal).filter(Boolean).sort()
 
-  useEffect(() => {
-    if (!autoOpened.current && orders && pending.length === 1) {
-      autoOpened.current = true
-      setOpen({ [pending[0].id]: true })
+  const tabs = [
+    { id: 'all',       label: 'All',          count: all.length },
+    { id: 'action',    label: 'Needs action', count: pending.length },
+    { id: 'automated', label: 'Automated',    count: active.length },
+    { id: 'expiring',  label: 'Expiring soon',count: expiring.length },
+  ]
+
+  const caLabels = { 300: 'Sectigo', 400: 'RapidSSL', 401: 'RapidSSL', 402: 'GeoTrust', 403: 'GeoTrust' }
+  const caColors = { 300: '#b8001a', 400: '#1a6bb5', 401: '#1a6bb5', 402: '#c26a00', 403: '#c26a00' }
+
+  function filterRows(list) {
+    let rows = tab === 'action' ? pending : tab === 'automated' ? active : tab === 'expiring' ? expiring : list
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      rows = rows.filter((o) => {
+        const d = deliverables(o)
+        return o.product_name?.toLowerCase().includes(q) ||
+          String(o.gogetssl_order_id).includes(q) ||
+          d.vendorDomains.some((dom) => (typeof dom === 'string' ? dom : dom?.name || '').toLowerCase().includes(q)) ||
+          (caLabels[o.product_id] || '').toLowerCase().includes(q)
+      })
     }
-  }, [orders])
+    rows = [...rows].sort((a, b) => {
+      const da = deliverables(a), db = deliverables(b)
+      let va, vb
+      if (sortCol === 'renewal') { va = da.renewal || 'zzz'; vb = db.renewal || 'zzz' }
+      else if (sortCol === 'name') { va = a.product_name || ''; vb = b.product_name || '' }
+      else if (sortCol === 'ca') { va = caLabels[a.product_id] || ''; vb = caLabels[b.product_id] || '' }
+      else if (sortCol === 'status') { va = da.activated ? 'z' : 'a'; vb = db.activated ? 'z' : 'a' }
+      else { va = vb = '' }
+      return sortDir === 'asc' ? (va < vb ? -1 : va > vb ? 1 : 0) : (va > vb ? -1 : va < vb ? 1 : 0)
+    })
+    return rows
+  }
+
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir((d) => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+    setPage(0)
+  }
+
+  const filtered = filterRows(all)
+  const pageRows = filtered.slice(page * PAGE, (page + 1) * PAGE)
+  const totalPages = Math.ceil(filtered.length / PAGE)
+  const SortIcon = ({ col }) => <span style={{ fontSize: 9, color: sortCol === col ? '#3375b1' : '#c4cdd6', marginLeft: 3 }}>{sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
+
+  function openRow(o) {
+    if (open === o.id) { setOpen(null); return }
+    setOpen(o.id)
+    refreshOrders([o]).then((r) => r && load())
+  }
 
   return (
     <div className="dash-page">
-      <span className="eyebrow">Dashboard</span>
-      <h1>Your plans{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}</h1>
-      <p className="sub">
-        Activate automation, check renewals, and tag each plan to the server it runs on.{' '}
-        <Link to="/dashboard/servers" style={{ textDecoration: 'underline' }}>Manage servers</Link>
-      </p>
+      <span className="eyebrow">Certificate lifecycle manager</span>
+      <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s certificates` : 'My certificates'}</h1>
 
-      <Stats items={[
-        ['Needs attention', orders ? pending.length : '…', pending.length ? 'activate below' : 'all clear'],
-        ['Automated', orders ? active.length : '…', active.length ? 'renewing automatically' : null],
-        ['Servers', servers.length, securedDomains ? `${securedDomains} domain${securedDomains === 1 ? '' : 's'} secured` : null],
-      ]} />
-      {orders && orders.length > 0 && (
-        <p className="overview-line">
-          {orders.length} plan{orders.length === 1 ? '' : 's'}
-          {securedDomains > 0 && <> securing {securedDomains} domain{securedDomains === 1 ? '' : 's'}</>}
-          {servers.length > 0 && <> across {servers.length} server{servers.length === 1 ? '' : 's'}</>}
-          {renewals[0] && <> · earliest renewal <b>{fmtDate(renewals[0])}</b> — handled automatically once activated</>}.
-        </p>
-      )}
+      {/* KPI strip */}
+      <div className="clm-kpi-strip">
+        <div className={'clm-kpi' + (pending.length > 0 ? ' clm-kpi-warn' : '')}>
+          <i className="ti ti-alert-circle clm-kpi-icon" aria-hidden="true" />
+          <div>
+            <div className="clm-kpi-num">{orders ? pending.length : '…'}</div>
+            <div className="clm-kpi-label">Needs action</div>
+          </div>
+        </div>
+        <div className="clm-kpi clm-kpi-ok">
+          <i className="ti ti-shield-check clm-kpi-icon" aria-hidden="true" />
+          <div>
+            <div className="clm-kpi-num">{orders ? active.length : '…'}</div>
+            <div className="clm-kpi-label">Automated</div>
+          </div>
+        </div>
+        <div className="clm-kpi">
+          <i className="ti ti-world clm-kpi-icon" aria-hidden="true" />
+          <div>
+            <div className="clm-kpi-num">{securedDomains}</div>
+            <div className="clm-kpi-label">Domains secured</div>
+          </div>
+        </div>
+        <div className="clm-kpi">
+          <i className="ti ti-calendar clm-kpi-icon" aria-hidden="true" />
+          <div>
+            <div className="clm-kpi-num" style={{ fontSize: '1rem' }}>{renewals[0] ? fmtDate(renewals[0]) : '—'}</div>
+            <div className="clm-kpi-label">Earliest renewal</div>
+          </div>
+        </div>
+        <div className="clm-kpi" style={{ marginLeft: 'auto' }}>
+          <Link to="/#plans" className="btn primary" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>+ Buy plans</Link>
+        </div>
+      </div>
 
       {celebrate && <div className="alert ok celebrate">{celebrate}</div>}
       {err && <div className="alert error">{err}</div>}
-      {orders && orders.length === 0 && (
-        <div className="alert ok">
-          No plans yet. <Link to="/#plans" style={{ textDecoration: 'underline' }}>Choose a plan</Link> — everything is free during the testing phase.
-        </div>
-      )}
 
-      {pending.length > 0 && (
-        <>
-          <h2 className="section-h">Needs activation <span className="count">{pending.length}</span></h2>
-          <div className="panel">
-          {pending.map((o) => (
-            <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
-              onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
-              <PlanCard order={o} isReseller={false} servers={servers} noHead
-                onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id} />
-            </SubRow>
-          ))}
+      {orders && orders.length === 0 ? (
+        <div className="clm-empty">
+          <i className="ti ti-certificate" style={{ fontSize: 32, color: '#b4dffc' }} aria-hidden="true" />
+          <h3>No certificates yet</h3>
+          <p>Purchase a plan and your certificates appear here — ready to activate automation.</p>
+          <Link to="/#plans" className="btn primary">Browse plans →</Link>
+        </div>
+      ) : (
+        <div className="clm-table-wrap">
+          {/* toolbar */}
+          <div className="clm-toolbar">
+            <div className="clm-search-wrap">
+              <i className="ti ti-search clm-search-icon" aria-hidden="true" />
+              <input
+                className="clm-search"
+                placeholder="Search domain, order #, CA…"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(0) }}
+              />
+            </div>
+            <a href="#" className="clm-export-btn" onClick={(e) => e.preventDefault()}>Export CSV</a>
           </div>
-        </>
-      )}
-      {active.length > 0 && (
-        <>
-          <h2 className="section-h">Active &amp; automated <span className="count">{active.length}</span></h2>
-          <div className="panel">
-          {active.map((o) => (
-            <SubRow key={o.id} order={o} isReseller={false} open={!!open[o.id]}
-              onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
-              <PlanCard order={o} isReseller={false} servers={servers} noHead onAssignServer={assignServer} />
-            </SubRow>
-          ))}
+
+          {/* tab strip */}
+          <div className="clm-tabs">
+            {tabs.map((t) => (
+              <button key={t.id} type="button"
+                className={'clm-tab' + (tab === t.id ? ' on' : '') + (t.id === 'action' && t.count > 0 ? ' warn' : '')}
+                onClick={() => { setTab(t.id); setPage(0) }}>
+                {t.label}
+                <span className={'clm-tab-count' + (t.id === 'action' && t.count > 0 ? ' warn' : '')}>{t.count}</span>
+              </button>
+            ))}
           </div>
-        </>
+
+          {/* table */}
+          <table className="clm-table">
+            <colgroup>
+              <col style={{ width: '32%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '14%' }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th onClick={() => toggleSort('name')}>Certificate / Domain <SortIcon col="name" /></th>
+                <th onClick={() => toggleSort('ca')}>CA <SortIcon col="ca" /></th>
+                <th onClick={() => toggleSort('status')}>Status <SortIcon col="status" /></th>
+                <th onClick={() => toggleSort('renewal')}>Renews <SortIcon col="renewal" /></th>
+                <th>Lifecycle</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.length === 0 && (
+                <tr><td colSpan={6} className="clm-empty-row">No certificates match your search or filter.</td></tr>
+              )}
+              {pageRows.map((o) => {
+                const d = deliverables(o)
+                const days = daysUntil(d.renewal)
+                const pct = days != null ? Math.min(100, Math.max(0, Math.round((365 - days) / 365 * 100))) : 0
+                const barColor = d.activated ? '#3375b1' : days != null && days < 60 ? '#e24b4a' : '#f0a020'
+                const isOpen = open === o.id
+                const domainList = d.vendorDomains.map((x) => typeof x === 'string' ? x : x?.name || '').filter(Boolean)
+
+                return (
+                  <React.Fragment key={o.id}>
+                    <tr className={'clm-row' + (isOpen ? ' open' : '') + (d.activated ? ' ok' : '')}
+                      onClick={() => openRow(o)} style={{ cursor: 'pointer' }}>
+                      <td>
+                        <div className="clm-cert-name">{o.product_name}</div>
+                        <div className="clm-cert-meta">#{o.gogetssl_order_id}{domainList.length > 0 && <> · <span className="clm-domain">{domainList[0]}{domainList.length > 1 ? ` +${domainList.length - 1}` : ''}</span></>}</div>
+                      </td>
+                      <td>
+                        <div className="clm-ca">
+                          <span className="clm-ca-dot" style={{ background: caColors[o.product_id] || '#888' }} />
+                          {caLabels[o.product_id] || 'CA'}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={'clm-status-pill' + (d.activated ? ' ok' : ' warn')}>
+                          {d.activated ? 'Automated ✓' : <StagePill d={d} />}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="clm-renew">{d.renewal ? fmtDate(d.renewal) : '—'}</div>
+                        {days != null && <div className="clm-days">{days}d left</div>}
+                      </td>
+                      <td>
+                        <div className="clm-bar"><div className="clm-bar-fill" style={{ width: pct + '%', background: barColor }} /></div>
+                        <div className="clm-bar-label">Year 1</div>
+                      </td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        {!d.activated && (
+                          <button type="button" className="clm-action-btn"
+                            disabled={checking === o.id}
+                            onClick={() => checkNow(o)}>
+                            {checking === o.id ? 'Syncing…' : '⟳ Sync'}
+                          </button>
+                        )}
+                        {d.setupLink && (
+                          <a className="clm-action-link" href={d.setupLink} target="_blank" rel="noreferrer">Setup portal →</a>
+                        )}
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="clm-expand-row">
+                        <td colSpan={6}>
+                          <div className="clm-expand-body">
+                            <PlanCard order={o} isReseller={false} servers={servers} noHead
+                              onAssignServer={async (id, sid) => {
+                                await supabase.from('orders').update({ server_id: sid || null }).eq('id', id)
+                                load()
+                              }}
+                              onCheck={checkNow} checking={checking === o.id} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+
+          {/* pagination */}
+          {totalPages > 1 && (
+            <div className="clm-pagination">
+              <span className="clm-pg-info">
+                Showing {page * PAGE + 1}–{Math.min((page + 1) * PAGE, filtered.length)} of {filtered.length} certificates
+              </span>
+              <div className="clm-pg-btns">
+                <button type="button" className="clm-pg-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>←</button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button key={i} type="button" className={'clm-pg-btn' + (i === page ? ' on' : '')} onClick={() => setPage(i)}>{i + 1}</button>
+                ))}
+                <button type="button" className="clm-pg-btn" disabled={page === totalPages - 1} onClick={() => setPage(p => p + 1)}>→</button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
