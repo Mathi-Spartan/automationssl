@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
@@ -15,29 +15,41 @@ export function deliverables(order) {
       else if (/eab|server_url|acme_account|directory/i.test(k) && v) acme[k] = v
     }
   }
-  if (Number(order.product_id) === 300) scan(order.api_response)
-  const aiStatus = item?.autoinstall?.status || null
   const isAcme = Number(order.product_id) === 300
+  if (isAcme) scan(order.api_response)
+  const aiStatus = item?.autoinstall?.status || null
+  const vendorDomains = Array.isArray(item?.domains) ? item.domains : []
   return {
     setupLink: link,
     aiStatus,
     acme: Object.keys(acme).length ? acme : null,
     renewal: item?.subscription?.next_renewal || null,
-    // ACME plans are "activated" from our side once credentials exist;
-    // AIS plans are pending until the agent reports anything but incomplete.
+    vendorDomains,
+    agentInstalled: Boolean(item?.autoinstall?.installation_method) || (aiStatus && aiStatus !== 'incomplete'),
+    isAcme,
     activated: isAcme ? true : Boolean(aiStatus && aiStatus !== 'incomplete'),
   }
 }
 
+function daysUntil(dateStr) {
+  if (!dateStr) return null
+  const d = Math.ceil((new Date(dateStr) - Date.now()) / 86_400_000)
+  return Number.isFinite(d) ? d : null
+}
+
+function fmtDate(dateStr) {
+  try {
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
+
 async function refreshPending(orders) {
-  // Ask the backend to re-sync any AIS plan still pending (throttled server-side).
   const { data: sess } = await supabase.auth.getSession()
   const token = sess?.session?.access_token
   if (!token) return false
-  const pending = orders.filter((o) => {
-    const d = deliverables(o)
-    return !d.activated && Number(o.product_id) !== 300
-  })
+  const pending = orders.filter((o) => !deliverables(o).activated)
   if (pending.length === 0) return false
   const results = await Promise.all(
     pending.map((o) =>
@@ -45,21 +57,22 @@ async function refreshPending(orders) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ order_id: o.id }),
-      })
-        .then((r) => r.json())
-        .catch(() => null)
+      }).then((r) => r.json()).catch(() => null)
     )
   )
   return results.some((r) => r?.refreshed)
 }
 
+// ---------- UI atoms ----------
+
 function Stats({ items }) {
   return (
     <div className="stat-strip">
-      {items.map(([label, value]) => (
+      {items.map(([label, value, sub]) => (
         <div className="stat" key={label}>
           <div className="stat-value">{value}</div>
           <div className="stat-label">{label}</div>
+          {sub && <div className="stat-sub">{sub}</div>}
         </div>
       ))}
     </div>
@@ -73,31 +86,93 @@ function OriginBadge({ order, isReseller }) {
   return <span className="badge">{text}</span>
 }
 
-function PlanCard({ order, isReseller, servers, onAssignServer, children }) {
-  const d = deliverables(order)
+function Journey({ d }) {
+  const steps = d.isAcme
+    ? [
+        { label: 'Ordered', done: true },
+        { label: 'Configure ACME client', done: d.vendorDomains.length > 0 },
+        { label: 'Automated', done: d.vendorDomains.length > 0 },
+      ]
+    : [
+        { label: 'Ordered', done: true },
+        { label: 'Install agent', done: d.agentInstalled },
+        { label: 'Add your domain', done: d.vendorDomains.length > 0 },
+        { label: 'Automated', done: d.activated && d.vendorDomains.length > 0 },
+      ]
+  const current = steps.findIndex((s) => !s.done)
   return (
-    <div className="alert ok" style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'baseline' }}>
+    <div className="journey" role="list" aria-label="Activation progress">
+      {steps.map((s, i) => (
+        <div key={s.label} role="listitem"
+          className={'jstep' + (s.done ? ' done' : i === current ? ' current' : '')}>
+          <span className="jdot">{s.done ? '✓' : i + 1}</span>
+          <span className="jlabel">{s.label}</span>
+          {i < steps.length - 1 && <span className="jline" aria-hidden="true" />}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checking, children }) {
+  const d = deliverables(order)
+  const days = daysUntil(d.renewal)
+  return (
+    <div className={'plan-card' + (d.activated ? ' activated' : '')}>
+      <div className="plan-head">
         <strong>{order.product_name}</strong>
         <OriginBadge order={order} isReseller={isReseller} />
       </div>
-      <div className="kv" style={{ marginTop: 8 }}>
-        <div><b>Order ID</b> {order.gogetssl_order_id}</div>
-        <div><b>Status</b> {order.status}</div>
-        {d.renewal && <div><b>Next renewal</b> {d.renewal}</div>}
-        {d.aiStatus && <div><b>Automation setup</b> {d.aiStatus}</div>}
-      </div>
 
-      {d.setupLink && (
-        <div style={{ marginTop: 10 }}>
-          <a className="btn primary" style={{ display: 'inline-block' }} href={d.setupLink} target="_blank" rel="noreferrer">
-            {d.activated ? 'Open automation portal →' : 'Activate — open setup portal →'}
-          </a>
+      <Journey d={d} />
+
+      {d.activated ? (
+        <p className="plan-note ok-note">
+          🎉 <b>Automation is live.</b> Issuance and renewals are hands-off from here
+          {d.renewal && <> — covered until <b>{fmtDate(d.renewal)}</b>{days != null && <> ({days} days), renews automatically</>}</>}.
+        </p>
+      ) : (
+        <div className="plan-note">
+          <b>You're {d.agentInstalled ? '1 step' : 'about 5 minutes'} away.</b>
+          <ol className="checklist">
+            <li className={d.setupLink ? '' : 'muted'}>Open your personal setup portal below.</li>
+            <li className={d.agentInstalled ? 'done' : ''}>Copy the one-line install command onto your server and run it.</li>
+            <li className={d.vendorDomains.length ? 'done' : ''}>Add the domain you want secured — we'll detect it automatically.</li>
+          </ol>
         </div>
       )}
+
+      <div className="kv" style={{ marginTop: 8 }}>
+        <div><b>Order ID</b> {order.gogetssl_order_id}</div>
+        {!d.activated && d.renewal && <div><b>Plan runs until</b> {fmtDate(d.renewal)}</div>}
+      </div>
+
+      {d.vendorDomains.length > 0 && (
+        <div className="chips" style={{ marginTop: 6 }}>
+          {d.vendorDomains.map((dom) => (
+            <span className="chip lock" key={typeof dom === 'string' ? dom : JSON.stringify(dom)}>
+              🔒 {typeof dom === 'string' ? dom : dom?.name || dom?.domain || ''}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="plan-actions">
+        {d.setupLink && (
+          <a className="btn primary" href={d.setupLink} target="_blank" rel="noreferrer">
+            {d.activated ? 'Open automation portal →' : 'Activate — open setup portal →'}
+          </a>
+        )}
+        {!d.activated && !d.isAcme && onCheck && (
+          <button className="btn ghost" type="button" disabled={checking} onClick={() => onCheck(order)}>
+            {checking ? 'Checking…' : 'Check my setup'}
+          </button>
+        )}
+      </div>
+
       {d.acme && (
         <details style={{ marginTop: 10 }}>
-          <summary><strong>ACME enrollment credentials</strong></summary>
+          <summary><strong>ACME enrollment credentials</strong> — works with certbot, acme.sh, Caddy…</summary>
           <pre>{JSON.stringify(d.acme, null, 2)}</pre>
         </details>
       )}
@@ -118,12 +193,40 @@ function PlanCard({ order, isReseller, servers, onAssignServer, children }) {
   )
 }
 
+// Shared polling: while any plan is pending, re-sync every 30s (backend throttles the vendor call).
+function usePendingPoll(orders, reload) {
+  const prevPending = useRef(new Set())
+  const [celebrate, setCelebrate] = useState(null)
+
+  useEffect(() => {
+    if (!orders) return
+    const pendingIds = new Set(orders.filter((o) => !deliverables(o).activated).map((o) => o.id))
+    // celebration: something that was pending is now activated
+    const flipped = [...prevPending.current].filter((id) => !pendingIds.has(id) && orders.some((o) => o.id === id))
+    if (flipped.length > 0) {
+      const o = orders.find((x) => x.id === flipped[0])
+      setCelebrate(`${o.product_name} is now fully automated — nice work! 🎉`)
+      setTimeout(() => setCelebrate(null), 12_000)
+    }
+    prevPending.current = pendingIds
+    if (pendingIds.size === 0) return
+    const t = setInterval(async () => {
+      if (document.hidden) return
+      if (await refreshPending(orders)) reload()
+    }, 30_000)
+    return () => clearInterval(t)
+  }, [orders, reload])
+
+  return celebrate
+}
+
 // ---------- customer view ----------
 
 function CustomerDashboard({ session, profile }) {
   const [orders, setOrders] = useState(null)
   const [servers, setServers] = useState([])
   const [domains, setDomains] = useState([])
+  const [checking, setChecking] = useState(null)
   const [err, setErr] = useState(null)
 
   const load = useCallback(async () => {
@@ -145,13 +248,24 @@ function CustomerDashboard({ session, profile }) {
     })
   }, [load])
 
+  const celebrate = usePendingPoll(orders, load)
+
   async function assignServer(orderId, serverId) {
     const { error } = await supabase.from('orders').update({ server_id: serverId || null }).eq('id', orderId)
     if (!error) setOrders((os) => os.map((o) => (o.id === orderId ? { ...o, server_id: serverId || null } : o)))
   }
 
+  async function checkNow(order) {
+    setChecking(order.id)
+    await refreshPending([order])
+    await load()
+    setChecking(null)
+  }
+
   const pending = (orders || []).filter((o) => !deliverables(o).activated)
   const active = (orders || []).filter((o) => deliverables(o).activated)
+  const renewals = (orders || []).map((o) => deliverables(o).renewal).filter(Boolean).sort()
+  const securedDomains = (orders || []).reduce((n, o) => n + deliverables(o).vendorDomains.length, 0)
 
   return (
     <div className="form-page wide">
@@ -164,12 +278,21 @@ function CustomerDashboard({ session, profile }) {
 
       <Stats items={[
         ['Plans', orders?.length ?? '…'],
-        ['Pending activation', orders ? pending.length : '…'],
-        ['Activated', orders ? active.length : '…'],
+        ['Pending activation', orders ? pending.length : '…', pending.length ? 'action needed' : 'all clear'],
+        ['Activated', orders ? active.length : '…', active.length ? 'renewing automatically' : null],
         ['Servers', servers.length],
-        ['Domains', domains.length],
+        ['Domains tracked', domains.length, securedDomains ? `${securedDomains} secured` : null],
       ]} />
+      {orders && orders.length > 0 && (
+        <p className="overview-line">
+          {orders.length} plan{orders.length === 1 ? '' : 's'}
+          {securedDomains > 0 && <> securing {securedDomains} domain{securedDomains === 1 ? '' : 's'}</>}
+          {servers.length > 0 && <> across {servers.length} server{servers.length === 1 ? '' : 's'}</>}
+          {renewals[0] && <> · earliest renewal <b>{fmtDate(renewals[0])}</b> — handled automatically once activated</>}.
+        </p>
+      )}
 
+      {celebrate && <div className="alert ok celebrate">{celebrate}</div>}
       {err && <div className="alert error">{err}</div>}
       {orders && orders.length === 0 && (
         <div className="alert ok">
@@ -181,7 +304,8 @@ function CustomerDashboard({ session, profile }) {
         <>
           <h2 className="section-h">Needs activation</h2>
           {pending.map((o) => (
-            <PlanCard key={o.id} order={o} isReseller={false} servers={servers} onAssignServer={assignServer} />
+            <PlanCard key={o.id} order={o} isReseller={false} servers={servers}
+              onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id} />
           ))}
         </>
       )}
@@ -208,6 +332,7 @@ function ResellerDashboard({ session, profile }) {
   const [subDomains, setSubDomains] = useState([])
   const [assignTo, setAssignTo] = useState({})
   const [busyAssign, setBusyAssign] = useState(null)
+  const [checking, setChecking] = useState(null)
   const [err, setErr] = useState(null)
   const [notice, setNotice] = useState(null)
 
@@ -237,9 +362,19 @@ function ResellerDashboard({ session, profile }) {
     })
   }, [load])
 
+  const allOrders = own ? [...own, ...subOrders] : null
+  const celebrate = usePendingPoll(allOrders, load)
+
   async function assignServer(orderId, serverId) {
     const { error } = await supabase.from('orders').update({ server_id: serverId || null }).eq('id', orderId)
     if (!error) setOwn((os) => os.map((o) => (o.id === orderId ? { ...o, server_id: serverId || null } : o)))
+  }
+
+  async function checkNow(order) {
+    setChecking(order.id)
+    await refreshPending([order])
+    await load()
+    setChecking(null)
   }
 
   async function assign(order) {
@@ -284,14 +419,15 @@ function ResellerDashboard({ session, profile }) {
       </p>
 
       <Stats items={[
-        ['Inventory (unassigned)', own ? inventory.length : '…'],
-        ['Assigned to customers', assigned.length],
+        ['Inventory', own ? inventory.length : '…', 'unassigned'],
+        ['Assigned', assigned.length, 'to customers'],
         ['Activated by you', ownActivated.length],
         ['Customers', subs.length],
         ['Customer servers', subServers.length],
         ['Customer domains', subDomains.length],
       ]} />
 
+      {celebrate && <div className="alert ok celebrate">{celebrate}</div>}
       {err && <div className="alert error">{err}</div>}
       {notice && <div className="alert ok">{notice}</div>}
 
@@ -302,7 +438,8 @@ function ResellerDashboard({ session, profile }) {
         </div>
       )}
       {inventory.map((o) => (
-        <PlanCard key={o.id} order={o} isReseller servers={servers} onAssignServer={assignServer}>
+        <PlanCard key={o.id} order={o} isReseller servers={servers}
+          onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
           {subs.length > 0 && (
             <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <label style={{ fontSize: '0.82rem' }}><b>Assign to customer</b></label>
@@ -327,7 +464,7 @@ function ResellerDashboard({ session, profile }) {
             const co = assigned.filter((o) => o.user_id === c.id)
             if (co.length === 0) return null
             return (
-              <div className="alert ok" key={c.id} style={{ marginBottom: 14 }}>
+              <div className="plan-card" key={c.id}>
                 <strong>{c.full_name || 'Customer'}</strong>
                 <div className="kv" style={{ marginTop: 8 }}>
                   {co.map((o) => {

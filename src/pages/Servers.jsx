@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+import { deliverables } from './Dashboard.jsx'
 
 const ENVS = ['production', 'staging', 'development', 'other']
+const ENV_ICON = { production: '🟢', staging: '🟡', development: '🔵', other: '⚪️' }
 
 export default function Servers() {
   const { session, loading } = useAuth()
   const [servers, setServers] = useState(null)
   const [orders, setOrders] = useState([])
   const [domains, setDomains] = useState([])
+  const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', hostname: '', environment: 'production' })
   const [newDomain, setNewDomain] = useState({})
   const [err, setErr] = useState(null)
@@ -17,7 +20,7 @@ export default function Servers() {
   async function reload(uid) {
     const [s, o, d] = await Promise.all([
       supabase.from('servers').select('*').eq('owner_id', uid).order('created_at'),
-      supabase.from('orders').select('id, product_name, status, server_id, gogetssl_order_id').eq('user_id', uid),
+      supabase.from('orders').select('*').eq('user_id', uid),
       supabase.from('tracked_domains').select('*').eq('owner_id', uid).order('domain'),
     ])
     setServers(s.data || [])
@@ -45,13 +48,26 @@ export default function Servers() {
     if (error) setErr(error.message)
     else {
       setForm({ name: '', hostname: '', environment: 'production' })
+      setShowForm(false)
       reload(session.user.id)
     }
   }
 
   async function removeServer(id) {
-    if (!confirm('Remove this server? Plans stay, they just lose the tag.')) return
+    if (!confirm('Remove this server? Your plans and domains stay — they just lose this tag.')) return
     await supabase.from('servers').delete().eq('id', id)
+    reload(session.user.id)
+  }
+
+  async function attachPlan(serverId, orderId) {
+    if (!orderId) return
+    const { error } = await supabase.from('orders').update({ server_id: serverId }).eq('id', orderId)
+    if (error) setErr(error.message)
+    else reload(session.user.id)
+  }
+
+  async function detachPlan(orderId) {
+    await supabase.from('orders').update({ server_id: null }).eq('id', orderId)
     reload(session.user.id)
   }
 
@@ -75,81 +91,122 @@ export default function Servers() {
     reload(session.user.id)
   }
 
+  const unattached = orders.filter((o) => !o.server_id)
+
   return (
     <div className="form-page wide">
-      <span className="eyebrow">Servers</span>
-      <h1>Where your certificates live</h1>
-      <p className="sub">
-        Add your servers, attach plans to them from the{' '}
-        <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link>, and track which
-        domains run where.
-      </p>
+      <div className="page-head">
+        <div>
+          <span className="eyebrow">Servers</span>
+          <h1>Where your certificates live</h1>
+          <p className="sub">
+            One card per machine — see the plans and domains running on each at a glance.
+            Attach plans here or from the <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link>.
+          </p>
+        </div>
+        <button className="btn primary" type="button" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? 'Close' : '+ Add server'}
+        </button>
+      </div>
 
       {err && <div className="alert error">{err}</div>}
 
-      <form onSubmit={addServer} className="order-summary" style={{ marginBottom: 20 }}>
-        <div className="field-row">
-          <div className="field">
-            <label htmlFor="sname">Server name</label>
-            <input id="sname" required placeholder="web-01" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      {showForm && (
+        <form onSubmit={addServer} className="add-server-card">
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="sname">Server name</label>
+              <input id="sname" required placeholder="web-01" autoFocus value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <p className="hint">Any name you'll recognise — "web-01", "Client VPS", "Apache box".</p>
+            </div>
+            <div className="field">
+              <label htmlFor="shost">Hostname or IP <span className="opt">optional</span></label>
+              <input id="shost" placeholder="203.0.113.10" value={form.hostname}
+                onChange={(e) => setForm({ ...form, hostname: e.target.value })} />
+            </div>
+            <div className="field">
+              <label htmlFor="senv">Environment</label>
+              <select id="senv" value={form.environment} onChange={(e) => setForm({ ...form, environment: e.target.value })}>
+                {ENVS.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
           </div>
-          <div className="field">
-            <label htmlFor="shost">Hostname / IP (optional)</label>
-            <input id="shost" placeholder="203.0.113.10" value={form.hostname} onChange={(e) => setForm({ ...form, hostname: e.target.value })} />
-          </div>
-          <div className="field">
-            <label htmlFor="senv">Environment</label>
-            <select id="senv" value={form.environment} onChange={(e) => setForm({ ...form, environment: e.target.value })}>
-              {ENVS.map((v) => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
+          <button className="btn primary" type="submit">Save server</button>
+        </form>
+      )}
+
+      {servers && servers.length === 0 && !showForm && (
+        <div className="empty-state">
+          <div className="empty-icon">🖥️</div>
+          <h3>No servers yet</h3>
+          <p>Add the machines your sites run on, then attach each SSL plan to its server —
+          so you always know what's secured where.</p>
+          <button className="btn primary" type="button" onClick={() => setShowForm(true)}>+ Add your first server</button>
         </div>
-        <button className="btn primary" type="submit">Add server</button>
-      </form>
+      )}
 
-      {servers && servers.length === 0 && <div className="alert ok">No servers yet — add your first one above.</div>}
-
-      {(servers || []).map((s) => {
-        const attached = orders.filter((o) => o.server_id === s.id)
-        const doms = domains.filter((d) => d.server_id === s.id)
-        return (
-          <div className="alert ok" key={s.id} style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-              <strong>{s.name}</strong>
-              <span className="mono" style={{ fontSize: '0.78rem' }}>
-                {s.environment}{s.hostname ? ` · ${s.hostname}` : ''} · {attached.length} plan{attached.length === 1 ? '' : 's'} · {doms.length} domain{doms.length === 1 ? '' : 's'}
-              </span>
-            </div>
-
-            {attached.length > 0 && (
-              <div className="kv" style={{ marginTop: 8 }}>
-                {attached.map((o) => (
-                  <div key={o.id}><b>{o.product_name}</b> #{o.gogetssl_order_id} — {o.status}</div>
-                ))}
+      <div className="server-grid">
+        {(servers || []).map((s) => {
+          const attached = orders.filter((o) => o.server_id === s.id)
+          const doms = domains.filter((d) => d.server_id === s.id)
+          return (
+            <div className="server-card" key={s.id}>
+              <div className="server-head">
+                <div>
+                  <span className="server-name">🖥️ {s.name}</span>
+                  {s.hostname && <span className="server-host">{s.hostname}</span>}
+                </div>
+                <span className={'pill env-' + s.environment}>{ENV_ICON[s.environment]} {s.environment}</span>
               </div>
-            )}
 
-            <div style={{ marginTop: 10 }}>
-              {doms.map((d) => (
-                <span key={d.id} className="mono" style={{ display: 'inline-block', border: '1px solid var(--line)', borderRadius: 6, padding: '3px 8px', marginRight: 6, marginBottom: 6, fontSize: '0.8rem' }}>
-                  {d.domain}{' '}
-                  <button type="button" onClick={() => removeDomain(d.id)} style={{ border: 'none', background: 'none', cursor: 'pointer' }} aria-label={`Remove ${d.domain}`}>✕</button>
-                </span>
-              ))}
-              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                <input placeholder="add domain e.g. shop.example.com" value={newDomain[s.id] || ''}
-                  onChange={(e) => setNewDomain({ ...newDomain, [s.id]: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain(s.id))} />
-                <button className="btn ghost" type="button" onClick={() => addDomain(s.id)}>Add domain</button>
+              <div className="server-section">
+                <div className="server-section-title">SSL plans <span className="count">{attached.length}</span></div>
+                {attached.length === 0 && <p className="muted-line">Nothing attached yet.</p>}
+                {attached.map((o) => {
+                  const d = deliverables(o)
+                  return (
+                    <div className="server-plan" key={o.id}>
+                      <span className={'dot ' + (d.activated ? 'ok' : 'warn')} aria-hidden="true" />
+                      <span className="server-plan-name">{o.product_name} <span className="mono">#{o.gogetssl_order_id}</span></span>
+                      <span className="server-plan-state">{d.activated ? 'automated' : 'pending setup'}</span>
+                      <button type="button" className="linklike" onClick={() => detachPlan(o.id)}>detach</button>
+                    </div>
+                  )
+                })}
+                {unattached.length > 0 && (
+                  <select className="attach-select" value="" onChange={(e) => attachPlan(s.id, e.target.value)}>
+                    <option value="">+ Attach a plan…</option>
+                    {unattached.map((o) => (
+                      <option key={o.id} value={o.id}>{o.product_name} #{o.gogetssl_order_id}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-            </div>
 
-            <button className="btn ghost" type="button" style={{ marginTop: 10, fontSize: '0.8rem' }} onClick={() => removeServer(s.id)}>
-              Remove server
-            </button>
-          </div>
-        )
-      })}
+              <div className="server-section">
+                <div className="server-section-title">Domains <span className="count">{doms.length}</span></div>
+                <div className="chips">
+                  {doms.map((d) => (
+                    <span key={d.id} className="chip">
+                      {d.domain}
+                      <button type="button" onClick={() => removeDomain(d.id)} aria-label={`Remove ${d.domain}`}>✕</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="chip-add">
+                  <input placeholder="shop.example.com" value={newDomain[s.id] || ''}
+                    onChange={(e) => setNewDomain({ ...newDomain, [s.id]: e.target.value })}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain(s.id))} />
+                  <button className="btn ghost" type="button" onClick={() => addDomain(s.id)}>Add</button>
+                </div>
+              </div>
+
+              <button className="linklike danger" type="button" onClick={() => removeServer(s.id)}>Remove server</button>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
