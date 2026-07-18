@@ -80,9 +80,11 @@ function CustomerServers({ session }) {
           <h1>Your servers</h1>
           <p className="sub">Tag each certificate to the server it runs on — so you always know what is secured where.</p>
         </div>
-        <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
-          {showForm ? 'Cancel' : '+ Add server'}
-        </button>
+        {servers && servers.length > 0 && (
+          <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
+            {showForm ? 'Cancel' : '+ Add server'}
+          </button>
+        )}
       </div>
 
       <div className="srv-kpis">

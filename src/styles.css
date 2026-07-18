@@ -358,6 +358,8 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .site-header { background: #3375b1; border-bottom: 1px solid rgba(255,255,255,0.18); backdrop-filter: none; }
 .site-header .logo, .site-header .nav, .site-header .nav a { color: #eaf3fc; }
 .site-header .nav a:hover { color: #fff; }
+.site-header .nav .cta { background: #fff; color: #1a4f80 !important; font-weight: 700; padding: 7px 18px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.18); line-height: 1.4; }
+.site-header .nav .cta:hover { background: #e8f2ff; color: #1a4f80 !important; }
 .site-header .logo em { color: #b4dffc; }
 .brand-tag { font-family: var(--mono); font-size: 0.72rem; color: #b4dffc; margin-left: 12px; letter-spacing: 0.02em; }
 @media (max-width: 760px) { .brand-tag { display: none; } }

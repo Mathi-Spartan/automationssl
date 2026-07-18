@@ -35,7 +35,6 @@ export function Header() {
         <nav className="nav" aria-label="Main">
           <a href="/#plans">Plans</a>
           <a href="/#how">How it works</a>
-          <Link to="/status">Order status</Link>
           <AccountNav />
         </nav>
       </div>
