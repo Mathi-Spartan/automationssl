@@ -1088,36 +1088,35 @@ function ResellerDashboard({ session, profile }) {
                         {' '}CA status: <StatusVal value={d.activated?'activated':'pending setup'}/>
                       </p>
                       {Number(o.product_id)===300 && <CaasInline order={o} onChanged={load}/>}
-                      <button className="btn ghost" type="button" disabled={checking===o.id} onClick={()=>checkNow(o)}>
-                        {checking===o.id?'Checking…':'⟳ Re-sync from CA'}
-                      </button>
-                      <div className="cancel-row" style={{marginTop:8}}>
-                        {cancelErr && cancelling === o.id && <span className="cancel-err">{cancelErr}</span>}
+                      <div className="cust-detail-actions">
+                        <button className="btn ghost" type="button" disabled={checking===o.id} onClick={()=>checkNow(o)}>
+                          {checking===o.id?'Checking…':'⟳ Re-sync from CA'}
+                        </button>
+                        {Number(o.product_id) !== 300 && (
+                          <button className="btn ghost" type="button" onClick={async () => {
+                            const stored = o.api_response?.items?.[0]?.autoinstall?.login_sso_link
+                              || o.api_response?.items?.[0]?.autoinstall?.manage_sso_link
+                            if (stored) { window.open(stored, '_blank'); return }
+                            try {
+                              const { data } = await supabase.auth.getSession()
+                              const r = await fetch('/api/sso', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+                                body: JSON.stringify({ order_id: o.id }),
+                              })
+                              const body = await r.json()
+                              if (body.sso_link) window.open(body.sso_link, '_blank')
+                              else alert('No setup link available yet — click ⟳ Re-sync from CA first, then try again.')
+                            } catch { alert('Could not retrieve the setup link — please try Re-sync from CA.') }
+                          }}>Open setup portal ↗</button>
+                        )}
                         <button className="btn ghost danger-btn" type="button"
                           disabled={cancelling === o.id || o.status === 'cancelled'}
                           onClick={() => cancelOrder(o)}>
                           {cancelling === o.id ? 'Cancelling…' : o.status === 'cancelled' ? 'Cancelled' : 'Cancel subscription'}
                         </button>
+                        {cancelErr && cancelling === o.id && <span className="cancel-err">{cancelErr}</span>}
                       </div>
-                      {Number(o.product_id) !== 300 && (
-                        <button className="btn ghost" type="button" onClick={async () => {
-                          // Use stored link first — only call /api/sso if it's missing
-                          const stored = o.api_response?.items?.[0]?.autoinstall?.login_sso_link
-                            || o.api_response?.items?.[0]?.autoinstall?.manage_sso_link
-                          if (stored) { window.open(stored, '_blank'); return }
-                          try {
-                            const { data } = await supabase.auth.getSession()
-                            const r = await fetch('/api/sso', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
-                              body: JSON.stringify({ order_id: o.id }),
-                            })
-                            const body = await r.json()
-                            if (body.sso_link) window.open(body.sso_link, '_blank')
-                            else alert('No setup link available yet — click ⟳ Re-sync from CA first, then try again.')
-                          } catch { alert('Could not retrieve the setup link — please try Re-sync from CA.') }
-                        }}>Open setup portal ↗</button>
-                      )}
                     </div>
                   )}
                 </div>
