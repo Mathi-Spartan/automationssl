@@ -6,56 +6,21 @@ function PlansTable() {
   const regular = PRODUCTS.filter((p) => !p.featured)
   const caas = PRODUCTS.find((p) => p.featured)
   const allProducts = [...regular, caas]
-  const BrandLogo = ({ brand }) => {
-    if (brand === 'RapidSSL') return (
-      <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-        <rect width="36" height="36" rx="8" fill="#1a6bb5"/>
-        <text x="18" y="14" textAnchor="middle" fill="#fff" fontSize="7" fontWeight="700" fontFamily="Arial,sans-serif">RAPID</text>
-        <text x="18" y="23" textAnchor="middle" fill="#7ec8f7" fontSize="8.5" fontWeight="800" fontFamily="Arial,sans-serif">SSL</text>
-        <rect x="7" y="26" width="22" height="2" rx="1" fill="#7ec8f7" opacity="0.5"/>
-      </svg>
-    )
-    if (brand === 'GeoTrust') return (
-      <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-        <rect width="36" height="36" rx="8" fill="#1a1a2e"/>
-        <circle cx="18" cy="16" r="9" fill="none" stroke="#e8832a" strokeWidth="2.2"/>
-        <path d="M18 7 Q23 11 23 16 Q23 21 18 25 Q13 21 13 16 Q13 11 18 7Z" fill="#e8832a" opacity="0.25"/>
-        <line x1="18" y1="7" x2="18" y2="25" stroke="#e8832a" strokeWidth="1.2"/>
-        <line x1="9" y1="16" x2="27" y2="16" stroke="#e8832a" strokeWidth="1.2"/>
-        <text x="18" y="31" textAnchor="middle" fill="#e8832a" fontSize="5.5" fontWeight="700" fontFamily="Arial,sans-serif">GeoTrust</text>
-      </svg>
-    )
-    return (
-      <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-        <rect width="36" height="36" rx="8" fill="#c00020"/>
-        <path d="M18 6 L28 10 L28 19 Q28 26 18 30 Q8 26 8 19 L8 10 Z" fill="rgba(255,255,255,0.15)"/>
-        <path d="M18 9 L25 12.5 L25 19 Q25 24.5 18 27.5 Q11 24.5 11 19 L11 12.5 Z" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
-        <text x="18" y="22" textAnchor="middle" fill="#fff" fontSize="7.5" fontWeight="800" fontFamily="Arial,sans-serif">Sectigo</text>
-      </svg>
-    )
+
+  const meta = {
+    400: { color: '#1a6bb5', features: ['Single domain (www + apex)', 'AutoInstall agent', 'All ACME clients', 'Auto-renews · 12 mo', 'DV — issued in minutes'] },
+    401: { color: '#1a6bb5', features: ['All subdomains (*.domain)', 'AutoInstall agent', 'All ACME clients', 'Auto-renews · 12 mo', 'DV — issued in minutes'] },
+    402: { color: '#c26a00', features: ['Single domain (www + apex)', 'AutoInstall agent', 'All ACME clients', 'Auto-renews · 12 mo', 'DV — GeoTrust brand'] },
+    403: { color: '#c26a00', features: ['All subdomains (*.domain)', 'AutoInstall agent', 'All ACME clients', 'Auto-renews · 12 mo', 'DV — GeoTrust brand'] },
+    300: { color: '#b8001a', features: ['Up to 255 SANs + wildcards', 'Add domains anytime', 'All ACME clients (no agent)', 'Auto-renews · 12 mo', 'DV — Sectigo CA'] },
   }
 
-  const rows = [
-    { section: 'Coverage' },
-    { label: 'Single domain', vals: [true, true, true, true, true] },
-    { label: 'Wildcard (*.domain)', vals: [false, true, false, true, true] },
-    { label: 'Multi-domain SANs', vals: [false, false, false, false, '\u2264 255'] },
-    { label: 'Add domains anytime', vals: [false, false, false, false, 'pro-rated'] },
-    { section: 'Automation' },
-    { label: 'AutoInstall agent', vals: [true, true, true, true, false] },
-    { label: 'certbot / acme.sh', vals: [true, true, true, true, true] },
-    { label: 'Caddy \u00b7 Traefik \u00b7 cert-manager', vals: [true, true, true, true, true] },
-    { section: 'Certificate' },
-    { label: 'Validation', vals: ['DV', 'DV', 'DV', 'DV', 'DV'] },
-    { label: 'OV / EV', vals: [false, false, false, false, false] },
-    { label: 'Auto-renews', vals: [true, true, true, true, true] },
-    { label: 'Term', vals: ['12 mo', '12 mo', '12 mo', '12 mo', '12 mo'] },
-  ]
-
-  function Val({ v }) {
-    if (v === true) return <span className="tv-yes"><i className="ti ti-check" aria-hidden="true" /></span>
-    if (v === false) return <span className="tv-no"><i className="ti ti-minus" aria-hidden="true" /></span>
-    return <span className="tv-partial">{v}</span>
+  const missing = {
+    400: ['Wildcard', 'Multi-domain SANs'],
+    401: ['Multi-domain SANs'],
+    402: ['Wildcard', 'Multi-domain SANs'],
+    403: ['Multi-domain SANs'],
+    300: ['AutoInstall agent'],
   }
 
   const shortName = (p) => p.name
@@ -64,65 +29,66 @@ function PlansTable() {
     .replace(' ACME Certificate-as-a-Service', ' CaaS')
 
   return (
-    <div className="tv-outer">
-      <table className="tv-table">
-        <colgroup>
-          <col className="tv-col-label" />
-          {allProducts.map((p) => <col key={p.id} className="tv-col-prod" />)}
-        </colgroup>
-        <thead>
-          <tr>
-            <th className="tv-corner" />
-            {allProducts.map((p) => (
-              <th key={p.id} className={"tv-th" + (p.featured ? " tv-th-accent" : "")}>
-                <div className="tv-brand-logo"><BrandLogo brand={p.brand} /></div>
-                <div className="tv-prod-name">{shortName(p)}</div>
-                <div className="tv-prod-sub">{p.coverage}</div>
-                {(p.coverage.startsWith("Wildcard") || p.featured) && (
-                  <span className={"tv-badge" + (p.featured ? " tv-badge-caas" : " tv-badge-wc")}>
-                    {p.featured ? "UP TO 255 SANs" : "WILDCARD"}
-                  </span>
+    <div className="pc3-grid">
+      {allProducts.map((p) => {
+        const m = meta[p.id]
+        const isAccent = p.featured
+        return (
+          <article key={p.id} className={'pc3-card' + (isAccent ? ' pc3-card-accent' : '')}>
+            <div className="pc3-head">
+              <div className="pc3-logo" style={{ background: m.color }}>
+                {p.brand === 'RapidSSL' && (
+                  <svg viewBox="0 0 28 28" width="28" height="28"><text x="14" y="11" textAnchor="middle" fill="#fff" fontSize="5.5" fontWeight="800" fontFamily="Arial,sans-serif">RAPID</text><text x="14" y="19" textAnchor="middle" fill="#90d0f8" fontSize="7" fontWeight="800" fontFamily="Arial,sans-serif">SSL</text><rect x="5" y="21" width="18" height="1.5" rx="0.75" fill="#90d0f8" opacity="0.5"/></svg>
                 )}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, ri) => row.section ? (
-            <tr key={ri} className="tv-section-row"><td colSpan={6}>{row.section}</td></tr>
-          ) : (
-            <tr key={ri} className="tv-data-row">
-              <td className="tv-label">{row.label}</td>
-              {row.vals.map((v, ci) => (
-                <td key={ci} className={"tv-val" + (allProducts[ci] && allProducts[ci].featured ? " tv-val-accent" : "")}>
-                  <Val v={v} />
-                </td>
+                {p.brand === 'GeoTrust' && (
+                  <svg viewBox="0 0 28 28" width="28" height="28"><circle cx="14" cy="13" r="7" fill="none" stroke="#ffa040" strokeWidth="1.8"/><ellipse cx="14" cy="13" rx="3.5" ry="7" fill="none" stroke="#ffa040" strokeWidth="1.2"/><line x1="7" y1="13" x2="21" y2="13" stroke="#ffa040" strokeWidth="1.2"/><text x="14" y="25" textAnchor="middle" fill="#ffa040" fontSize="4.5" fontWeight="700" fontFamily="Arial,sans-serif">GeoTrust</text></svg>
+                )}
+                {p.brand === 'Sectigo' && (
+                  <svg viewBox="0 0 28 28" width="28" height="28"><path d="M14 4 L22 7.5 L22 15 Q22 21 14 24.5 Q6 21 6 15 L6 7.5 Z" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5"/><text x="14" y="17" textAnchor="middle" fill="#fff" fontSize="5.5" fontWeight="800" fontFamily="Arial,sans-serif">Sectigo</text></svg>
+                )}
+              </div>
+              <div className="pc3-head-text">
+                <div className="pc3-brand">{p.brand}</div>
+                <h3 className="pc3-name">{shortName(p)}</h3>
+              </div>
+              {isAccent && <span className="pc3-popular">Most flexible</span>}
+            </div>
+
+            <div className="pc3-coverage">
+              <span className="pc3-cov-label">Coverage</span>
+              <span className="pc3-cov-val">{p.coverage}</span>
+            </div>
+
+            <ul className="pc3-features">
+              {m.features.map((f) => (
+                <li key={f} className="pc3-feat-yes">
+                  <i className="ti ti-check" aria-hidden="true" />
+                  {f}
+                </li>
               ))}
-            </tr>
-          ))}
-          <tr className="tv-price-row">
-            <td className="tv-label tv-price-label">Price / year</td>
-            {allProducts.map((p) => (
-              <td key={p.id} className={"tv-val tv-price-cell" + (p.featured ? " tv-val-accent" : "")}>
-                <span className="tv-price">{p.price}</span>
-                <span className="tv-price-note">{p.priceNote}</span>
-              </td>
-            ))}
-          </tr>
-          <tr className="tv-cta-row">
-            <td className="tv-label" />
-            {allProducts.map((p) => (
-              <td key={p.id} className={"tv-val tv-cta-cell" + (p.featured ? " tv-val-accent" : "")}>
-                <Link className="tv-btn-order btn primary" to={`/order/${p.slug}`}>Order now</Link>
-                <Link className="tv-btn-det" to={`/plan/${p.slug}`}>Details</Link>
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
+              {missing[p.id].map((f) => (
+                <li key={f} className="pc3-feat-no">
+                  <i className="ti ti-minus" aria-hidden="true" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <div className="pc3-foot">
+              <div className="pc3-price-block">
+                <span className="pc3-price">{p.price}</span>
+                <span className="pc3-price-note">{p.priceNote}</span>
+              </div>
+              <Link className={'pc3-btn-order' + (isAccent ? ' pc3-btn-accent' : '')} to={`/order/${p.slug}`}>Order now</Link>
+              <Link className="pc3-btn-det" to={`/plan/${p.slug}`}>View details</Link>
+            </div>
+          </article>
+        )
+      })}
     </div>
   )
 }
+
 
 function HowItWorksFlow() {
   const [active, setActive] = React.useState('agent')
