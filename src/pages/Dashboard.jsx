@@ -1070,7 +1070,7 @@ function ResellerDashboard({ session, profile }) {
           <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>
         </div>
         <div className="dash-head-buy">
-          <Link to="/#plans" className="btn primary">
+          <Link to="/order-for/stock" className="btn primary">
             <i className="ti ti-shopping-cart" style={{fontSize:14,verticalAlign:-2,marginRight:6}} aria-hidden="true"/>
             Buy now
           </Link>

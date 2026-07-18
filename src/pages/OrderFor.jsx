@@ -16,8 +16,10 @@ export default function OrderFor() {
   const [result, setResult] = useState(null)
   const [notFound, setNotFound] = useState(false)
 
+  const isStock = customerId === 'stock'
+
   useEffect(() => {
-    if (!session?.user) return
+    if (!session?.user || isStock) return
     supabase.from('profiles').select('id, full_name, parent_reseller_id')
       .eq('id', customerId).single()
       .then(({ data }) => {
@@ -27,7 +29,7 @@ export default function OrderFor() {
           setForm(f => ({ ...f, email: '' }))
         }
       })
-  }, [session?.user?.id, customerId])
+  }, [session?.user?.id, customerId, isStock])
 
   if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
   if (!session) return <Navigate to="/login" replace state={{ from: `/order-for/${customerId}` }} />
@@ -53,7 +55,7 @@ export default function OrderFor() {
           firstname: form.firstname.trim(),
           lastname: form.lastname.trim(),
           phone: form.phone.trim(),
-          for_customer_id: customerId,
+          ...(isStock ? {} : { for_customer_id: customerId }),
         }),
       })
       const body = await res.json()
@@ -69,15 +71,15 @@ export default function OrderFor() {
           <div className="wizard-card-head">
             <span className="wizard-check">✓</span>
             <div>
-              <div className="wizard-card-title">Order placed for {customer?.full_name}</div>
-              <div className="wizard-card-sub">The plan is now active in their dashboard.</div>
+              <div className="wizard-card-title">{isStock ? 'Order placed to your stock' : `Order placed for ${customer?.full_name}`}</div>
+              <div className="wizard-card-sub">{isStock ? 'The plan is in My inventory — assign it to any customer from the dashboard.' : 'The plan is now active in their dashboard.'}</div>
             </div>
           </div>
           <div className="wizard-meta-grid">
             <div><span className="wizard-meta-label">Order ID</span><span className="wizard-meta-val mono">{result.order_id}</span></div>
             <div><span className="wizard-meta-label">Plan</span><span className="wizard-meta-val">{selectedPlan?.name}</span></div>
             <div><span className="wizard-meta-label">Domain</span><span className="wizard-meta-val">{form.domain}</span></div>
-            <div><span className="wizard-meta-label">Customer</span><span className="wizard-meta-val">{customer?.full_name}</span></div>
+            <div><span className="wizard-meta-label">{isStock ? 'Destination' : 'Customer'}</span><span className="wizard-meta-val">{isStock ? 'My inventory' : customer?.full_name}</span></div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -91,8 +93,10 @@ export default function OrderFor() {
   return (
     <div className="form-page">
       <span className="eyebrow">Reseller order</span>
-      <h1>Buy a plan for {customer?.full_name || '…'}</h1>
-      <p className="sub">This plan will be placed directly into {customer?.full_name || 'this customer'}'s account and appear in their dashboard immediately.</p>
+      <h1>{isStock ? 'Buy a plan for your stock' : `Buy a plan for ${customer?.full_name || '…'}`}</h1>
+      <p className="sub">{isStock
+        ? 'This plan will be placed into My inventory — assign it to any customer afterwards.'
+        : `This plan will be placed directly into ${customer?.full_name || 'this customer'}'s account and appear in their dashboard immediately.`}</p>
 
       {/* Plan picker */}
       {!selectedPlan ? (
@@ -145,7 +149,7 @@ export default function OrderFor() {
             </div>
             {error && <div className="alert error" role="alert"><strong>{error.message || 'Order failed.'}</strong></div>}
             <button className="btn primary" type="submit" disabled={busy} style={{ width: '100%', padding: '14px' }}>
-              {busy ? 'Placing order…' : `Place order for ${customer?.full_name || 'customer'} →`}
+              {busy ? 'Placing order…' : isStock ? 'Place order to my stock →' : `Place order for ${customer?.full_name || 'customer'} →`}
             </button>
           </form>
         </>
