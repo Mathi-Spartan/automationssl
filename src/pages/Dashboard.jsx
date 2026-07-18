@@ -532,12 +532,15 @@ function CaasDomainManager({ caasOrders, ownerName, onChanged }) {
 
   return (
     <>
-      <h2 className="section-h">Sectigo CaaS — domain management</h2>
-      <p className="sub" style={{ marginBottom: 12 }}>
-        One CaaS subscription can secure many domains. Adding a domain is billed by the CA
-        <b> pro-rated to the renewal date</b> — that's why only you, as the reseller, can do it.
-        Customers see new domains and refreshed credentials on their card automatically.
-      </p>
+      <div className="r-section-head" style={{ marginTop: 8 }}>
+        <div>
+          <h2 className="r-section-title">Sectigo CaaS — domain management</h2>
+          <p className="r-section-desc">
+            One CaaS subscription can secure many domains — billed by the CA <b>pro-rated to the renewal date</b>.
+            Only you (the reseller) can add domains. Customers see updated domains and credentials instantly.
+          </p>
+        </div>
+      </div>
       {msg && <div className="alert ok">{msg}</div>}
       {err && <div className="alert error">{err}</div>}
       <div className="panel">
@@ -662,87 +665,130 @@ function ResellerDashboard({ session, profile }) {
   return (
     <div className="dash-page">
       <span className="eyebrow">Reseller dashboard</span>
-      <h1>Your business{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}</h1>
+      <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>
       <p className="sub">
-        Buy plans from the <Link to="/#plans" style={{ textDecoration: 'underline' }}>Plans page</Link> to stock inventory —
-        then activate them yourself or assign them to a customer.{' '}
-        <Link to="/dashboard/customers" style={{ textDecoration: 'underline' }}>Customer console</Link> ·{' '}
-        <Link to="/dashboard/servers" style={{ textDecoration: 'underline' }}>Your servers</Link>
+        Stock inventory by buying from the{' '}
+        <Link to="/#plans">Plans page</Link>, then activate for yourself or assign to a customer.
       </p>
 
-      <Stats items={[
-        ['Inventory', own ? inventory.length : '…', 'unassigned'],
-        ['Assigned', assigned.length, 'to customers'],
-        ['Activated by you', ownActivated.length],
-        ['Customers', subs.length],
-        ['Customer servers', subServers.length],
-        ['Customer domains', subDomains.length],
-      ]} />
+      {/* ---- KPI strip ---- */}
+      <div className="r-kpi-strip">
+        <div className="r-kpi">
+          <span className="r-kpi-num">{own ? inventory.length : '—'}</span>
+          <span className="r-kpi-label">Inventory</span>
+          <span className="r-kpi-sub">unassigned plans</span>
+        </div>
+        <div className="r-kpi">
+          <span className="r-kpi-num">{assigned.length}</span>
+          <span className="r-kpi-label">Assigned</span>
+          <span className="r-kpi-sub">to customers</span>
+        </div>
+        <div className="r-kpi accent">
+          <span className="r-kpi-num">{ownActivated.length}</span>
+          <span className="r-kpi-label">Active on your servers</span>
+          <span className="r-kpi-sub">running automatically</span>
+        </div>
+        <div className="r-kpi">
+          <span className="r-kpi-num">{subs.length}</span>
+          <span className="r-kpi-label">Customers</span>
+          <span className="r-kpi-sub">{subServers.length} server{subServers.length !== 1 ? 's' : ''} · {subDomains.length} domain{subDomains.length !== 1 ? 's' : ''}</span>
+        </div>
+      </div>
 
       {celebrate && <div className="alert ok celebrate">{celebrate}</div>}
       {err && <div className="alert error">{err}</div>}
       {notice && <div className="alert ok">{notice}</div>}
 
-      <h2 className="section-h">Your inventory</h2>
-      {own && inventory.length === 0 && (
-        <div className="alert ok">
-          No unassigned plans. <Link to="/#plans" style={{ textDecoration: 'underline' }}>Buy a plan</Link> to stock inventory.
+      {/* ---- inventory ---- */}
+      <div className="r-section-head">
+        <div>
+          <h2 className="r-section-title">Your inventory</h2>
+          <p className="r-section-desc">Plans you've purchased — activate yourself or assign to a customer (permanent).</p>
         </div>
-      )}
-      <div className="panel">
-      {inventory.map((o) => (
-        <SubRow key={o.id} order={o} isReseller open={!!open[o.id]}
-          onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
-        <PlanCard order={o} isReseller servers={servers} noHead
-          onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
-          {subs.length > 0 && (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <label style={{ fontSize: '0.82rem' }}><b>Assign to customer</b></label>
-              <select value={assignTo[o.id] || ''} onChange={(e) => setAssignTo({ ...assignTo, [o.id]: e.target.value })}>
-                <option value="">— choose customer —</option>
-                {subs.map((c) => (
-                  <option key={c.id} value={c.id}>{c.full_name || c.id.slice(0, 8)}</option>
-                ))}
-              </select>
-              <button className="btn ghost" type="button" disabled={!assignTo[o.id] || busyAssign === o.id} onClick={() => assign(o)}>
-                {busyAssign === o.id ? 'Assigning…' : 'Assign (permanent)'}
-              </button>
-            </div>
-          )}
-        </PlanCard>
-        </SubRow>
-      ))}
+        <Link to="/#plans" className="btn primary" style={{ alignSelf: 'flex-start' }}>+ Buy plans</Link>
       </div>
 
+      {own && inventory.length === 0 ? (
+        <div className="r-empty">
+          <span className="r-empty-icon">📦</span>
+          <h3>No inventory yet</h3>
+          <p>Purchase plans to stock your reseller inventory — they'll appear here ready to activate or assign.</p>
+          <Link to="/#plans" className="btn primary">Browse plans →</Link>
+        </div>
+      ) : (
+        <div className="panel">
+          {inventory.map((o) => (
+            <SubRow key={o.id} order={o} isReseller open={!!open[o.id]}
+              onToggle={() => { const opening = !open[o.id]; setOpen((x) => ({ ...x, [o.id]: !x[o.id] })); if (opening) refreshOrders([o]).then((r) => r && load()) }}>
+              <PlanCard order={o} isReseller servers={servers} noHead
+                onAssignServer={assignServer} onCheck={checkNow} checking={checking === o.id}>
+                {subs.length > 0 && (
+                  <div className="assign-row">
+                    <span className="assign-label">Assign to customer</span>
+                    <select value={assignTo[o.id] || ''} onChange={(e) => setAssignTo({ ...assignTo, [o.id]: e.target.value })}>
+                      <option value="">— choose customer —</option>
+                      {subs.map((c) => (
+                        <option key={c.id} value={c.id}>{c.full_name || c.id.slice(0, 8)}</option>
+                      ))}
+                    </select>
+                    <button className="btn primary" type="button"
+                      disabled={!assignTo[o.id] || busyAssign === o.id}
+                      onClick={() => assign(o)}>
+                      {busyAssign === o.id ? 'Assigning…' : 'Assign permanently →'}
+                    </button>
+                    <p className="assign-warn">⚠ Assignment is permanent and cannot be undone.</p>
+                  </div>
+                )}
+              </PlanCard>
+            </SubRow>
+          ))}
+        </div>
+      )}
+
+      {/* ---- CaaS domain management ---- */}
       <CaasDomainManager
         caasOrders={[...(own || []), ...subOrders].filter((o) => Number(o.product_id) === 300)}
         ownerName={(o) => o.user_id === session.user.id ? 'your subscription' : (subs.find((c) => c.id === o.user_id)?.full_name || 'customer')}
         onChanged={load}
       />
 
+      {/* ---- assigned to customers ---- */}
       {assigned.length > 0 && (
         <>
-          <h2 className="section-h">Assigned to customers</h2>
-          {subs.map((c) => {
-            const co = assigned.filter((o) => o.user_id === c.id)
-            if (co.length === 0) return null
-            return (
-              <div className="plan-card" key={c.id}>
-                <strong>{c.full_name || 'Customer'}</strong>
-                <div className="kv" style={{ marginTop: 8 }}>
-                  {co.map((o) => {
-                    const d = deliverables(o)
-                    return (
-                      <div key={o.id}>
-                        <b>{o.product_name}</b> #{o.gogetssl_order_id} — {d.activated ? 'activated ✓' : 'waiting on customer setup'}
-                        {' '}<span className="badge">assigned — locked</span>
-                      </div>
-                    )
-                  })}
+          <div className="r-section-head">
+            <div>
+              <h2 className="r-section-title">Assigned to customers</h2>
+              <p className="r-section-desc">These subscriptions are permanently locked to the customer they were assigned to.</p>
+            </div>
+          </div>
+          <div className="panel">
+            {subs.map((c) => {
+              const co = assigned.filter((o) => o.user_id === c.id)
+              if (co.length === 0) return null
+              return (
+                <div className="assigned-customer-row" key={c.id}>
+                  <div className="assigned-customer-head">
+                    <span className="assigned-customer-name">👤 {c.full_name || 'Customer'}</span>
+                    <span className="assigned-count">{co.length} plan{co.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="assigned-plans">
+                    {co.map((o) => {
+                      const d = deliverables(o)
+                      return (
+                        <div className="assigned-plan-row" key={o.id}>
+                          <span className={'dot ' + (d.activated ? 'ok' : 'warn')} />
+                          <span className="assigned-plan-name">{o.product_name}</span>
+                          <span className="mono-v" style={{ fontSize: '0.76rem', color: 'var(--ink-soft)' }}>#{o.gogetssl_order_id}</span>
+                          <StatusVal value={d.activated ? 'activated' : 'pending setup'} />
+                          <span className="badge" style={{ marginLeft: 'auto' }}>locked</span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </>
       )}
     </div>
