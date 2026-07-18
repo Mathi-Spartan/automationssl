@@ -1515,6 +1515,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .lc-slice-days { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; line-height: 1.1; }
 .lc-slice-exp { font-family: var(--mono); font-size: 0.62rem; font-weight: 500; color: rgba(255,255,255,.72); white-space: nowrap; overflow: hidden; line-height: 1.1; }
 .lc-slice.first .lc-slice-exp { color: rgba(255,255,255,.62); }
+.lc-slice.partial { background: repeating-linear-gradient(135deg, var(--cert), var(--cert) 7px, #5a90c4 7px, #5a90c4 14px); }
 .lc-legend { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 0.76rem; color: #7c90a3; }
 .lc-legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .lc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cert); display: inline-block; }

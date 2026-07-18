@@ -28,19 +28,20 @@ function buildTimeline(startISO) {
 
   while (cursor < end && guard < 40) {
     guard += 1
-    const life = maxLifetimeOn(cursor)
-    const rawEnd = new Date(cursor.getTime() + life * DAY)
-    const sliceEnd = rawEnd > end ? end : rawEnd
-    const span = Math.round((sliceEnd - cursor) / DAY)
-    if (span <= 0) break
+    const cap = maxLifetimeOn(cursor)
+    const remaining = Math.round((end - cursor) / DAY)
+    const life = Math.min(cap, remaining)
+    if (life <= 0) break
+    const sliceEnd = new Date(cursor.getTime() + life * DAY)
     slices.push({
       startsOn: cursor.toISOString().slice(0, 10),
       days: life,
-      shown: span,
-      endsOn: rawEnd.toISOString().slice(0, 10),
-      clipped: rawEnd > end,
+      cap,
+      shown: life,
+      endsOn: sliceEnd.toISOString().slice(0, 10),
+      partial: life < cap,
     })
-    cursor = new Date(cursor.getTime() + life * DAY)
+    cursor = sliceEnd
   }
 
   return {
@@ -194,9 +195,11 @@ export default function AutomationTheatre() {
             {slices.map((s, i) => (
               <div
                 key={s.startsOn}
-                className={'lc-slice' + (i < drawn ? ' in' : '') + (i === 0 ? ' first' : '')}
+                className={'lc-slice' + (i < drawn ? ' in' : '') + (i === 0 ? ' first' : '') + (s.partial ? ' partial' : '')}
                 style={{ flexGrow: s.shown, transitionDelay: (i * 40) + 'ms' }}
-                title={`${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)}`}
+                title={s.partial
+                  ? `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)} — only ${s.days} days of the term remained, so it is issued short of the ${s.cap}-day maximum`
+                  : `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)}`}
               >
                 <span className="lc-slice-days">{s.days}d</span>
                 <span className="lc-slice-exp">{fmtSlice(s.endsOn)}</span>
@@ -207,7 +210,11 @@ export default function AutomationTheatre() {
           <div className="lc-legend">
             <span className="lc-legend-item"><i className="lc-dot" aria-hidden="true" />each block expires on the date shown</span>
             <span className="lc-legend-sep" />
-            <span className="lc-legend-note">{slices[0].days}-day maximum on {fmtSlice(startISO)} {new Date(startISO + 'T00:00:00Z').getUTCFullYear()}</span>
+            <span className="lc-legend-note">
+              {slices[slices.length - 1].partial
+                ? `last one runs ${slices[slices.length - 1].days}d to the term end`
+                : `${slices[0].days}-day maximum on ${fmtSlice(startISO)}`}
+            </span>
           </div>
         </div>
 
