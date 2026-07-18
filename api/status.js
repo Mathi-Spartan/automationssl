@@ -1,18 +1,14 @@
 // GET /api/status?order_id=..&email=.. — verifies the email matches the order in
-// Supabase, then returns curated live status from GoGetSSL, including any
-// ACME/enrollment credentials the CA has attached to the order.
+// Supabase, then returns live V2 status from GoGetSSL:
+//   - product 300: ACME EAB credentials (eab_kid, eab_hmac_key, server_url)
+//   - products 400-403: AutoInstall setup link (autoinstall.login_sso_link)
 
-const GG = 'https://my.gogetssl.com/api'
+const GG2 = 'https://my.gogetssl.com/api/v2'
 
-async function ggAuth() {
-  const res = await fetch(`${GG}/auth/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ user: (process.env.GOGETSSL_USER || '').trim(), pass: (process.env.GOGETSSL_PASS || '').trim() }),
-  })
-  const data = await res.json()
-  if (!data.key) throw new Error('Certificate authority authentication failed')
-  return data.key
+function ggHeaders() {
+  const code = (process.env.GOGETSSL_PARTNER_CODE || '133617').trim()
+  const pass = (process.env.GOGETSSL_PASS || '').trim()
+  return { Authorization: `GGS ${code}:${pass}`, Accept: 'application/json' }
 }
 
 export default async function handler(req, res) {
@@ -26,7 +22,7 @@ export default async function handler(req, res) {
     const q = new URLSearchParams({
       gogetssl_order_id: `eq.${order_id}`,
       email: `eq.${String(email).toLowerCase()}`,
-      select: 'gogetssl_order_id,product_name,domain,period',
+      select: 'gogetssl_order_id,product_id,product_name,domain,period,api_response',
       limit: '1',
     })
     const sbRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/orders?${q}`, {
@@ -40,25 +36,46 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: true, message: 'No order found for that ID and email combination.' })
     const record = rows[0]
 
-    // -------- live status from GoGetSSL --------
-    const key = await ggAuth()
-    const stRes = await fetch(`${GG}/orders/status/${encodeURIComponent(order_id)}?auth_key=${key}`)
+    // -------- live status from GoGetSSL V2 --------
+    const category = Number(record.product_id) === 300 ? 'acme' : 'ais'
+    const itemId = record?.api_response?.items?.[0]?.id || record.gogetssl_order_id
+
+    const stRes = await fetch(`${GG2}/certificates/${category}/${encodeURIComponent(itemId)}`, {
+      headers: ggHeaders(),
+    })
     const st = await stRes.json()
 
-    // Collect ACME / enrollment fields regardless of exact naming
-    const acme = {}
-    for (const [k, v] of Object.entries(st)) {
-      if (/acme|eab|directory|hmac|enrollment|registration/i.test(k) && v) acme[k] = v
-    }
-
-    return res.status(200).json({
-      status: st.status || 'submitted',
+    const item = st?.items?.[0] || {}
+    const out = {
+      status: st?.order?.status || 'pending',
       product_name: record.product_name,
       domain: record.domain,
-      valid_from: st.valid_from || null,
-      valid_till: st.valid_till || null,
-      acme: Object.keys(acme).length ? acme : null,
-    })
+      period_start: item?.subscription?.begin || null,
+      next_renewal: item?.subscription?.next_renewal || null,
+      acme: null,
+      autoinstall: null,
+    }
+
+    // ACME EAB credentials (Sectigo CaaS)
+    const acme = {}
+    const scan = (obj) => {
+      for (const [k, v] of Object.entries(obj || {})) {
+        if (v && typeof v === 'object' && !Array.isArray(v)) scan(v)
+        else if (/eab|server_url|acme_account|directory/i.test(k) && v) acme[k] = v
+      }
+    }
+    scan(st)
+    if (Object.keys(acme).length) out.acme = acme
+
+    // AutoInstall link (Plan + Automate)
+    if (item.autoinstall) {
+      out.autoinstall = {
+        setup_link: item.autoinstall.login_sso_link || item.autoinstall.manage_sso_link || null,
+        status: item.autoinstall.status || null,
+      }
+    }
+
+    return res.status(200).json(out)
   } catch (err) {
     return res.status(500).json({ error: true, message: 'Status lookup failed.', detail: String(err.message || err) })
   }

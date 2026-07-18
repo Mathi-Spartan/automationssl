@@ -85,7 +85,7 @@ export const PRODUCTS = [
     name: 'Sectigo ACME Certificate-as-a-Service',
     coverage: 'Multi-domain + wildcard SANs (up to 255)',
     validation: 'DV',
-    periods: [12, 24, 36],
+    periods: [12],
     featured: true,
     tagline: 'Your servers talk to the CA directly. You do nothing.',
     description:
@@ -93,7 +93,7 @@ export const PRODUCTS = [
     features: [
       'Standard ACME protocol — works with certbot, acme.sh, Caddy, Traefik, cert-manager',
       'Up to 255 SAN entries, wildcard SANs supported',
-      'Plans of 12, 24 or 36 months',
+      '12-month plans, renewed automatically',
       'Certificates issue and renew fully unattended',
       'Enterprise Sectigo CA infrastructure',
     ],

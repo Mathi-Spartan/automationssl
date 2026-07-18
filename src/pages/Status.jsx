@@ -59,8 +59,8 @@ export default function Status() {
           <div className="kv" style={{ marginTop: 10 }}>
             {data.product_name && <div><b>Plan</b> {data.product_name}</div>}
             {data.domain && <div><b>Domain</b> {data.domain}</div>}
-            {data.valid_from && <div><b>Valid from</b> {data.valid_from}</div>}
-            {data.valid_till && <div><b>Valid till</b> {data.valid_till}</div>}
+            {data.period_start && <div><b>Plan started</b> {data.period_start}</div>}
+            {data.next_renewal && <div><b>Next renewal</b> {data.next_renewal}</div>}
           </div>
           {data.acme && (
             <>
@@ -68,7 +68,17 @@ export default function Status() {
               <pre>{JSON.stringify(data.acme, null, 2)}</pre>
             </>
           )}
-          {data.raw && !data.acme && <pre>{JSON.stringify(data.raw, null, 2)}</pre>}
+          {data.autoinstall && data.autoinstall.setup_link && (
+            <div style={{ marginTop: 12 }}>
+              <p><strong>Set up your automation agent</strong> — open your personal setup portal to connect your server. Issuance and renewals run automatically after that:</p>
+              <a className="btn primary" style={{ display: 'inline-block', marginTop: 10 }} href={data.autoinstall.setup_link} target="_blank" rel="noreferrer">
+                Open setup portal →
+              </a>
+              {data.autoinstall.status && (
+                <p className="hint" style={{ fontSize: '0.8rem', marginTop: 8 }}>Setup status: {data.autoinstall.status}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

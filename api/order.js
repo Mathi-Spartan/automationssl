@@ -1,56 +1,44 @@
-// POST /api/order — places a live order with GoGetSSL and records it in Supabase.
-// Credentials come exclusively from environment variables (never bundled client-side):
-//   GOGETSSL_USER, GOGETSSL_PASS, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// POST /api/order — places a live order via the GoGetSSL V2 API and records it
+// in Supabase. Credentials come exclusively from environment variables:
+//   GOGETSSL_PARTNER_CODE, GOGETSSL_PASS, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+//
+// Automation products use the V2 API (V1 add_ssl_order does not support them):
+//   - product 300 (Sectigo ACME CaaS, category "caas"): POST /v2/certificates/acme
+//     with { product: {id}, domains } — customer receives EAB credentials.
+//   - products 400-403 (Plan + Automate, category "ais"): POST /v2/certificates/ais
+//     with { product: {id}, contacts } — customer receives an AutoInstall SSO link;
+//     domains are configured later through the automation agent.
+// No CSR is involved anywhere in this workflow.
 
-import forge from 'node-forge'
-
-const GG = 'https://my.gogetssl.com/api'
-
-// Products whose placeholder CSR must carry a wildcard common name
-const WILDCARD_CN = new Set([300, 401, 403])
-
-// The order API requires a CSR even for automation/ACME plans. It is a pure
-// formality: the customer's ACME client generates its own keys later, so we
-// create a throwaway key+CSR in memory and discard the key immediately.
-function placeholderCsr(commonName) {
-  const keys = forge.pki.rsa.generateKeyPair(2048)
-  const csr = forge.pki.createCertificationRequest()
-  csr.publicKey = keys.publicKey
-  csr.setSubject([{ name: 'commonName', value: commonName }])
-  csr.sign(keys.privateKey, forge.md.sha256.create())
-  return forge.pki.certificationRequestToPem(csr)
-}
+const GG2 = 'https://my.gogetssl.com/api/v2'
 
 const KNOWN_PRODUCTS = {
-  300: 'Sectigo ACME Certificate-as-a-Service',
-  400: 'RapidSSL Plan + Automate',
-  401: 'RapidSSL Wildcard Plan + Automate',
-  402: 'GeoTrust DV Plan + Automate',
-  403: 'GeoTrust DV Wildcard Plan + Automate',
+  300: { name: 'Sectigo ACME Certificate-as-a-Service', category: 'acme' },
+  400: { name: 'RapidSSL Plan + Automate', category: 'ais' },
+  401: { name: 'RapidSSL Wildcard Plan + Automate', category: 'ais' },
+  402: { name: 'GeoTrust DV Plan + Automate', category: 'ais' },
+  403: { name: 'GeoTrust DV Wildcard Plan + Automate', category: 'ais' },
 }
 
-async function ggAuth() {
-  const res = await fetch(`${GG}/auth/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ user: (process.env.GOGETSSL_USER || '').trim(), pass: (process.env.GOGETSSL_PASS || '').trim() }),
-  })
-  const data = await res.json()
-  if (!data.key) {
-    console.error('GoGetSSL auth rejected:', JSON.stringify(data))
-    throw new Error('Certificate authority authentication failed: ' + (data.description || data.message || JSON.stringify(data)))
+function ggHeaders() {
+  const code = (process.env.GOGETSSL_PARTNER_CODE || '133617').trim()
+  const pass = (process.env.GOGETSSL_PASS || '').trim()
+  return {
+    Authorization: `GGS ${code}:${pass}`,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
   }
-  return data.key
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: true, message: 'Method not allowed' })
 
   try {
-    const { product_id, period, domain, email, firstname, lastname, phone, csr } = req.body || {}
+    const { product_id, period, domain, email, firstname, lastname, phone } = req.body || {}
+    const product = KNOWN_PRODUCTS[product_id]
 
     // -------- validation --------
-    if (!KNOWN_PRODUCTS[product_id]) return res.status(400).json({ error: true, message: 'Unknown plan selected.' })
+    if (!product) return res.status(400).json({ error: true, message: 'Unknown plan selected.' })
     if (!domain || !/^[*a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(domain))
       return res.status(400).json({ error: true, message: 'Please enter a valid domain name.' })
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
@@ -59,42 +47,33 @@ export default async function handler(req, res) {
     if (!phone) return res.status(400).json({ error: true, message: 'Phone number is required.' })
     const months = Number(period) || 12
 
-    // -------- place order with GoGetSSL --------
-    const base = domain.replace(/^\*\./, '')
-    const cn = WILDCARD_CN.has(Number(product_id)) ? `*.${base.replace(/^www\./, '')}` : base
-    const finalCsr = csr || placeholderCsr(cn)
+    // -------- create the subscription via V2 --------
+    let endpoint, payload
+    if (product.category === 'acme') {
+      endpoint = `${GG2}/certificates/acme`
+      payload = { product: { id: Number(product_id) }, domains: domain.replace(/^\*\./, '') }
+    } else {
+      endpoint = `${GG2}/certificates/ais`
+      payload = {
+        product: { id: Number(product_id) },
+        contacts: { primary: { email }, technical: { email } },
+      }
+    }
 
-    const key = await ggAuth()
-    const params = new URLSearchParams({
-      product_id: String(product_id),
-      period: String(months),
-      server_count: '-1',
-      webserver_type: '-1',
-      admin_firstname: firstname,
-      admin_lastname: lastname,
-      admin_phone: phone,
-      admin_title: 'Mr.',
-      admin_email: email,
-      tech_firstname: firstname,
-      tech_lastname: lastname,
-      tech_phone: phone,
-      tech_title: 'Mr.',
-      tech_email: email,
-    })
-    params.set('csr', finalCsr)
-
-    const orderRes = await fetch(`${GG}/orders/add_ssl_order/?auth_key=${key}`, {
+    const orderRes = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params,
+      headers: ggHeaders(),
+      body: JSON.stringify(payload),
     })
     const order = await orderRes.json()
 
-    if (order.error || !order.order_id) {
+    const orderId = order?.order?.id
+    if (!orderRes.ok || !orderId) {
+      console.error('GoGetSSL V2 order rejected:', JSON.stringify(order))
       return res.status(502).json({
         error: true,
         message: 'The certificate authority rejected the order.',
-        detail: order.description || order.message || order,
+        detail: order?.message || order,
       })
     }
 
@@ -110,15 +89,15 @@ export default async function handler(req, res) {
           Prefer: 'return=minimal',
         },
         body: JSON.stringify({
-          gogetssl_order_id: order.order_id,
+          gogetssl_order_id: orderId,
           product_id,
-          product_name: KNOWN_PRODUCTS[product_id],
+          product_name: product.name,
           period: months,
           domain,
           email,
           customer_name: `${firstname} ${lastname}`,
           phone,
-          status: 'submitted',
+          status: order?.order?.status || 'pending',
           api_response: order,
         }),
       })
@@ -127,7 +106,7 @@ export default async function handler(req, res) {
       db_ok = false
     }
 
-    return res.status(200).json({ order_id: order.order_id, db_ok })
+    return res.status(200).json({ order_id: orderId, db_ok })
   } catch (err) {
     return res.status(500).json({ error: true, message: 'Order failed.', detail: String(err.message || err) })
   }

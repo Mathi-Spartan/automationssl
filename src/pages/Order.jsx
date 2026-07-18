@@ -12,10 +12,8 @@ export default function Order() {
     lastname: '',
     phone: '',
     period: p ? p.periods[0] : 12,
-    csr: '',
     agree: false,
   })
-  const [showCsr, setShowCsr] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
@@ -45,7 +43,6 @@ export default function Order() {
           firstname: form.firstname.trim(),
           lastname: form.lastname.trim(),
           phone: form.phone.trim(),
-          csr: form.csr.trim() || undefined,
         }),
       })
       const data = await res.json()
@@ -138,21 +135,6 @@ export default function Order() {
             <label htmlFor="phone">Phone</label>
             <input id="phone" type="tel" required value={form.phone} onChange={set('phone')} autoComplete="tel" placeholder="+31 6 12345678" />
           </div>
-        </div>
-
-        <div className="field">
-          <button type="button" className="btn ghost" onClick={() => setShowCsr(!showCsr)} style={{ fontSize: '0.85rem', padding: '8px 14px' }}>
-            {showCsr ? 'Hide CSR field' : 'Have your own CSR? (optional)'}
-          </button>
-          {showCsr && (
-            <div style={{ marginTop: 12 }}>
-              <textarea placeholder="-----BEGIN CERTIFICATE REQUEST-----" value={form.csr} onChange={set('csr')} spellCheck="false" />
-              <p className="hint">
-                Most automation plans don't need a CSR — your ACME client
-                generates keys itself. Only paste one if you know you need it.
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="field checkbox">
