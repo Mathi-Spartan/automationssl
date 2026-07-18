@@ -79,14 +79,16 @@ function AuthForm({ mode }) {
         </button>
       </form>
 
-      <p style={{ marginTop: 16 }}>
+      <p style={{ marginTop: 16 }} className="hint">
         {mode === 'signup'
           ? <>Already have an account? <Link to="/login" style={{ textDecoration: 'underline' }}>Sign in</Link></>
-          : <>New here? <Link to="/signup" style={{ textDecoration: 'underline' }}>Create an account</Link></>}
+          : <>Accounts are provisioned by the AutomationSSL team during the testing phase.</>}
       </p>
     </div>
   )
 }
 
 export const Login = () => <AuthForm mode="login" />
-export const Signup = () => <AuthForm mode="signup" />
+// Signup intentionally not exported during the testing phase — accounts are
+// provisioned by the team. Re-export when public signup opens.
+

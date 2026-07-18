@@ -1,9 +1,9 @@
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import Product from './pages/Product.jsx'
 import Order from './pages/Order.jsx'
 import Status from './pages/Status.jsx'
-import { Login, Signup } from './pages/Auth.jsx'
+import { Login } from './pages/Auth.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Servers from './pages/Servers.jsx'
 import Customers from './pages/Customers.jsx'
@@ -43,12 +43,7 @@ function AccountNav() {
   const navigate = useNavigate()
   if (loading) return null
   if (!session) {
-    return (
-      <>
-        <Link to="/login">Sign in</Link>
-        <Link to="/signup" className="cta">Get started free</Link>
-      </>
-    )
+    return <Link to="/login" className="cta">Sign in</Link>
   }
   return (
     <>
@@ -134,7 +129,7 @@ export default function App() {
           <Route path="/order/:slug" element={<Order />} />
           <Route path="/status" element={<Status />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/signup" element={<Navigate to="/login" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/servers" element={<Servers />} />
           <Route path="/dashboard/customers" element={<Customers />} />
