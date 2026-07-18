@@ -20,7 +20,7 @@ function CustomerServers({ session }) {
   const [orders, setOrders] = useState([])
   const [domains, setDomains] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', hostname: '', environment: 'production' })
+  const [form, setForm] = useState({ name: '', hostname: '', environment: 'production', webserver: '' })
   const [newDomain, setNewDomain] = useState({})
   const [expanded, setExpanded] = useState({})
   const [err, setErr] = useState(null)
@@ -43,8 +43,8 @@ function CustomerServers({ session }) {
   async function addServer(e) {
     e.preventDefault()
     if (!form.name.trim()) return
-    await supabase.from('servers').insert({ owner_id: session.user.id, name: form.name.trim(), hostname: form.hostname.trim() || null, environment: form.environment })
-    setForm({ name: '', hostname: '', environment: 'production' })
+    await supabase.from('servers').insert({ owner_id: session.user.id, name: form.name.trim(), hostname: form.hostname.trim() || null, environment: form.environment, webserver: form.webserver || null })
+    setForm({ name: '', hostname: '', environment: 'production', webserver: '' })
     setShowForm(false)
     reload()
   }
@@ -96,25 +96,64 @@ function CustomerServers({ session }) {
 
       {showForm && (
         <form onSubmit={addServer} className="srv-add-form">
-          <h3 className="srv-form-title">Add a server</h3>
-          <div className="field-row">
-            <div className="field">
-              <label htmlFor="sname">Name</label>
-              <input id="sname" required placeholder="web-01" autoFocus value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-              <p className="hint">Any label you will recognise — "web-01", "Client VPS".</p>
-            </div>
-            <div className="field">
-              <label htmlFor="shost">Hostname / IP <span className="opt">optional</span></label>
-              <input id="shost" placeholder="203.0.113.10" value={form.hostname} onChange={e => setForm({ ...form, hostname: e.target.value })} />
-            </div>
-            <div className="field">
-              <label htmlFor="senv">Environment</label>
-              <select id="senv" value={form.environment} onChange={e => setForm({ ...form, environment: e.target.value })}>
-                {ENVS.map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
+          <div className="srv-form-header">
+            <i className="ti ti-server-2" style={{ fontSize: 22, color: '#3375b1' }} aria-hidden="true" />
+            <div>
+              <h3 className="srv-form-title">Add a server</h3>
+              <p className="srv-form-sub">Once added, attach SSL plans to it from your certificate dashboard.</p>
             </div>
           </div>
-          <button className="btn primary" type="submit">Save server</button>
+
+          <div className="srv-form-grid">
+            <div className="srv-form-section">
+              <div className="srv-form-section-label">Server identity</div>
+              <div className="field">
+                <label htmlFor="sname">Server name <span className="req">*</span></label>
+                <input id="sname" required autoFocus placeholder='e.g. web-01, api-server, client-vps'
+                  value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                <p className="hint">A short label you will recognise in the dashboard.</p>
+              </div>
+              <div className="field">
+                <label htmlFor="shost">Hostname or IP address <span className="opt">optional</span></label>
+                <input id="shost" placeholder='e.g. 203.0.113.10 or server.example.com'
+                  value={form.hostname} onChange={e => setForm({ ...form, hostname: e.target.value })} />
+                <p className="hint">Shown alongside the server name for reference — not used technically.</p>
+              </div>
+            </div>
+
+            <div className="srv-form-section">
+              <div className="srv-form-section-label">Environment &amp; stack</div>
+              <div className="field">
+                <label htmlFor="senv">Environment</label>
+                <div className="srv-env-selector">
+                  {ENVS.map(v => (
+                    <button key={v} type="button"
+                      className={'srv-env-opt' + (form.environment === v ? ' on' : '')}
+                      onClick={() => setForm({ ...form, environment: v })}>
+                      <span className="srv-env-opt-dot" style={{ background: ENV_COLOR[v] }} />
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="swebserver">Web server <span className="opt">optional</span></label>
+                <select id="swebserver" value={form.webserver || ''} onChange={e => setForm({ ...form, webserver: e.target.value })}>
+                  <option value="">— select if known —</option>
+                  {['Apache', 'Nginx', 'Caddy', 'Traefik', 'IIS', 'LiteSpeed', 'Other'].map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
+                <p className="hint">Helps identify the right AutoInstall agent configuration.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="srv-form-footer">
+            <button className="btn primary" type="submit">
+              <i className="ti ti-device-floppy" aria-hidden="true" /> Save server
+            </button>
+            <button className="btn ghost" type="button" onClick={() => setShowForm(false)}>Cancel</button>
+            <p className="srv-form-note">After saving, go to your <strong>certificate dashboard</strong> to attach SSL plans to this server.</p>
+          </div>
         </form>
       )}
 

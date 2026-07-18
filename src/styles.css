@@ -56,9 +56,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .nav { display: flex; gap: 22px; font-size: 0.92rem; font-weight: 500; color: var(--ink-soft); }
 .nav a:hover { color: var(--ink); }
 .nav .cta {
-  color: #fff; background: var(--pine); padding: 8px 16px; border-radius: 8px; font-weight: 600;
+  color: #2e6ba2; background: #fff; padding: 8px 18px; border-radius: 8px; font-weight: 700;
+  border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
-.nav .cta:hover { background: var(--cert); color: #fff; }
+.nav .cta:hover { background: #e8f2ff; color: #1a4f80; }
 
 /* ---------- badges / labels ---------- */
 .eyebrow {
@@ -350,8 +351,8 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 /* ---------- easysecurity.in family theme ---------- */
 .btn.primary { background: #2e6ba2; border-color: #2e6ba2; color: #fff; }
 .btn.primary:hover { background: #235581; border-color: #235581; }
-.nav .cta { background: #fff; color: #2e6ba2; }
-.nav .cta:hover { background: #b4dffc; color: #1d466b; }
+.nav .cta { background: #fff; color: #2e6ba2; font-weight: 700; }
+.nav .cta:hover { background: #e8f2ff; color: #1a4f80; }
 
 /* blue global header (public pages) */
 .site-header { background: #3375b1; border-bottom: 1px solid rgba(255,255,255,0.18); backdrop-filter: none; }
@@ -1132,3 +1133,19 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .cust-stat.warn .cust-stat-num { color: #b8862b; }
 
 .cust-row-actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* ── Add server form ── */
+.srv-form-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #edf1f7; }
+.srv-form-sub { font-size: 0.82rem; color: #7a8fa0; margin-top: 2px; }
+.srv-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
+.srv-form-section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #3375b1; margin-bottom: 12px; }
+.srv-env-selector { display: flex; gap: 6px; flex-wrap: wrap; }
+.srv-env-opt { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1.5px solid #dde5ef; border-radius: 8px; background: #fff; font: inherit; font-size: 0.82rem; font-weight: 500; color: #4c5a68; cursor: pointer; }
+.srv-env-opt:hover { border-color: #3375b1; }
+.srv-env-opt.on { border-color: #3375b1; background: #e8f2ff; color: #2e6ba2; font-weight: 700; }
+.srv-env-opt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.srv-form-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.srv-form-note { font-size: 0.78rem; color: #9aa8b5; margin-left: 4px; }
+.srv-form-note strong { color: #3375b1; }
+.req { color: #e24b4a; margin-left: 2px; }
+@media (max-width: 700px) { .srv-form-grid { grid-template-columns: 1fr; } }

@@ -38,11 +38,7 @@ export default function DashShell({ children }) {
               <span className="ic" aria-hidden="true">👥</span> Customers
             </NavLink>
           )}
-          {!isReseller && (
-            <Link to="/status">
-              <span className="ic" aria-hidden="true">☰</span> Order status
-            </Link>
-          )}
+
         </nav>
 
         <div className="dash-user">
