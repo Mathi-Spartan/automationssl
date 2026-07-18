@@ -1013,16 +1013,20 @@ function ResellerDashboard({ session, profile }) {
           </div>
           <div className="rd-customer-list">
             {custList.map(c => (
-              <button key={c.id} type="button"
-                className={'rd-cust-row'+(selCustomer===c.id?' active':'')}
-                onClick={()=>{setSelCustomer(c.id);setFilter('all')}}>
-                <span className="rd-cust-icon">{c.icon}</span>
-                <span className="rd-cust-label">{c.label}</span>
-                <span className="rd-cust-badges">
-                  {c.pending>0 && <span className="rd-cust-badge warn">{c.pending}</span>}
-                  <span className="rd-cust-badge">{c.count}</span>
-                </span>
-              </button>
+              <div key={c.id} className={'rd-cust-item'+(selCustomer===c.id?' active':'')}>
+                <button type="button" className="rd-cust-row-btn"
+                  onClick={()=>{setSelCustomer(c.id);setFilter('all')}}>
+                  <span className="rd-cust-icon">{c.icon}</span>
+                  <span className="rd-cust-label">{c.label}</span>
+                  <span className="rd-cust-badges">
+                    {c.pending>0 && <span className="rd-cust-badge warn">{c.pending}</span>}
+                    <span className="rd-cust-badge">{c.count}</span>
+                  </span>
+                </button>
+                {c.id !== '__all__' && c.id !== '__mine__' && (
+                  <Link to={`/order-for/${c.id}`} className="rd-cust-buy" title={`Buy a plan for ${c.label}`}>+</Link>
+                )}
+              </div>
             ))}
           </div>
         </div>

@@ -8,6 +8,7 @@ import { Login } from './pages/Auth.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Servers from './pages/Servers.jsx'
 import Customers from './pages/Customers.jsx'
+import OrderFor from './pages/OrderFor.jsx'
 import { AuthProvider, useAuth } from './lib/AuthContext.jsx'
 import { supabase } from './lib/supabase.js'
 
@@ -140,6 +141,7 @@ function Chrome() {
           <Route path="/dashboard" element={<DashShell><Dashboard /></DashShell>} />
           <Route path="/dashboard/servers" element={<DashShell><Servers /></DashShell>} />
           <Route path="/dashboard/customers" element={<DashShell><Customers /></DashShell>} />
+          <Route path="/order-for/:customerId" element={<DashShell><OrderFor /></DashShell>} />
         </Routes>
       </main>
       {!inDash && <Footer />}

@@ -56,7 +56,34 @@ export default async function handler(req, res) {
     const user = await resolveUser(req)
     if (!user?.id) return res.status(401).json({ error: true, message: 'Please sign in to place an order.' })
 
-    const { product_id, period, domain, email, firstname, lastname, phone, server_id } = req.body || {}
+    const { product_id, period, domain, email, firstname, lastname, phone, server_id, for_customer_id } = req.body || {}
+
+    // -------- reseller ordering on behalf of a customer --------
+    // If for_customer_id is supplied, verify the caller is a reseller and the
+    // target customer belongs to them. The order will be attributed directly to
+    // the customer with assigned_by stamped so provenance is clear.
+    let targetUserId = user.id
+    let assignedBy = null
+    let assignedAt = null
+    if (for_customer_id) {
+      // Caller must be a reseller
+      const prRes = await fetch(`${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=account_type`, {
+        headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+      })
+      const pr = await prRes.json()
+      if (pr?.[0]?.account_type !== 'reseller')
+        return res.status(403).json({ error: true, message: 'Only reseller accounts can order on behalf of a customer.' })
+      // Target must be a sub-account of this reseller
+      const custRes = await fetch(`${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(for_customer_id)}&select=id,parent_reseller_id,full_name`, {
+        headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+      })
+      const cust = await custRes.json()
+      if (!cust?.[0] || cust[0].parent_reseller_id !== user.id)
+        return res.status(403).json({ error: true, message: 'That customer does not belong to your account.' })
+      targetUserId = for_customer_id
+      assignedBy = user.id
+      assignedAt = new Date().toISOString()
+    }
 
     // If a server tag was chosen, it must belong to the buyer.
     let serverId = null
@@ -160,7 +187,9 @@ export default async function handler(req, res) {
           phone,
           status: order?.order?.status || 'pending',
           api_response: order,
-          user_id: user.id,
+          user_id: targetUserId,
+          assigned_by: assignedBy,
+          assigned_at: assignedAt,
           server_id: serverId,
         }),
       })
