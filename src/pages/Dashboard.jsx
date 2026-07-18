@@ -534,7 +534,23 @@ function CustomerDashboard({ session, profile }) {
                 onChange={(e) => { setSearch(e.target.value); setPage(0) }}
               />
             </div>
-            <a href="#" className="clm-export-btn" onClick={(e) => e.preventDefault()}>Export CSV</a>
+            <a href="#" className="clm-export-btn" onClick={(e) => {
+              e.preventDefault()
+              const header = 'Order #,Product,CA,Domain,Status,Renews,Days left'
+              const rows = (orders || []).map(o => {
+                const d = deliverables(o)
+                const dom = d.vendorDomains.map(v => typeof v === 'string' ? v : v?.name || '').filter(Boolean).join('; ')
+                const days = d.renewal ? Math.ceil((new Date(d.renewal) - Date.now()) / 86400000) : ''
+                const ca = { 300: 'Sectigo', 400: 'RapidSSL', 401: 'RapidSSL', 402: 'GeoTrust', 403: 'GeoTrust' }[o.product_id] || ''
+                return [o.gogetssl_order_id, `"${o.product_name}"`, ca, dom || '—', d.activated ? 'Automated' : 'Pending setup', d.renewal || '—', days].join(',')
+              })
+              const csv = [header, ...rows].join('\n')
+              const blob = new Blob([csv], { type: 'text/csv' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url; a.download = 'certificates.csv'; a.click()
+              URL.revokeObjectURL(url)
+            }}>Export CSV</a>
           </div>
 
           {/* tab strip */}

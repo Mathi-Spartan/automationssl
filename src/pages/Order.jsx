@@ -1,8 +1,31 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Navigate, Link, useLocation } from 'react-router-dom'
 import { bySlug } from '../catalog.js'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+
+
+function WizardCopyBtn({ text }) {
+  const [copied, setCopied] = React.useState(false)
+  return (
+    <button type="button" className="wizard-copy-btn" onClick={async () => {
+      try { await navigator.clipboard.writeText(text) } catch {}
+      setCopied(true); setTimeout(() => setCopied(false), 1800)
+    }}>{copied ? 'Copied ✓' : 'Copy'}</button>
+  )
+}
+
+function WizardCred({ label, value }) {
+  return (
+    <div className="wizard-cred-row">
+      <span className="wizard-cred-label">{label}</span>
+      <div className="wizard-cred-val-wrap">
+        <code className="wizard-cred-val">{value}</code>
+        <WizardCopyBtn text={value} />
+      </div>
+    </div>
+  )
+}
 
 export default function Order() {
   const { slug } = useParams()
@@ -93,46 +116,97 @@ export default function Order() {
   }
 
   if (result) {
+    const isAcme = !!result.acme
+    const steps = isAcme
+      ? ['Order confirmed', 'Configure ACME client', 'Renews automatically']
+      : ['Order confirmed', 'Install the agent', 'Renews automatically']
+
     return (
-      <div className="form-page">
-        <h1>Order received ✓</h1>
-        <p className="sub">Your {p.name} plan has been registered.</p>
-        <div className="alert ok">
-          <strong>Order ID: {result.order_id ?? '—'}</strong>
-          <div className="kv" style={{ marginTop: 12 }}>
-            <div><b>Plan</b> {p.name}</div>
-            <div><b>Domain</b> {form.domain || '—'}</div>
-            <div><b>Term</b> {form.period} months</div>
-            <div><b>Contact</b> {form.email}</div>
-          </div>
-          {result.autoinstall && result.autoinstall.setup_link && (
-            <div style={{ marginTop: 14 }}>
-              <p><strong>Next step — set up your automation agent.</strong> Open your personal
-              setup portal below to connect your server. Issuance and renewals run
-              automatically after that.</p>
-              <a className="btn primary" style={{ display: 'inline-block', marginTop: 10 }} href={result.autoinstall.setup_link} target="_blank" rel="noreferrer">
-                Open setup portal →
-              </a>
-              <p className="hint" style={{ fontSize: '0.8rem', marginTop: 8 }}>
-                This link is personal to your plan — save it somewhere safe and do not share it.
-              </p>
+      <div className="wizard-wrap">
+        {/* progress bar */}
+        <div className="wizard-progress">
+          {steps.map((s, i) => (
+            <div key={i} className={"wizard-step" + (i === 0 ? " done" : i === 1 ? " active" : "")}>
+              <div className="wizard-step-dot">{i === 0 ? "✓" : i + 1}</div>
+              <div className="wizard-step-label">{s}</div>
+              {i < steps.length - 1 && <div className="wizard-step-line" />}
             </div>
-          )}
-          {result.acme && (
-            <div style={{ marginTop: 14 }}>
-              <p><strong>Your ACME enrollment credentials</strong> — use these with certbot,
-              acme.sh, Caddy or any ACME client. Save them now; treat them like a password.</p>
-              <pre>{JSON.stringify(result.acme, null, 2)}</pre>
-            </div>
-          )}
-          <p style={{ marginTop: 10 }}>
-            This plan is saved to your account — find it anytime in your{' '}
-            <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link>, or via the{' '}
-            <Link to="/status" style={{ textDecoration: 'underline' }}>order status page</Link>{' '}
-            with your Order ID and email.
-          </p>
+          ))}
         </div>
-        <Link className="btn ghost" to="/">Back to plans</Link>
+
+        {/* Step 1 — confirmation */}
+        <div className="wizard-card wizard-card-done">
+          <div className="wizard-card-head">
+            <span className="wizard-check">✓</span>
+            <div>
+              <div className="wizard-card-title">Order confirmed</div>
+              <div className="wizard-card-sub">Your certificate plan is registered with the CA.</div>
+            </div>
+          </div>
+          <div className="wizard-meta-grid">
+            <div><span className="wizard-meta-label">Order ID</span><span className="wizard-meta-val mono">{result.order_id}</span></div>
+            <div><span className="wizard-meta-label">Plan</span><span className="wizard-meta-val">{p.name}</span></div>
+            <div><span className="wizard-meta-label">Domain</span><span className="wizard-meta-val">{form.domain || '—'}</span></div>
+            <div><span className="wizard-meta-label">Contact</span><span className="wizard-meta-val">{form.email}</span></div>
+          </div>
+        </div>
+
+        {/* Step 2 — setup */}
+        <div className="wizard-card wizard-card-active">
+          <div className="wizard-card-head">
+            <span className="wizard-num">2</span>
+            <div>
+              <div className="wizard-card-title">{isAcme ? 'Configure your ACME client' : 'Install the automation agent'}</div>
+              <div className="wizard-card-sub">{isAcme ? 'One command — then your server handles everything.' : 'Open your setup portal and run one command on your server.'}</div>
+            </div>
+          </div>
+
+          {isAcme && result.acme ? (
+            <div className="wizard-setup-body">
+              <div className="wizard-cred-grid">
+                <WizardCred label="ACME server URL" value={result.acme.server_url} />
+                <WizardCred label="EAB key ID" value={result.acme.eab_kid} />
+                <WizardCred label="EAB HMAC key" value={result.acme.eab_hmac_key} />
+              </div>
+              <div className="wizard-cmd-block">
+                <div className="wizard-cmd-label">Quick start — copy and run</div>
+                <div className="wizard-cmd-wrap">
+                  <code className="wizard-cmd">{`certbot register --server ${result.acme.server_url} --eab-kid ${result.acme.eab_kid} --eab-hmac-key ${result.acme.eab_hmac_key}`}</code>
+                  <WizardCopyBtn text={`certbot register --server ${result.acme.server_url} --eab-kid ${result.acme.eab_kid} --eab-hmac-key ${result.acme.eab_hmac_key}`} />
+                </div>
+              </div>
+              <p className="wizard-hint">Works with certbot, acme.sh, Caddy, Traefik, and cert-manager. Save these credentials — they are yours alone.</p>
+            </div>
+          ) : result.autoinstall && result.autoinstall.setup_link ? (
+            <div className="wizard-setup-body">
+              <p className="wizard-setup-desc">Your personal setup portal is ready. Click below — it opens the AutoInstall dashboard where you run one command on your server. Issuance and all future renewals happen automatically from there.</p>
+              <a className="wizard-portal-btn" href={result.autoinstall.setup_link} target="_blank" rel="noreferrer">
+                <i className="ti ti-external-link" aria-hidden="true" /> Open my setup portal
+              </a>
+              <p className="wizard-hint">This link is personal to your plan — bookmark it and do not share it.</p>
+            </div>
+          ) : (
+            <div className="wizard-setup-body">
+              <p className="wizard-setup-desc">Your setup credentials are being provisioned by the CA — this usually takes under 2 minutes. Open your <Link to="/dashboard">dashboard</Link> to see them as soon as they are ready.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Step 3 — future */}
+        <div className="wizard-card wizard-card-future">
+          <div className="wizard-card-head">
+            <span className="wizard-num wizard-num-future">3</span>
+            <div>
+              <div className="wizard-card-title">Renewals happen on their own</div>
+              <div className="wizard-card-sub">After setup, your server and the CA handle everything. No cron jobs. No manual steps.</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="wizard-footer">
+          <Link className="btn primary" to="/dashboard">Go to my dashboard →</Link>
+          <Link className="btn ghost" to="/">Back to plans</Link>
+        </div>
       </div>
     )
   }

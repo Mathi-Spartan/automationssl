@@ -5,19 +5,28 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import { deliverables } from './Dashboard.jsx'
 
 const ENVS = ['production', 'staging', 'development', 'other']
-const ENV_ICON = { production: '🟢', staging: '🟡', development: '🔵', other: '⚪️' }
+const ENV_COLOR = { production: '#1a7a4c', staging: '#b8862b', development: '#2e6ba2', other: '#7a8fa0' }
+const ENV_BG    = { production: '#e0f4ea', staging: '#fff3d4', development: '#e8f2ff', other: '#f4f6f8' }
 
-export default function Servers() {
-  const { session, loading } = useAuth()
+function fmtDate(s) {
+  if (!s) return '—'
+  try { return new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }
+  catch { return s }
+}
+
+/* ─── CUSTOMER servers view ─── */
+function CustomerServers({ session }) {
   const [servers, setServers] = useState(null)
   const [orders, setOrders] = useState([])
   const [domains, setDomains] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', hostname: '', environment: 'production' })
   const [newDomain, setNewDomain] = useState({})
+  const [expanded, setExpanded] = useState({})
   const [err, setErr] = useState(null)
 
-  async function reload(uid) {
+  async function reload() {
+    const uid = session.user.id
     const [s, o, d] = await Promise.all([
       supabase.from('servers').select('*').eq('owner_id', uid).order('created_at'),
       supabase.from('orders').select('*').eq('user_id', uid),
@@ -26,98 +35,82 @@ export default function Servers() {
     setServers(s.data || [])
     setOrders(o.data || [])
     setDomains(d.data || [])
-    setErr(s.error?.message || o.error?.message || d.error?.message || null)
+    setErr(s.error?.message || null)
   }
 
-  useEffect(() => {
-    if (session?.user && supabase) reload(session.user.id)
-  }, [session?.user?.id])
-
-  if (loading) return <div className="form-page"><p>Loading…</p></div>
-  if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard/servers' }} />
+  useEffect(() => { reload() }, [session.user.id])
 
   async function addServer(e) {
     e.preventDefault()
     if (!form.name.trim()) return
-    const { error } = await supabase.from('servers').insert({
-      owner_id: session.user.id,
-      name: form.name.trim(),
-      hostname: form.hostname.trim() || null,
-      environment: form.environment,
-    })
-    if (error) setErr(error.message)
-    else {
-      setForm({ name: '', hostname: '', environment: 'production' })
-      setShowForm(false)
-      reload(session.user.id)
-    }
+    await supabase.from('servers').insert({ owner_id: session.user.id, name: form.name.trim(), hostname: form.hostname.trim() || null, environment: form.environment })
+    setForm({ name: '', hostname: '', environment: 'production' })
+    setShowForm(false)
+    reload()
   }
 
   async function removeServer(id) {
-    if (!confirm('Remove this server? Your plans and domains stay — they just lose this tag.')) return
+    if (!confirm('Remove this server? Your plans stay — they just lose this tag.')) return
     await supabase.from('servers').delete().eq('id', id)
-    reload(session.user.id)
+    reload()
   }
 
   async function addDomain(serverId) {
-    const value = (newDomain[serverId] || '').trim().toLowerCase()
-    if (!value) return
-    const { error } = await supabase.from('tracked_domains').insert({
-      owner_id: session.user.id,
-      server_id: serverId,
-      domain: value,
-    })
-    if (error) setErr(error.message)
-    else {
-      setNewDomain({ ...newDomain, [serverId]: '' })
-      reload(session.user.id)
-    }
+    const v = (newDomain[serverId] || '').trim().toLowerCase()
+    if (!v) return
+    await supabase.from('tracked_domains').insert({ owner_id: session.user.id, server_id: serverId, domain: v })
+    setNewDomain({ ...newDomain, [serverId]: '' })
+    reload()
   }
 
   async function removeDomain(id) {
     await supabase.from('tracked_domains').delete().eq('id', id)
-    reload(session.user.id)
+    reload()
   }
+
+  const totalCerts = orders.filter(o => o.server_id).length
+  const totalDomains = orders.reduce((n, o) => n + deliverables(o).vendorDomains.length, 0)
+  const automated = orders.filter(o => deliverables(o).activated).length
 
   return (
     <div className="dash-page">
-      <div className="page-head">
+      <div className="srv-header">
         <div>
-          <span className="eyebrow">Servers</span>
-          <h1>Where your certificates live</h1>
-          <p className="sub">
-            A read-only map of your infrastructure — one card per machine, showing the plans
-            and domains on each. To connect a plan to a server, open it on the{' '}
-            <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link> and pick the server there.
-          </p>
+          <span className="eyebrow">Infrastructure</span>
+          <h1>Your servers</h1>
+          <p className="sub">Tag each certificate to the server it runs on — so you always know what is secured where.</p>
         </div>
-        {(showForm || (servers && servers.length > 0)) && (
-          <button className="btn primary" type="button" onClick={() => setShowForm((v) => !v)}>
-            {showForm ? 'Close' : '+ Add server'}
-          </button>
-        )}
+        <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
+          {showForm ? 'Cancel' : '+ Add server'}
+        </button>
+      </div>
+
+      <div className="srv-kpis">
+        <div className="srv-kpi"><div className="srv-kpi-num">{servers?.length ?? '…'}</div><div className="srv-kpi-label">Servers</div></div>
+        <div className="srv-kpi"><div className="srv-kpi-num">{totalCerts}</div><div className="srv-kpi-label">Certs tagged</div></div>
+        <div className="srv-kpi srv-kpi-ok"><div className="srv-kpi-num">{automated}</div><div className="srv-kpi-label">Automated</div></div>
+        <div className="srv-kpi"><div className="srv-kpi-num">{totalDomains}</div><div className="srv-kpi-label">Domains secured</div></div>
       </div>
 
       {err && <div className="alert error">{err}</div>}
 
       {showForm && (
-        <form onSubmit={addServer} className="add-server-card">
+        <form onSubmit={addServer} className="srv-add-form">
+          <h3 className="srv-form-title">Add a server</h3>
           <div className="field-row">
             <div className="field">
-              <label htmlFor="sname">Server name</label>
-              <input id="sname" required placeholder="web-01" autoFocus value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <p className="hint">Any name you'll recognise — "web-01", "Client VPS", "Apache box".</p>
+              <label htmlFor="sname">Name</label>
+              <input id="sname" required placeholder="web-01" autoFocus value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+              <p className="hint">Any label you will recognise — "web-01", "Client VPS".</p>
             </div>
             <div className="field">
-              <label htmlFor="shost">Hostname or IP <span className="opt">optional</span></label>
-              <input id="shost" placeholder="203.0.113.10" value={form.hostname}
-                onChange={(e) => setForm({ ...form, hostname: e.target.value })} />
+              <label htmlFor="shost">Hostname / IP <span className="opt">optional</span></label>
+              <input id="shost" placeholder="203.0.113.10" value={form.hostname} onChange={e => setForm({ ...form, hostname: e.target.value })} />
             </div>
             <div className="field">
               <label htmlFor="senv">Environment</label>
-              <select id="senv" value={form.environment} onChange={(e) => setForm({ ...form, environment: e.target.value })}>
-                {ENVS.map((v) => <option key={v} value={v}>{v}</option>)}
+              <select id="senv" value={form.environment} onChange={e => setForm({ ...form, environment: e.target.value })}>
+                {ENVS.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
           </div>
@@ -126,73 +119,242 @@ export default function Servers() {
       )}
 
       {servers && servers.length === 0 && !showForm && (
-        <div className="empty-state">
-          <div className="empty-icon">🖥️</div>
+        <div className="srv-empty">
+          <i className="ti ti-server-2" style={{ fontSize: 36, color: '#b4dffc' }} aria-hidden="true" />
           <h3>No servers yet</h3>
-          <p>Add the machines your sites run on, then attach each SSL plan to its server —
-          so you always know what's secured where.</p>
+          <p>Add a server, then attach SSL plans to it from your <Link to="/dashboard">certificate dashboard</Link>.</p>
           <button className="btn primary" type="button" onClick={() => setShowForm(true)}>+ Add your first server</button>
         </div>
       )}
 
-      <div className="server-grid">
-        {(servers || []).map((s) => {
-          const attached = orders.filter((o) => o.server_id === s.id)
-          const doms = domains.filter((d) => d.server_id === s.id)
-          const secured = [...new Set(attached.flatMap((o) =>
-            deliverables(o).vendorDomains.map((v) => (typeof v === 'string' ? v : v?.name || v?.domain || ''))
-          ).filter(Boolean))]
+      <div className="srv-grid">
+        {(servers || []).map(s => {
+          const attached = orders.filter(o => o.server_id === s.id)
+          const doms = domains.filter(d => d.server_id === s.id)
+          const secured = [...new Set(attached.flatMap(o => deliverables(o).vendorDomains.map(v => typeof v === 'string' ? v : v?.name || '')).filter(Boolean))]
+          const allOk = attached.length > 0 && attached.every(o => deliverables(o).activated)
+          const anyPending = attached.some(o => !deliverables(o).activated)
+          const isOpen = expanded[s.id]
+
           return (
-            <div className="server-card" key={s.id}>
-              <div className="server-head">
-                <div>
-                  <span className="server-name">🖥️ {s.name}</span>
-                  {s.hostname && <span className="server-host">{s.hostname}</span>}
+            <div className="srv-card" key={s.id}>
+              <div className="srv-card-head" onClick={() => setExpanded(x => ({ ...x, [s.id]: !x[s.id] }))}>
+                <div className="srv-card-left">
+                  <div className="srv-card-icon"><i className="ti ti-server-2" aria-hidden="true" /></div>
+                  <div>
+                    <div className="srv-card-name">{s.name}</div>
+                    {s.hostname && <div className="srv-card-host">{s.hostname}</div>}
+                  </div>
                 </div>
-                <span className={'pill env-' + s.environment}>{ENV_ICON[s.environment]} {s.environment}</span>
-              </div>
-
-              <div className="server-section">
-                <div className="server-section-title">SSL plans <span className="count">{attached.length}</span></div>
-                {attached.length === 0 && <p className="muted-line">Nothing attached yet.</p>}
-                {attached.map((o) => {
-                  const d = deliverables(o)
-                  return (
-                    <div className="server-plan" key={o.id}>
-                      <span className={'dot ' + (d.activated ? 'ok' : 'warn')} aria-hidden="true" />
-                      <span className="server-plan-name">{o.product_name} <span className="mono">#{o.gogetssl_order_id}</span></span>
-                      <span className="server-plan-state">{d.activated ? 'automated' : 'pending setup'}</span>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className="server-section">
-                <div className="server-section-title">Domains <span className="count">{secured.length + doms.length}</span></div>
-                <div className="chips">
-                  {secured.map((dom) => (
-                    <span key={'v-' + dom} className="chip lock" title="Secured by an attached plan">🔒 {dom}</span>
-                  ))}
-                  {doms.map((d) => (
-                    <span key={d.id} className="chip">
-                      {d.domain}
-                      <button type="button" onClick={() => removeDomain(d.id)} aria-label={`Remove ${d.domain}`}>✕</button>
-                    </span>
-                  ))}
-                </div>
-                <div className="chip-add">
-                  <input placeholder="shop.example.com" value={newDomain[s.id] || ''}
-                    onChange={(e) => setNewDomain({ ...newDomain, [s.id]: e.target.value })}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDomain(s.id))} />
-                  <button className="btn ghost" type="button" onClick={() => addDomain(s.id)}>Add</button>
+                <div className="srv-card-right">
+                  <span className="srv-env-pill" style={{ background: ENV_BG[s.environment], color: ENV_COLOR[s.environment] }}>{s.environment}</span>
+                  <span className="srv-cert-count">{attached.length} cert{attached.length !== 1 ? 's' : ''}</span>
+                  <span className={'srv-health-dot ' + (allOk ? 'ok' : anyPending ? 'warn' : 'idle')} />
+                  <span className="srv-chev">{isOpen ? '▾' : '▸'}</span>
                 </div>
               </div>
 
-              <button className="linklike danger" type="button" onClick={() => removeServer(s.id)}>Remove server</button>
+              {isOpen && (
+                <div className="srv-card-body">
+                  {/* Certs section */}
+                  <div className="srv-section-label">SSL certificates</div>
+                  {attached.length === 0
+                    ? <p className="srv-muted">No plans attached. <Link to="/dashboard">Open your dashboard</Link> to tag a plan to this server.</p>
+                    : attached.map(o => {
+                        const d = deliverables(o)
+                        return (
+                          <div className="srv-plan-row" key={o.id}>
+                            <span className={'srv-plan-dot ' + (d.activated ? 'ok' : 'warn')} />
+                            <span className="srv-plan-name">{o.product_name}</span>
+                            <span className="srv-plan-id">#{o.gogetssl_order_id}</span>
+                            <span className={'srv-plan-status ' + (d.activated ? 'ok' : 'warn')}>{d.activated ? 'Automated ✓' : 'Pending setup'}</span>
+                            {d.renewal && <span className="srv-plan-renew">renews {fmtDate(d.renewal)}</span>}
+                          </div>
+                        )
+                      })
+                  }
+
+                  {/* Domains section */}
+                  <div className="srv-section-label" style={{ marginTop: 12 }}>Secured domains</div>
+                  <div className="srv-chips">
+                    {secured.map(dom => <span key={'v-'+dom} className="srv-chip srv-chip-lock"><i className="ti ti-lock" style={{ fontSize: 10 }} aria-hidden="true" /> {dom}</span>)}
+                    {doms.map(d => (
+                      <span key={d.id} className="srv-chip">
+                        {d.domain}
+                        <button type="button" className="srv-chip-remove" onClick={() => removeDomain(d.id)} aria-label={`Remove ${d.domain}`}>✕</button>
+                      </span>
+                    ))}
+                    {secured.length === 0 && doms.length === 0 && <span className="srv-muted">No domains yet.</span>}
+                  </div>
+                  <div className="srv-domain-add">
+                    <input placeholder="add domain e.g. shop.example.com" value={newDomain[s.id] || ''}
+                      onChange={e => setNewDomain({ ...newDomain, [s.id]: e.target.value })}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDomain(s.id))} />
+                    <button className="btn ghost" type="button" onClick={() => addDomain(s.id)}>Track</button>
+                  </div>
+
+                  <button className="srv-remove-btn" type="button" onClick={() => removeServer(s.id)}>Remove server</button>
+                </div>
+              )}
             </div>
           )
         })}
       </div>
     </div>
   )
+}
+
+/* ─── RESELLER server rollup view ─── */
+function ResellerServers({ session }) {
+  const [ownServers, setOwnServers]     = useState(null)
+  const [subServers, setSubServers]     = useState([])
+  const [ownOrders, setOwnOrders]       = useState([])
+  const [subOrders, setSubOrders]       = useState([])
+  const [profiles, setProfiles]         = useState([])
+  const [subDomains, setSubDomains]     = useState([])
+  const [expanded, setExpanded]         = useState({})
+  const [err, setErr]                   = useState(null)
+
+  useEffect(() => {
+    const uid = session.user.id
+    Promise.all([
+      supabase.from('servers').select('*').eq('owner_id', uid).order('name'),
+      supabase.from('servers').select('*').neq('owner_id', uid).order('name'),
+      supabase.from('orders').select('*').eq('user_id', uid),
+      supabase.from('orders').select('*').neq('user_id', uid),
+      supabase.from('profiles').select('id, full_name').eq('parent_reseller_id', uid),
+      supabase.from('tracked_domains').select('*').neq('owner_id', uid),
+    ]).then(([os, ss, oo, so, p, sd]) => {
+      setOwnServers(os.data || [])
+      setSubServers(ss.data || [])
+      setOwnOrders(oo.data || [])
+      setSubOrders(so.data || [])
+      setProfiles(p.data || [])
+      setSubDomains(sd.data || [])
+      setErr(os.error?.message || null)
+    })
+  }, [session.user.id])
+
+  const allServers = [...(ownServers || []), ...subServers]
+  const allOrders  = [...ownOrders, ...subOrders]
+  const totalCerts = allOrders.filter(o => o.server_id).length
+  const automated  = allOrders.filter(o => deliverables(o).activated).length
+  const needsAction = allOrders.filter(o => !deliverables(o).activated).length
+
+  const customerName = id => id === session.user.id ? 'Your servers' : (profiles.find(p => p.id === id)?.full_name || 'Customer')
+
+  // Group servers by owner
+  const owners = [...new Set(allServers.map(s => s.owner_id))]
+
+  return (
+    <div className="dash-page">
+      <span className="eyebrow">Infrastructure rollup</span>
+      <h1>All servers</h1>
+      <p className="sub">A live map of every server across your account and customer sub-accounts.</p>
+
+      <div className="srv-kpis">
+        <div className="srv-kpi"><div className="srv-kpi-num">{allServers.length}</div><div className="srv-kpi-label">Total servers</div></div>
+        <div className="srv-kpi"><div className="srv-kpi-num">{profiles.length}</div><div className="srv-kpi-label">Customers</div></div>
+        <div className="srv-kpi srv-kpi-ok"><div className="srv-kpi-num">{automated}</div><div className="srv-kpi-label">Certs automated</div></div>
+        <div className="srv-kpi srv-kpi-warn"><div className="srv-kpi-num">{needsAction}</div><div className="srv-kpi-label">Needs action</div></div>
+      </div>
+
+      {err && <div className="alert error">{err}</div>}
+
+      {allServers.length === 0 && (
+        <div className="srv-empty">
+          <i className="ti ti-server-2" style={{ fontSize: 36, color: '#b4dffc' }} aria-hidden="true" />
+          <h3>No servers registered</h3>
+          <p>Your customers can add servers from their dashboard. Once added, they appear here in your rollup.</p>
+        </div>
+      )}
+
+      <div className="rsrv-tree">
+        {owners.map(ownerId => {
+          const ownerServers = allServers.filter(s => s.owner_id === ownerId)
+          const label = customerName(ownerId)
+          const ownerOrders = allOrders.filter(o => o.user_id === ownerId)
+          const ownerDomains = ownerId === session.user.id ? [] : subDomains.filter(d => d.owner_id === ownerId)
+          const ownerAuto = ownerOrders.filter(o => deliverables(o).activated).length
+          const ownerPending = ownerOrders.filter(o => !deliverables(o).activated).length
+
+          return (
+            <div className="rsrv-customer-group" key={ownerId}>
+              <div className="rsrv-customer-head">
+                <i className="ti ti-user" style={{ fontSize: 14, color: '#7a8fa0' }} aria-hidden="true" />
+                <span className="rsrv-customer-name">{label}</span>
+                <span className="rsrv-customer-stats">
+                  {ownerServers.length} server{ownerServers.length !== 1 ? 's' : ''}
+                  {ownerAuto > 0 && <span className="rsrv-tag ok">{ownerAuto} automated</span>}
+                  {ownerPending > 0 && <span className="rsrv-tag warn">{ownerPending} pending</span>}
+                </span>
+              </div>
+
+              {ownerServers.map(s => {
+                const attached = allOrders.filter(o => o.server_id === s.id)
+                const doms = ownerDomains.filter(d => d.server_id === s.id)
+                const secured = [...new Set(attached.flatMap(o => deliverables(o).vendorDomains.map(v => typeof v === 'string' ? v : v?.name || '')).filter(Boolean))]
+                const allOk = attached.length > 0 && attached.every(o => deliverables(o).activated)
+                const anyPend = attached.some(o => !deliverables(o).activated)
+                const isOpen = expanded[s.id]
+
+                return (
+                  <div className="rsrv-server-row" key={s.id}>
+                    <div className="rsrv-server-head" onClick={() => setExpanded(x => ({ ...x, [s.id]: !x[s.id] }))}>
+                      <span className={'rsrv-health ' + (allOk ? 'ok' : anyPend ? 'warn' : 'idle')} />
+                      <i className="ti ti-server-2" style={{ fontSize: 13, color: '#7a8fa0' }} aria-hidden="true" />
+                      <span className="rsrv-server-name">{s.name}</span>
+                      {s.hostname && <span className="rsrv-server-host">{s.hostname}</span>}
+                      <span className="rsrv-env-pill" style={{ background: ENV_BG[s.environment], color: ENV_COLOR[s.environment] }}>{s.environment}</span>
+                      <span className="rsrv-counts">
+                        <span>{attached.length} cert{attached.length !== 1 ? 's' : ''}</span>
+                        <span>{(secured.length + doms.length)} domain{secured.length + doms.length !== 1 ? 's' : ''}</span>
+                      </span>
+                      <span className="rsrv-chev">{isOpen ? '▾' : '▸'}</span>
+                    </div>
+
+                    {isOpen && (
+                      <div className="rsrv-server-detail">
+                        {attached.length === 0
+                          ? <p className="srv-muted">No plans attached to this server.</p>
+                          : attached.map(o => {
+                              const d = deliverables(o)
+                              return (
+                                <div className="rsrv-plan-row" key={o.id}>
+                                  <span className={'srv-plan-dot ' + (d.activated ? 'ok' : 'warn')} />
+                                  <span className="rsrv-plan-name">{o.product_name}</span>
+                                  <span className="srv-plan-id">#{o.gogetssl_order_id}</span>
+                                  <span className={'srv-plan-status ' + (d.activated ? 'ok' : 'warn')}>{d.activated ? 'Automated ✓' : 'Pending'}</span>
+                                  {d.renewal && <span className="srv-plan-renew">renews {fmtDate(d.renewal)}</span>}
+                                </div>
+                              )
+                            })
+                        }
+                        {(secured.length > 0 || doms.length > 0) && (
+                          <div className="rsrv-domains">
+                            {secured.map(dom => <span key={'v-'+dom} className="srv-chip srv-chip-lock"><i className="ti ti-lock" style={{ fontSize: 9 }} aria-hidden="true" /> {dom}</span>)}
+                            {doms.map(d => <span key={d.id} className="srv-chip">{d.domain}</span>)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Entry ─── */
+export default function Servers() {
+  const { session, profile, loading } = useAuth()
+  if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
+  if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard/servers' }} />
+  return profile?.account_type === 'reseller'
+    ? <ResellerServers session={session} />
+    : <CustomerServers session={session} />
 }
