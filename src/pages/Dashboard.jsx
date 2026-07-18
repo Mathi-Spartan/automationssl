@@ -41,6 +41,29 @@ export function deliverables(order) {
   }
 }
 
+function CopyBtn({ text, label = 'Copy' }) {
+  const [done, setDone] = useState(false)
+  return (
+    <button type="button" className="copy-btn" onClick={async () => {
+      try { await navigator.clipboard.writeText(text) } catch { /* noop */ }
+      setDone(true)
+      setTimeout(() => setDone(false), 1800)
+    }}>
+      {done ? 'Copied ✓' : label}
+    </button>
+  )
+}
+
+function CredRow({ label, value }) {
+  return (
+    <div className="cred-row">
+      <span className="cred-label">{label}</span>
+      <code className="cred-value">{value}</code>
+      <CopyBtn text={value} />
+    </div>
+  )
+}
+
 function fmtTime(ts) {
   try {
     return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -209,11 +232,26 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
                 <li>Register your ACME client with the credentials below (certbot, acme.sh, Caddy, Traefik, cert-manager…).</li>
                 <li>Request the certificate for your domain — renewals run on their own after that.</li>
               </ol>
-              <pre className="acme-creds">{`# one-time registration
-certbot register --server ${d.acme.server_url} \
+              <div className="cred-card">
+                <div className="cred-card-title">Your ACME credentials <span className="cred-live">live from the CA</span></div>
+                <CredRow label="ACME server URL" value={d.acme.server_url} />
+                <CredRow label="EAB key ID" value={d.acme.eab_kid} />
+                <CredRow label="EAB HMAC key" value={d.acme.eab_hmac_key} />
+                <p className="hint" style={{ fontSize: '0.76rem', marginTop: 8 }}>
+                  Treat these like a password — they're yours alone. Every ACME client
+                  (certbot, acme.sh, Caddy, Traefik, cert-manager) accepts these three values.
+                </p>
+              </div>
+              <div className="cred-card cmd">
+                <div className="cred-card-title">
+                  Quick start with certbot
+                  <CopyBtn label="Copy command" text={`certbot register --server ${d.acme.server_url} --eab-kid ${d.acme.eab_kid} --eab-hmac-key ${d.acme.eab_hmac_key}`} />
+                </div>
+                <pre className="acme-creds">{`certbot register \
+  --server ${d.acme.server_url} \
   --eab-kid ${d.acme.eab_kid} \
   --eab-hmac-key ${d.acme.eab_hmac_key}`}</pre>
-              <p className="hint" style={{ fontSize: '0.78rem' }}>Treat these credentials like a password — they're yours alone.</p>
+              </div>
             </>
           ) : (
             <>

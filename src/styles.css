@@ -423,3 +423,18 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .hero .wrap { display: block; }
 .hero p.lede, .hero .lede { color: #e6f0fa; max-width: 640px; margin: 0 auto 30px; font-size: 1.06rem; }
 .acme-creds { background: #0a2540; color: #cfe4f7; border-radius: 10px; padding: 14px 16px; font-family: var(--mono); font-size: 0.78rem; overflow-x: auto; margin-top: 10px; white-space: pre; }
+
+/* ---------- credential presentation ---------- */
+.cred-card { background: #f7fafd; border: 1px solid #d6e3f2; border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+.cred-card.cmd { background: #0a2540; border-color: #0a2540; }
+.cred-card-title { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #235581; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cred-card.cmd .cred-card-title { color: #b4dffc; }
+.cred-live { font-weight: 500; text-transform: none; letter-spacing: 0; color: #6b87a3; }
+.cred-row { display: grid; grid-template-columns: 140px 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid #e2ecf7; }
+.cred-row:first-of-type { border-top: none; }
+.cred-label { font-size: 0.78rem; font-weight: 600; color: #4c5a68; }
+.cred-value { font-family: var(--mono); font-size: 0.78rem; background: #fff; border: 1px solid #d6e3f2; border-radius: 8px; padding: 7px 10px; word-break: break-all; color: #0d1116; }
+.copy-btn { border: 1px solid #3375b1; color: #2e6ba2; background: #fff; border-radius: 8px; padding: 6px 12px; font-size: 0.76rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.copy-btn:hover { background: #e3eefb; }
+.cred-card.cmd .acme-creds { margin-top: 0; background: transparent; padding: 4px 0 0; white-space: pre-wrap; word-break: break-all; }
+@media (max-width: 640px) { .cred-row { grid-template-columns: 1fr; gap: 4px; } }
