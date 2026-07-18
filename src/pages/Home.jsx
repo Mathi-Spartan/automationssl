@@ -124,8 +124,8 @@ export default function Home() {
         <div className="wrap">
           <Reveal className="b-head">
             <span className="b-head-eyebrow">How it works</span>
-            <h2 className="b-h2">Watch a certificate automate itself.</h2>
-            <p className="b-head-sub">Real commands, real CA exchange. Pick the path that matches your stack.</p>
+            <h2 className="b-h2">Your certificates are about to get much shorter.</h2>
+            <p className="b-head-sub">Pick an order date and see how many certificates a single year now takes — and how automation handles every one of them.</p>
           </Reveal>
           <AutomationTheatre />
         </div>
