@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { deliverables } from './Dashboard.jsx'
+import { Reveal, Stagger } from '../components/Motion.jsx'
 
 const ENVS = ['production', 'staging', 'development', 'other']
 const ENV_COLOR = { production: '#1a7a4c', staging: '#b8862b', development: '#2e6ba2', other: '#7a8fa0' }
@@ -87,12 +88,12 @@ function CustomerServers({ session }) {
         )}
       </div>
 
-      <div className="srv-kpis">
+      <Stagger className="srv-kpis" step={70}>
         <div className="srv-kpi"><div className="srv-kpi-num">{servers?.length ?? '…'}</div><div className="srv-kpi-label">Servers</div></div>
         <div className="srv-kpi"><div className="srv-kpi-num">{totalCerts}</div><div className="srv-kpi-label">Certs tagged</div></div>
         <div className="srv-kpi srv-kpi-ok"><div className="srv-kpi-num">{automated}</div><div className="srv-kpi-label">Automated</div></div>
         <div className="srv-kpi"><div className="srv-kpi-num">{totalDomains}</div><div className="srv-kpi-label">Domains secured</div></div>
-      </div>
+      </Stagger>
 
       {err && <div className="alert error">{err}</div>}
 
@@ -293,12 +294,12 @@ function ResellerServers({ session }) {
       <h1>All servers</h1>
       <p className="sub">A live map of every server across your account and customer sub-accounts.</p>
 
-      <div className="srv-kpis">
+      <Stagger className="srv-kpis" step={70}>
         <div className="srv-kpi"><div className="srv-kpi-num">{allServers.length}</div><div className="srv-kpi-label">Total servers</div></div>
         <div className="srv-kpi"><div className="srv-kpi-num">{profiles.length}</div><div className="srv-kpi-label">Customers</div></div>
         <div className="srv-kpi srv-kpi-ok"><div className="srv-kpi-num">{automated}</div><div className="srv-kpi-label">Certs automated</div></div>
         <div className="srv-kpi srv-kpi-warn"><div className="srv-kpi-num">{needsAction}</div><div className="srv-kpi-label">Needs action</div></div>
-      </div>
+      </Stagger>
 
       {err && <div className="alert error">{err}</div>}
 

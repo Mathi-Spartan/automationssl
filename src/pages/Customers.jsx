@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { deliverables } from './Dashboard.jsx'
+import { Stagger } from '../components/Motion.jsx'
 
 export default function Customers() {
   const { session, profile, loading } = useAuth()
@@ -110,7 +111,7 @@ export default function Customers() {
         </div>
       )}
 
-      <div className="cust-list">
+      <Stagger className="cust-list" step={70}>
         {(subs || []).map(c => {
           const co = orders.filter(o => o.user_id === c.id)
           const activated = co.filter(o => deliverables(o).activated).length
@@ -152,7 +153,7 @@ export default function Customers() {
             </div>
           )
         })}
-      </div>
+      </Stagger>
     </div>
   )
 }
