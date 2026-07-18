@@ -205,3 +205,6 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
   .nav { display: none; }
   .field-row { grid-template-columns: 1fr; }
 }
+
+.form-page.wide { max-width: 860px; }
+.form-page.wide select, .form-page.wide input { font: inherit; }

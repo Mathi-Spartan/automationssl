@@ -30,11 +30,43 @@ function ggHeaders() {
   }
 }
 
+const SB = () => (process.env.SUPABASE_URL || '').replace(/\/$/, '')
+const SRK = () => process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+
+// Resolve the signed-in Supabase user from the Authorization: Bearer header.
+async function resolveUser(req) {
+  const auth = req.headers.authorization || ''
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
+  if (!token) return null
+  try {
+    const r = await fetch(`${SB()}/auth/v1/user`, {
+      headers: { apikey: SRK(), Authorization: `Bearer ${token}` },
+    })
+    if (!r.ok) return null
+    return await r.json()
+  } catch {
+    return null
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: true, message: 'Method not allowed' })
 
   try {
-    const { product_id, period, domain, email, firstname, lastname, phone } = req.body || {}
+    const user = await resolveUser(req)
+    if (!user?.id) return res.status(401).json({ error: true, message: 'Please sign in to place an order.' })
+
+    const { product_id, period, domain, email, firstname, lastname, phone, server_id } = req.body || {}
+
+    // If a server tag was chosen, it must belong to the buyer.
+    let serverId = null
+    if (server_id) {
+      const sv = await fetch(`${SB()}/rest/v1/servers?id=eq.${encodeURIComponent(server_id)}&select=id,owner_id`, {
+        headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+      })
+      const svRows = await sv.json()
+      if (svRows?.[0]?.owner_id === user.id) serverId = svRows[0].id
+    }
     const product = KNOWN_PRODUCTS[product_id]
 
     // -------- validation --------
@@ -125,6 +157,8 @@ export default async function handler(req, res) {
           phone,
           status: order?.order?.status || 'pending',
           api_response: order,
+          user_id: user.id,
+          server_id: serverId,
         }),
       })
       db_ok = sbRes.ok

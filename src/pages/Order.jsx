@@ -1,10 +1,14 @@
-import { useState } from 'react'
-import { useParams, Navigate, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useParams, Navigate, Link, useLocation } from 'react-router-dom'
 import { bySlug } from '../catalog.js'
+import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../lib/AuthContext.jsx'
 
 export default function Order() {
   const { slug } = useParams()
   const p = bySlug(slug)
+  const { session, profile, loading } = useAuth()
+  const location = useLocation()
   const [form, setForm] = useState({
     domain: '',
     email: '',
@@ -12,13 +16,37 @@ export default function Order() {
     lastname: '',
     phone: '',
     period: p ? p.periods[0] : 12,
+    server_id: '',
     agree: false,
   })
+  const [servers, setServers] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
 
+  // Prefill from the signed-in account
+  useEffect(() => {
+    if (!session?.user) return
+    setForm((f) => {
+      const parts = (profile?.full_name || '').trim().split(/\s+/)
+      return {
+        ...f,
+        email: f.email || session.user.email || '',
+        firstname: f.firstname || parts[0] || '',
+        lastname: f.lastname || parts.slice(1).join(' ') || '',
+      }
+    })
+    supabase
+      ?.from('servers')
+      .select('id, name, environment')
+      .eq('owner_id', session.user.id)
+      .order('name')
+      .then(({ data }) => setServers(data || []))
+  }, [session?.user?.id, profile?.full_name])
+
   if (!p) return <Navigate to="/" replace />
+  if (loading) return <div className="form-page"><p>Loading…</p></div>
+  if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />
 
   const set = (k) => (e) =>
     setForm({ ...form, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
@@ -32,9 +60,13 @@ export default function Order() {
     }
     setBusy(true)
     try {
+      const { data: sess } = await supabase.auth.getSession()
       const res = await fetch('/api/order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sess?.session?.access_token || ''}`,
+        },
         body: JSON.stringify({
           product_id: p.id,
           period: Number(form.period),
@@ -43,6 +75,7 @@ export default function Order() {
           firstname: form.firstname.trim(),
           lastname: form.lastname.trim(),
           phone: form.phone.trim(),
+          server_id: form.server_id || null,
         }),
       })
       const data = await res.json()
@@ -93,9 +126,10 @@ export default function Order() {
             </div>
           )}
           <p style={{ marginTop: 10 }}>
-            You can retrieve these details anytime on the{' '}
+            This plan is saved to your account — find it anytime in your{' '}
+            <Link to="/dashboard" style={{ textDecoration: 'underline' }}>dashboard</Link>, or via the{' '}
             <Link to="/status" style={{ textDecoration: 'underline' }}>order status page</Link>{' '}
-            using your Order ID and the email above. Keep your Order ID safe.
+            with your Order ID and email.
           </p>
         </div>
         <Link className="btn ghost" to="/">Back to plans</Link>
@@ -131,6 +165,19 @@ export default function Order() {
                 <option key={m} value={m}>{m} months</option>
               ))}
             </select>
+          </div>
+        )}
+
+        {servers.length > 0 && (
+          <div className="field">
+            <label htmlFor="server">Install on server (optional)</label>
+            <select id="server" value={form.server_id} onChange={set('server_id')}>
+              <option value="">— choose later —</option>
+              {servers.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.environment})</option>
+              ))}
+            </select>
+            <p className="hint">Tags this plan to one of your servers so it shows up in the Servers view.</p>
           </div>
         )}
 

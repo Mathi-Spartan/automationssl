@@ -1,8 +1,14 @@
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import Product from './pages/Product.jsx'
 import Order from './pages/Order.jsx'
 import Status from './pages/Status.jsx'
+import { Login, Signup } from './pages/Auth.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import Servers from './pages/Servers.jsx'
+import Customers from './pages/Customers.jsx'
+import { AuthProvider, useAuth } from './lib/AuthContext.jsx'
+import { supabase } from './lib/supabase.js'
 
 function Logo() {
   return (
@@ -25,10 +31,40 @@ export function Header() {
           <a href="/#plans">Plans</a>
           <a href="/#how">How it works</a>
           <Link to="/status">Order status</Link>
-          <a href="/#plans" className="cta">Get started free</a>
+          <AccountNav />
         </nav>
       </div>
     </header>
+  )
+}
+
+function AccountNav() {
+  const { session, loading } = useAuth()
+  const navigate = useNavigate()
+  if (loading) return null
+  if (!session) {
+    return (
+      <>
+        <Link to="/login">Sign in</Link>
+        <Link to="/signup" className="cta">Get started free</Link>
+      </>
+    )
+  }
+  return (
+    <>
+      <Link to="/dashboard">Dashboard</Link>
+      <Link to="/dashboard/servers">Servers</Link>
+      <a
+        href="/"
+        onClick={async (e) => {
+          e.preventDefault()
+          await supabase?.auth.signOut()
+          navigate('/')
+        }}
+      >
+        Sign out
+      </a>
+    </>
   )
 }
 
@@ -89,7 +125,7 @@ export function RenewalLoop() {
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <Header />
       <main>
         <Routes>
@@ -97,9 +133,14 @@ export default function App() {
           <Route path="/plan/:slug" element={<Product />} />
           <Route path="/order/:slug" element={<Order />} />
           <Route path="/status" element={<Status />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/servers" element={<Servers />} />
+          <Route path="/dashboard/customers" element={<Customers />} />
         </Routes>
       </main>
       <Footer />
-    </>
+    </AuthProvider>
   )
 }
