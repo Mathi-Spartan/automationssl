@@ -2,84 +2,100 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { PRODUCTS } from '../catalog.js'
 
-function PlanCard({ p }) {
-  const isWild = p.coverage.startsWith('Wildcard')
-  const isFeatured = p.featured
+function PlansTable() {
+  const regular = PRODUCTS.filter((p) => !p.featured)
+  const caas = PRODUCTS.find((p) => p.featured)
+  const allProducts = [...regular, caas]
+  const brandColor = { RapidSSL: '#1a6bb5', GeoTrust: '#e8832a', Sectigo: '#c00020' }
 
-  if (isFeatured) {
-    return (
-      <article className="pcard pcard-featured">
-        <div className="pcard-featured-left">
-          <div className="pcard-brand-row">
-            <span className="pcard-brand-badge sectigo">Sectigo</span>
-            <span className="pcard-brand-badge dv">DV</span>
-            <span className="pcard-brand-badge san">Up to 255 SANs</span>
-          </div>
-          <h3 className="pcard-name">{p.name}</h3>
-          <p className="pcard-tagline">{p.tagline}</p>
-          <p className="pcard-meta">{p.coverage} · {p.periods.map((m) => `${m}mo`).join(' / ')} plans</p>
-          <div className="pcard-acme-preview">
-            <span className="pcard-acme-label">Works with any ACME client</span>
-            <div className="pcard-acme-logos">
-              {['certbot', 'acme.sh', 'Caddy', 'Traefik', 'cert-manager'].map((c) => (
-                <span key={c} className="pcard-acme-chip">{c}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="pcard-featured-right">
-          <div className="pcard-price-block">
-            <span className="pcard-price">$0</span>
-            <span className="pcard-price-note">free during launch testing</span>
-          </div>
-          <Link className="btn primary pcard-order-btn" to={`/order/${p.slug}`}>Order free &rarr;</Link>
-          <Link className="pcard-details-link" to={`/plan/${p.slug}`}>View plan details</Link>
-          <p className="pcard-san-note">Add domains any time &middot; billed pro-rated by the CA</p>
-        </div>
-      </article>
-    )
+  const rows = [
+    { section: 'Coverage' },
+    { label: 'Single domain', vals: [true, true, true, true, true] },
+    { label: 'Wildcard (*.domain)', vals: [false, true, false, true, true] },
+    { label: 'Multi-domain SANs', vals: [false, false, false, false, '\u2264 255'] },
+    { label: 'Add domains anytime', vals: [false, false, false, false, 'pro-rated'] },
+    { section: 'Automation' },
+    { label: 'AutoInstall agent', vals: [true, true, true, true, false] },
+    { label: 'certbot / acme.sh', vals: [true, true, true, true, true] },
+    { label: 'Caddy \u00b7 Traefik \u00b7 cert-manager', vals: [true, true, true, true, true] },
+    { section: 'Certificate' },
+    { label: 'Validation', vals: ['DV', 'DV', 'DV', 'DV', 'DV'] },
+    { label: 'OV / EV', vals: [false, false, false, false, false] },
+    { label: 'Auto-renews', vals: [true, true, true, true, true] },
+    { label: 'Term', vals: ['12 mo', '12 mo', '12 mo', '12 mo', '12 mo'] },
+  ]
+
+  function Val({ v }) {
+    if (v === true) return <span className="tv-yes"><i className="ti ti-check" aria-hidden="true" /></span>
+    if (v === false) return <span className="tv-no"><i className="ti ti-minus" aria-hidden="true" /></span>
+    return <span className="tv-partial">{v}</span>
   }
 
-  const brandBg = p.brand === 'RapidSSL' ? '#1a3a5c' : '#163d22'
-  const brandAccent = p.brand === 'RapidSSL' ? '#7ab8e8' : '#6dc98a'
-  const icon = isWild ? '✳' : '🔒'
-  const feature = isWild
-    ? ['Covers all subdomains (*.domain)', 'One cert, unlimited sub-sites', 'AutoInstall agent or ACME']
-    : ['Single domain, always valid', 'Zero manual renewal steps', 'AutoInstall agent or ACME']
+  const shortName = (p) => p.name
+    .replace(' Plan + Automate', '').replace(' DV Plan + Automate', '')
+    .replace(' DV Wildcard Plan + Automate', '').replace(' Wildcard Plan + Automate', '')
+    .replace(' ACME Certificate-as-a-Service', ' CaaS')
 
   return (
-    <article className={"pcard pcard-split" + (isWild ? " pcard-wild" : "")}>
-      <div className="pcard-split-left" style={{ background: brandBg }}>
-        <div className="pcard-brand-row">
-          <span className={"pcard-brand-badge " + p.brand.toLowerCase()}>{p.brand}</span>
-          <span className="pcard-brand-badge dv">{p.validation}</span>
-          {isWild && <span className="pcard-brand-badge wild">Wildcard</span>}
-        </div>
-        <div className="pcard-split-icon" style={{ color: brandAccent }}>{icon}</div>
-        <h3 className="pcard-name">{p.name}</h3>
-        <p className="pcard-tagline" style={{ color: '#9bbdd4' }}>{p.tagline}</p>
-        <ul className="pcard-features">
-          {feature.map((f) => (
-            <li key={f} style={{ color: brandAccent }}>
-              <span style={{ marginRight: 7 }}>✓</span>
-              <span style={{ color: '#c8dce8' }}>{f}</span>
-            </li>
+    <div className="tv-outer">
+      <table className="tv-table">
+        <colgroup>
+          <col className="tv-col-label" />
+          {allProducts.map((p) => <col key={p.id} className="tv-col-prod" />)}
+        </colgroup>
+        <thead>
+          <tr>
+            <th className="tv-corner" />
+            {allProducts.map((p) => (
+              <th key={p.id} className={"tv-th" + (p.featured ? " tv-th-accent" : "")}>
+                <div className="tv-brand-circle" style={{ background: brandColor[p.brand] }}>{p.brand[0]}</div>
+                <div className="tv-prod-name">{shortName(p)}</div>
+                <div className="tv-prod-sub">{p.coverage}</div>
+                {(p.coverage.startsWith("Wildcard") || p.featured) && (
+                  <span className={"tv-badge" + (p.featured ? " tv-badge-caas" : " tv-badge-wc")}>
+                    {p.featured ? "UP TO 255 SANs" : "WILDCARD"}
+                  </span>
+                )}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => row.section ? (
+            <tr key={ri} className="tv-section-row"><td colSpan={6}>{row.section}</td></tr>
+          ) : (
+            <tr key={ri} className="tv-data-row">
+              <td className="tv-label">{row.label}</td>
+              {row.vals.map((v, ci) => (
+                <td key={ci} className={"tv-val" + (allProducts[ci] && allProducts[ci].featured ? " tv-val-accent" : "")}>
+                  <Val v={v} />
+                </td>
+              ))}
+            </tr>
           ))}
-        </ul>
-      </div>
-      <div className="pcard-split-right">
-        <div className="pcard-price-block">
-          <span className="pcard-price">$0</span>
-          <span className="pcard-price-note">free during launch testing</span>
-        </div>
-        <p className="pcard-meta" style={{ marginBottom: 16 }}>{p.coverage} · {p.periods.map((m) => `${m}mo`).join(' / ')} plans</p>
-        <Link className="btn primary pcard-order-btn" to={`/order/${p.slug}`}>Order free →</Link>
-        <Link className="pcard-details-link" to={`/plan/${p.slug}`}>View plan details</Link>
-      </div>
-    </article>
+          <tr className="tv-price-row">
+            <td className="tv-label tv-price-label">Price / year</td>
+            {allProducts.map((p) => (
+              <td key={p.id} className={"tv-val tv-price-cell" + (p.featured ? " tv-val-accent" : "")}>
+                <span className="tv-price">{p.price}</span>
+                <span className="tv-price-note">{p.priceNote}</span>
+              </td>
+            ))}
+          </tr>
+          <tr className="tv-cta-row">
+            <td className="tv-label" />
+            {allProducts.map((p) => (
+              <td key={p.id} className={"tv-val tv-cta-cell" + (p.featured ? " tv-val-accent" : "")}>
+                <Link className="tv-btn-order btn primary" to={`/order/${p.slug}`}>Order now</Link>
+                <Link className="tv-btn-det" to={`/plan/${p.slug}`}>Details</Link>
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
   )
 }
-
 
 function HowItWorksFlow() {
   const [active, setActive] = React.useState('agent')
@@ -233,28 +249,9 @@ export default function Home() {
           <div className="section-head">
             <span className="eyebrow">Plans</span>
             <h2>Five automation plans. One outcome: always valid.</h2>
-            <p>
-              Pick the CA brand and coverage you need. Every plan includes
-              lifecycle automation for its full term.
-            </p>
+            <p>Pick the CA brand and coverage that fits your stack. Every plan includes full lifecycle automation.</p>
           </div>
-          <div className="pcard-brand-group">
-            <div className="pcard-brand-label">
-              <span className="pcard-brand-eyebrow">⚡ AutoInstall Agent</span>
-              <span className="pcard-brand-sub">RapidSSL &middot; GeoTrust &mdash; agent or ACME supported</span>
-            </div>
-            <div className="pcard-grid-2">
-              {PRODUCTS.filter((p) => !p.featured).map((p) => <PlanCard key={p.id} p={p} />)}
-            </div>
-          </div>
-          <div className="pcard-brand-group">
-            <div className="pcard-brand-label">
-              <span className="pcard-brand-eyebrow">🔑 ACME / certbot</span>
-              <span className="pcard-brand-sub">Sectigo CaaS &mdash; any ACME client</span>
-            </div>
-            {PRODUCTS.filter((p) => p.featured).map((p) => <PlanCard key={p.id} p={p} />)}
-          </div>
-
+          <PlansTable />
         </div>
       </section>
 

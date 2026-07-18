@@ -20,6 +20,8 @@ export const PRODUCTS = [
       'Static site seal included',
       'Free reissues during the plan term',
     ],
+    price: '$63',
+    priceNote: '/yr · billed annually',
   },
   {
     id: 401,
@@ -39,6 +41,8 @@ export const PRODUCTS = [
       'Static site seal included',
       'Ideal for SaaS tenants and multi-app stacks',
     ],
+    price: '$236',
+    priceNote: '/yr · billed annually',
   },
   {
     id: 402,
@@ -58,6 +62,8 @@ export const PRODUCTS = [
       'Static site seal included',
       'Free reissues during the plan term',
     ],
+    price: '$168',
+    priceNote: '/yr · billed annually',
   },
   {
     id: 403,
@@ -77,6 +83,8 @@ export const PRODUCTS = [
       'Static site seal included',
       'Ideal for SaaS tenants and multi-app stacks',
     ],
+    price: '$708',
+    priceNote: '/yr · billed annually',
   },
   {
     id: 300,
@@ -97,6 +105,8 @@ export const PRODUCTS = [
       'Certificates issue and renew fully unattended',
       'Enterprise Sectigo CA infrastructure',
     ],
+    price: '$79',
+    priceNote: '/domain/yr · base subscription free',
   },
 ]
 
