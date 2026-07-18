@@ -3,27 +3,63 @@ import { Link } from 'react-router-dom'
 import { PRODUCTS } from '../catalog.js'
 
 function PlanCard({ p }) {
-  return (
-    <article className={`card${p.featured ? ' featured' : ''}`}>
-      <div className="row">
-        <span className="pill brand">{p.brand}</span>
-        <span className="pill">{p.validation}</span>
-        {p.coverage.startsWith('Wildcard') && <span className="pill amber">Wildcard</span>}
-        {p.featured && <span className="pill amber">Up to 255 SANs</span>}
-      </div>
-      <h3>{p.name}</h3>
-      <p className="tagline">{p.tagline}</p>
-      <p className="meta">
-        {p.coverage} · {p.periods.map((m) => `${m}mo`).join(' / ')} plans
-      </p>
-      <div className="foot">
-        <div className="price">
-          $0
-          <small>free during launch testing</small>
+  const isWild = p.coverage.startsWith('Wildcard')
+  const isFeatured = p.featured
+
+  if (isFeatured) {
+    return (
+      <article className="pcard pcard-featured">
+        <div className="pcard-featured-left">
+          <div className="pcard-brand-row">
+            <span className="pcard-brand-badge sectigo">Sectigo</span>
+            <span className="pcard-brand-badge dv">DV</span>
+            <span className="pcard-brand-badge san">Up to 255 SANs</span>
+          </div>
+          <h3 className="pcard-name">{p.name}</h3>
+          <p className="pcard-tagline">{p.tagline}</p>
+          <p className="pcard-meta">{p.coverage} · {p.periods.map((m) => `${m}mo`).join(' / ')} plans</p>
+          <div className="pcard-acme-preview">
+            <span className="pcard-acme-label">Works with any ACME client</span>
+            <div className="pcard-acme-logos">
+              {['certbot', 'acme.sh', 'Caddy', 'Traefik', 'cert-manager'].map((c) => (
+                <span key={c} className="pcard-acme-chip">{c}</span>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="row">
+        <div className="pcard-featured-right">
+          <div className="pcard-price-block">
+            <span className="pcard-price">$0</span>
+            <span className="pcard-price-note">free during launch testing</span>
+          </div>
+          <Link className="btn primary pcard-order-btn" to={`/order/${p.slug}`}>Order free &rarr;</Link>
+          <Link className="pcard-details-link" to={`/plan/${p.slug}`}>View plan details</Link>
+          <p className="pcard-san-note">Add domains any time &middot; billed pro-rated by the CA</p>
+        </div>
+      </article>
+    )
+  }
+
+  return (
+    <article className={"pcard" + (isWild ? " pcard-wild" : "")}>
+      <div className="pcard-top">
+        <div className="pcard-brand-row">
+          <span className={"pcard-brand-badge " + p.brand.toLowerCase()}>{p.brand}</span>
+          <span className="pcard-brand-badge dv">{p.validation}</span>
+          {isWild && <span className="pcard-brand-badge wild">Wildcard</span>}
+        </div>
+        <h3 className="pcard-name">{p.name}</h3>
+        <p className="pcard-tagline">{p.tagline}</p>
+        <p className="pcard-meta">{p.coverage} · {p.periods.map((m) => `${m}mo`).join(' / ')} plans</p>
+      </div>
+      <div className="pcard-foot">
+        <div className="pcard-price-block">
+          <span className="pcard-price">$0</span>
+          <span className="pcard-price-note">free during launch testing</span>
+        </div>
+        <div className="pcard-actions">
+          <Link className="btn primary pcard-order-btn" to={`/order/${p.slug}`}>Order free</Link>
           <Link className="btn ghost" to={`/plan/${p.slug}`}>Details</Link>
-          <Link className="btn primary" to={`/order/${p.slug}`}>Order free</Link>
         </div>
       </div>
     </article>
@@ -188,11 +224,23 @@ export default function Home() {
               lifecycle automation for its full term.
             </p>
           </div>
-          <div className="grid">
-            {PRODUCTS.map((p) => (
-              <PlanCard key={p.id} p={p} />
-            ))}
+          <div className="pcard-brand-group">
+            <div className="pcard-brand-label">
+              <span className="pcard-brand-eyebrow">⚡ AutoInstall Agent</span>
+              <span className="pcard-brand-sub">RapidSSL &middot; GeoTrust &mdash; agent or ACME supported</span>
+            </div>
+            <div className="pcard-grid-2">
+              {PRODUCTS.filter((p) => !p.featured).map((p) => <PlanCard key={p.id} p={p} />)}
+            </div>
           </div>
+          <div className="pcard-brand-group">
+            <div className="pcard-brand-label">
+              <span className="pcard-brand-eyebrow">🔑 ACME / certbot</span>
+              <span className="pcard-brand-sub">Sectigo CaaS &mdash; any ACME client</span>
+            </div>
+            {PRODUCTS.filter((p) => p.featured).map((p) => <PlanCard key={p.id} p={p} />)}
+          </div>
+
         </div>
       </section>
 
