@@ -685,3 +685,23 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
   .pcard-featured { flex-direction: column; }
   .pcard-featured-right { width: 100%; border-left: none; border-top: 1px solid var(--line); }
 }
+
+/* ---------- split plan cards (standard) ---------- */
+.pcard-split { flex-direction: row; min-height: 200px; }
+.pcard-split:hover { border-color: var(--cert); box-shadow: 0 6px 20px rgba(51,117,177,0.12); }
+.pcard-split-left { flex: 1; padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px 0 0 14px; }
+.pcard-split-right { width: 200px; flex-shrink: 0; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; justify-content: center; background: #fff; border-left: 1px solid var(--line); border-radius: 0 14px 14px 0; }
+.pcard-split-icon { font-size: 1.5rem; margin: 4px 0 2px; }
+.pcard-split-left .pcard-name { color: #fff; font-size: 1rem; margin: 0; }
+.pcard-features { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.pcard-features li { display: flex; align-items: flex-start; font-size: 0.78rem; line-height: 1.4; }
+.pcard-split-right .pcard-price { font-size: 1.6rem; }
+.pcard-split-right .pcard-order-btn { display: block; text-align: center; font-size: 0.86rem; padding: 10px 16px; }
+.pcard-split-right .pcard-details-link { text-align: center; font-size: 0.8rem; }
+.pcard-split-right .pcard-meta { font-size: 0.72rem; line-height: 1.5; }
+
+@media (max-width: 760px) {
+  .pcard-split { flex-direction: column; }
+  .pcard-split-left { border-radius: 14px 14px 0 0; }
+  .pcard-split-right { width: 100%; border-left: none; border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; }
+}

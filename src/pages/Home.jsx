@@ -40,27 +40,41 @@ function PlanCard({ p }) {
     )
   }
 
+  const brandBg = p.brand === 'RapidSSL' ? '#1a3a5c' : '#163d22'
+  const brandAccent = p.brand === 'RapidSSL' ? '#7ab8e8' : '#6dc98a'
+  const icon = isWild ? '✳' : '🔒'
+  const feature = isWild
+    ? ['Covers all subdomains (*.domain)', 'One cert, unlimited sub-sites', 'AutoInstall agent or ACME']
+    : ['Single domain, always valid', 'Zero manual renewal steps', 'AutoInstall agent or ACME']
+
   return (
-    <article className={"pcard" + (isWild ? " pcard-wild" : "")}>
-      <div className="pcard-top">
+    <article className={"pcard pcard-split" + (isWild ? " pcard-wild" : "")}>
+      <div className="pcard-split-left" style={{ background: brandBg }}>
         <div className="pcard-brand-row">
           <span className={"pcard-brand-badge " + p.brand.toLowerCase()}>{p.brand}</span>
           <span className="pcard-brand-badge dv">{p.validation}</span>
           {isWild && <span className="pcard-brand-badge wild">Wildcard</span>}
         </div>
+        <div className="pcard-split-icon" style={{ color: brandAccent }}>{icon}</div>
         <h3 className="pcard-name">{p.name}</h3>
-        <p className="pcard-tagline">{p.tagline}</p>
-        <p className="pcard-meta">{p.coverage} · {p.periods.map((m) => `${m}mo`).join(' / ')} plans</p>
+        <p className="pcard-tagline" style={{ color: '#9bbdd4' }}>{p.tagline}</p>
+        <ul className="pcard-features">
+          {feature.map((f) => (
+            <li key={f} style={{ color: brandAccent }}>
+              <span style={{ marginRight: 7 }}>✓</span>
+              <span style={{ color: '#c8dce8' }}>{f}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-      <div className="pcard-foot">
+      <div className="pcard-split-right">
         <div className="pcard-price-block">
           <span className="pcard-price">$0</span>
           <span className="pcard-price-note">free during launch testing</span>
         </div>
-        <div className="pcard-actions">
-          <Link className="btn primary pcard-order-btn" to={`/order/${p.slug}`}>Order free</Link>
-          <Link className="btn ghost" to={`/plan/${p.slug}`}>Details</Link>
-        </div>
+        <p className="pcard-meta" style={{ marginBottom: 16 }}>{p.coverage} · {p.periods.map((m) => `${m}mo`).join(' / ')} plans</p>
+        <Link className="btn primary pcard-order-btn" to={`/order/${p.slug}`}>Order free →</Link>
+        <Link className="pcard-details-link" to={`/plan/${p.slug}`}>View plan details</Link>
       </div>
     </article>
   )
