@@ -2163,3 +2163,92 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 @media (max-width: 1000px) {
   .clm-step-pill { font-size: 0.72rem; padding: 3px 8px 3px 4px; gap: 4px; }
 }
+
+/* ══════════════════════════════════════════════════
+   SERVERS PAGE — colour + motion
+   Layered over the existing rules; no markup change.
+   Each KPI carries its own tint; environment pills
+   carry their state colour.
+══════════════════════════════════════════════════ */
+
+/* --- KPI tiles: tinted, with a coloured spine --- */
+.srv-kpi { position: relative; overflow: hidden; transition: transform .42s cubic-bezier(.16,1,.3,1), box-shadow .42s cubic-bezier(.16,1,.3,1); }
+.srv-kpi::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; transition: width .34s cubic-bezier(.16,1,.3,1); }
+.srv-kpi:hover::before { width: 5px; }
+.srv-kpi:hover { transform: translateY(-3px); }
+.srv-kpi-label { display: block; transition: transform .42s cubic-bezier(.16,1,.3,1); transform-origin: left center; }
+.srv-kpi:hover .srv-kpi-label { transform: translateX(3px); }
+
+.srv-kpi:nth-child(1) { background: #f0f6fd; border-color: #d9e8f7; }
+.srv-kpi:nth-child(1)::before { background: #3375b1; }
+.srv-kpi:nth-child(1) .srv-kpi-num { color: #1a5a94; }
+.srv-kpi:nth-child(1) .srv-kpi-label { color: #5a87b0; }
+
+.srv-kpi:nth-child(2) { background: #f5f1fc; border-color: #e4dcf5; }
+.srv-kpi:nth-child(2)::before { background: #7c5cbf; }
+.srv-kpi:nth-child(2) .srv-kpi-num { color: #5b3fa0; }
+.srv-kpi:nth-child(2) .srv-kpi-label { color: #8a72c0; }
+
+.srv-kpi:nth-child(3) { background: #edf9f2; border-color: #cfeadb; }
+.srv-kpi:nth-child(3)::before { background: #1a8a4f; }
+.srv-kpi:nth-child(3) .srv-kpi-num { color: #12703f; }
+.srv-kpi:nth-child(3) .srv-kpi-label { color: #4a9a70; }
+
+.srv-kpi:nth-child(4) { background: #fff6ec; border-color: #f7e3cd; }
+.srv-kpi:nth-child(4)::before { background: #d9843a; }
+.srv-kpi:nth-child(4) .srv-kpi-num { color: #b0651f; }
+.srv-kpi:nth-child(4) .srv-kpi-label { color: #c08b52; }
+
+/* --- form panel --- */
+.srv-form { animation: srv-open .42s cubic-bezier(.16,1,.3,1) both; box-shadow: 0 2px 16px rgba(10,37,64,.06); }
+@keyframes srv-open { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: none } }
+.srv-form-header { background: linear-gradient(135deg, #f2f8ff, #fff 70%); }
+
+.srv-form-section { animation: srv-in .45s cubic-bezier(.16,1,.3,1) both; }
+.srv-form-section:nth-child(1) { animation-delay: .06s; }
+.srv-form-section:nth-child(2) { animation-delay: .13s; }
+.srv-form-footer { animation: srv-in .45s cubic-bezier(.16,1,.3,1) .2s both; }
+@keyframes srv-in { from { opacity: 0; transform: translateY(7px) } to { opacity: 1; transform: none } }
+
+.srv-form-section:nth-child(1) .srv-form-section-label { color: #1a5a94; }
+.srv-form-section:nth-child(2) .srv-form-section-label { color: #5b3fa0; }
+
+/* --- inputs --- */
+.srv-form .field input, .srv-form .field select { transition: border-color .24s ease, box-shadow .3s cubic-bezier(.16,1,.3,1), background .24s ease; }
+.srv-form .field input:hover:not(:focus), .srv-form .field select:hover:not(:focus) { border-color: #c2d6e8; background: #fcfdff; }
+.srv-form .field input:focus, .srv-form .field select:focus { box-shadow: 0 0 0 3.5px rgba(51,117,177,.14); }
+.srv-form .field .hint { transition: color .26s ease, transform .34s cubic-bezier(.16,1,.3,1); }
+.srv-form .field:focus-within .hint { color: #3375b1; transform: translateY(-1px); }
+
+/* --- environment pills: colour carries the state --- */
+.srv-env-opt { transition: border-color .24s, background .24s, color .24s, transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.16,1,.3,1); }
+.srv-env-opt:hover:not(.on) { transform: translateY(-2px); border-color: #c2d6e8; box-shadow: 0 4px 12px rgba(10,37,64,.07); }
+.srv-env-opt-dot { transition: transform .34s cubic-bezier(.16,1,.3,1), box-shadow .34s ease; }
+.srv-env-opt.on { animation: srv-pick .34s cubic-bezier(.16,1,.3,1); }
+.srv-env-opt.on .srv-env-opt-dot { transform: scale(1.3); }
+@keyframes srv-pick { 0% { transform: scale(.97) } 55% { transform: scale(1.04) } 100% { transform: none } }
+
+.srv-env-opt.on:nth-child(1) { border-color: #1a8a4f; background: #edf9f2; color: #12703f; }
+.srv-env-opt.on:nth-child(1) .srv-env-opt-dot { box-shadow: 0 0 0 3px rgba(26,138,79,.2); }
+.srv-env-opt.on:nth-child(2) { border-color: #d9a441; background: #fdf6e7; color: #8a5a00; }
+.srv-env-opt.on:nth-child(2) .srv-env-opt-dot { box-shadow: 0 0 0 3px rgba(217,164,65,.22); }
+.srv-env-opt.on:nth-child(3) { border-color: #3375b1; background: #f0f6fd; color: #1a5a94; }
+.srv-env-opt.on:nth-child(3) .srv-env-opt-dot { box-shadow: 0 0 0 3px rgba(51,117,177,.2); }
+.srv-env-opt.on:nth-child(4) { border-color: #8a9bad; background: #f4f7fa; color: #55708a; }
+.srv-env-opt.on:nth-child(4) .srv-env-opt-dot { box-shadow: 0 0 0 3px rgba(138,155,173,.24); }
+
+/* --- footer --- */
+.srv-form-footer { background: #fbfcfe; }
+.srv-form-footer .btn.primary { position: relative; overflow: hidden; background: linear-gradient(135deg, #3375b1, #2a5f92); box-shadow: 0 2px 8px rgba(51,117,177,.25); transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.16,1,.3,1); }
+.srv-form-footer .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 9px 22px rgba(51,117,177,.34); }
+.srv-form-footer .btn.primary::after { content: ''; position: absolute; top: 0; left: -70%; width: 50%; height: 100%; background: linear-gradient(105deg, transparent, rgba(255,255,255,.4), transparent); transform: skewX(-18deg); pointer-events: none; }
+.srv-form-footer .btn.primary:hover::after { animation: srv-sheen .75s cubic-bezier(.16,1,.3,1) forwards; }
+@keyframes srv-sheen { 0% { left: -70%; opacity: 0 } 22% { opacity: 1 } 100% { left: 120%; opacity: 0 } }
+
+@media (prefers-reduced-motion: reduce) {
+  .srv-kpi, .srv-kpi-label, .srv-form, .srv-form-section, .srv-form-footer,
+  .srv-env-opt, .srv-env-opt-dot, .srv-form-footer .btn.primary,
+  .srv-form-footer .btn.primary::after, .srv-form .field .hint {
+    animation: none !important; transition: none !important; transform: none !important;
+  }
+}
