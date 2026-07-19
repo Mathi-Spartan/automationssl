@@ -150,7 +150,7 @@ export default function Home() {
             <div className="b-stat">
               <div className="b-stat-num"><CountUp to={47} /></div>
               <div className="b-stat-label">Day lifetimes by 2029</div>
-              <p className="b-stat-desc">Lifetimes shrink on a published schedule. Every cut multiplies the renewals you would do by hand.</p>
+              <p className="b-stat-desc">Lifetimes shrink on a published schedule. Every cut multiplies the reissues you would do by hand.</p>
             </div>
             <div className="b-stat">
               <div className="b-stat-num"><CountUp to={1} /></div>
