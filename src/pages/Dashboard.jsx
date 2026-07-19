@@ -320,7 +320,7 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
             )}
             {!d.activated && onCheck && (
               <button className="btn ghost" type="button" disabled={checking} onClick={() => onCheck(order)}>
-                {checking ? 'Checking…' : 'Check my setup'}
+                {checking ? 'Checking…' : '⟳ Check status with the CA'}
               </button>
             )}
           </div>
@@ -384,7 +384,7 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
               ) : (
                 <>
                   <b>The CA is provisioning your enrollment — usually a few minutes.</b>{' '}
-                  Use "Check my setup", or just wait: this page re-checks automatically.
+                  Use "Check status with the CA", or just wait: this page re-checks automatically.
                 </>
               )}
             </div>
