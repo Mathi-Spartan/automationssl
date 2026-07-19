@@ -2347,3 +2347,6 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 
 /* read-only note where the buy button sits while impersonating */
 .dash-head-hint-ro { display: inline-block; max-width: 260px; text-align: right; line-height: 1.45; color: #9aacba; font-style: italic; }
+
+/* note shown where 'Buy for this customer' sits when the account is a reseller */
+.rd-main-note { font-size: 0.74rem; color: #9aacba; font-style: italic; max-width: 280px; line-height: 1.45; text-align: right; }

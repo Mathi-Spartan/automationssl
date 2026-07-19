@@ -1450,10 +1450,16 @@ function ResellerDashboard({ session, profile, readOnly = false }) {
                 <div className="rd-main-actions">
                   <span className="rd-main-stat ok">{allOrders?.filter(o=>o.user_id===selCustomer&&deliverables(o).activated).length||0} automated</span>
                   <span className="rd-main-stat warn">{allOrders?.filter(o=>o.user_id===selCustomer&&!deliverables(o).activated).length||0} pending</span>
-                  <Link to={`/order-for/${selCustomer}`} className="btn primary rd-main-buy">
-                    <i className="ti ti-shopping-cart" style={{fontSize:13,verticalAlign:-2,marginRight:5}} aria-hidden="true"/>
-                    Buy for this customer
-                  </Link>
+                  {subs.find(c => c.id === selCustomer)?.account_type === 'reseller' ? (
+                    <span className="rd-main-note">
+                      Resellers buy on their own account — select one of their customers instead.
+                    </span>
+                  ) : (
+                    <Link to={`/order-for/${selCustomer}`} className="btn primary rd-main-buy">
+                      <i className="ti ti-shopping-cart" style={{fontSize:13,verticalAlign:-2,marginRight:5}} aria-hidden="true"/>
+                      Buy for this customer
+                    </Link>
+                  )}
                 </div>
               )}
               {visibleRows.length > 0 && (() => {

@@ -46,10 +46,13 @@ export default function OrderFor() {
 
   useEffect(() => {
     if (!session?.user || isStock) return
-    supabase.from('profiles').select('id, full_name, parent_reseller_id')
+    supabase.from('profiles').select('id, full_name, parent_reseller_id, account_type')
       .eq('id', customerId).single()
       .then(({ data }) => {
-        if (!data || data.parent_reseller_id !== session.user.id) setNotFound(true)
+        // Retail customers only. A reseller buys on their own account and
+        // assigns to their own customers; the route is reachable by URL, so
+        // hiding the buttons is not enough on its own.
+        if (!data || data.parent_reseller_id !== session.user.id || data.account_type === 'reseller') setNotFound(true)
         else {
           setCustomer(data)
           setForm(f => ({ ...f, email: '' }))
