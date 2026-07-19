@@ -223,107 +223,120 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
         </div>
       )}
 
-      <div className="pc-strip">
-        {d.begin && <span className="pc-strip-item">Began <b>{fmtDate(d.begin)}</b></span>}
-        {d.renewal && <span className="pc-strip-item">Renews <b>{fmtDate(d.renewal)}</b>{days != null && <i> ({days}d)</i>}</span>}
-        {d.caOrderStatus && <span className="pc-strip-item">CA order <StatusVal value={d.caOrderStatus} /></span>}
-        {d.isAcme && d.acmeAccountStatus && <span className="pc-strip-item">ACME <StatusVal value={d.acmeAccountStatus} /></span>}
-        {d.aiStatus && <span className="pc-strip-item">AutoInstall <StatusVal value={d.aiStatus} /></span>}
-        {!noHead && <span className="pc-strip-item pc-strip-id">#{order.gogetssl_order_id}</span>}
-      </div>
+      <div className="pc-cols">
+        <aside className="pc-rail">
+          <div className="pc-rail-actions">
+            {d.setupLink && (
+              <a className="btn primary" href={d.setupLink} target="_blank" rel="noreferrer">
+                {d.activated ? 'Open automation portal →' : 'Activate — open setup portal →'}
+              </a>
+            )}
+            {!d.activated && onCheck && (
+              <button className="btn ghost" type="button" disabled={checking} onClick={() => onCheck(order)}>
+                {checking ? 'Checking…' : 'Check my setup'}
+              </button>
+            )}
+          </div>
 
-      {d.activated ? (
-        <p className="plan-note ok-note">
-          🎉 <b>Automation is live.</b> Issuance and renewals are hands-off from here
-          {d.renewal && <> — covered until <b>{fmtDate(d.renewal)}</b>{days != null && <> ({days} days), renews automatically</>}</>}.
-        </p>
-      ) : d.isAcme ? (
-        <div className="plan-note">
-          {d.enrollReady ? (
-            <>
-              <b>Your enrollment credentials are ready — two steps left.</b>
-              <div className="todo-steps">
-                <div className="todo done"><span className="todo-dot">✓</span> Enrollment provisioned by the CA</div>
-                <div className="todo current"><span className="todo-dot">1</span> Register your ACME client with the credentials below <span className="todo-sub">certbot · acme.sh · Caddy · Traefik · cert-manager</span></div>
-                <div className="todo"><span className="todo-dot">2</span> Request the certificate for your domain <span className="todo-sub">renewals run on their own after that</span></div>
+          <dl className="pc-facts">
+            {!noHead && <div className="pc-fact"><dt>Order</dt><dd className="mono-v">#{order.gogetssl_order_id}</dd></div>}
+            {d.begin && <div className="pc-fact"><dt>Began</dt><dd>{fmtDate(d.begin)}</dd></div>}
+            {d.renewal && <div className="pc-fact"><dt>Renews</dt><dd>{fmtDate(d.renewal)}{days != null && <span className="pc-fact-sub"> ({days}d)</span>}</dd></div>}
+            {d.caOrderStatus && <div className="pc-fact"><dt>CA order</dt><dd><StatusVal value={d.caOrderStatus} /></dd></div>}
+            {d.isAcme && d.acmeAccountStatus && <div className="pc-fact"><dt>ACME</dt><dd><StatusVal value={d.acmeAccountStatus} /></dd></div>}
+            {d.aiStatus && <div className="pc-fact"><dt>AutoInstall</dt><dd><StatusVal value={d.aiStatus} /></dd></div>}
+            {servers && (
+              <div className="pc-fact"><dt>Server</dt><dd>
+                <select id={'srv-' + order.id} value={order.server_id || ''} onChange={(e) => onAssignServer(order.id, e.target.value)}>
+                  <option value="">— not assigned —</option>
+                  {servers.map((sv) => (<option key={sv.id} value={sv.id}>{sv.name} ({sv.environment})</option>))}
+                </select>
+              </dd></div>
+            )}
+          </dl>
+
+          {d.vendorDomains.length > 0 && (
+            <div className="pc-rail-domains">
+              <div className="pc-rail-label">Domains</div>
+              <div className="chips">
+                {d.vendorDomains.map((dom) => {
+                  const name = typeof dom === 'string' ? dom : dom?.name || dom?.domain || ''
+                  return d.activated
+                    ? <span className="chip lock" key={name} title="Secured — certificate active">🔒 {name}</span>
+                    : <span className="chip" key={name} title="Registered with the CA — no certificate issued yet">{name} · awaiting cert</span>
+                })}
               </div>
-              <div className="cred-card">
-                <div className="cred-card-title">Your ACME credentials <span className="cred-live">live from the CA</span></div>
-                <CredRow label="ACME server URL" value={d.acme.server_url} />
-                <CredRow label="EAB key ID" value={d.acme.eab_kid} />
-                <CredRow label="EAB HMAC key" value={d.acme.eab_hmac_key} />
-                <p className="hint" style={{ fontSize: '0.76rem', marginTop: 8 }}>
-                  Treat these like a password — they're yours alone. Every ACME client
-                  (certbot, acme.sh, Caddy, Traefik, cert-manager) accepts these three values.
-                </p>
-              </div>
-              <div className="cred-card cmd">
-                <div className="cred-card-title">
-                  Quick start with certbot
-                  <CopyBtn label="Copy command" text={`certbot register --server ${d.acme.server_url} --eab-kid ${d.acme.eab_kid} --eab-hmac-key ${d.acme.eab_hmac_key}`} />
-                </div>
-                <pre className="acme-creds">{`certbot register \
-  --server ${d.acme.server_url} \
-  --eab-kid ${d.acme.eab_kid} \
-  --eab-hmac-key ${d.acme.eab_hmac_key}`}</pre>
-              </div>
-            </>
+              {d.isAcme && !isReseller && (
+                <p className="pc-rail-hint">Extra domains are added by your provider, pro-rated.</p>
+              )}
+            </div>
+          )}
+
+          {order.last_synced_at && (
+            <p className="pc-rail-sync">⟳ Synced {fmtTime(order.last_synced_at)}</p>
+          )}
+        </aside>
+
+        <div className="pc-main">
+          {d.activated ? (
+            <p className="plan-note ok-note">
+              🎉 <b>Automation is live.</b> Issuance and renewals are hands-off from here
+              {d.renewal && <> — covered until <b>{fmtDate(d.renewal)}</b>{days != null && <> ({days} days), renews automatically</>}</>}.
+            </p>
+          ) : d.isAcme ? (
+            <div className="plan-note">
+              {d.enrollReady ? (
+                <>
+                  <b>Your enrollment credentials are ready — two steps left.</b>
+                  <div className="todo-steps">
+                    <div className="todo done"><span className="todo-dot">✓</span> Enrollment provisioned by the CA</div>
+                    <div className="todo current"><span className="todo-dot">1</span> Register your ACME client with the credentials below <span className="todo-sub">certbot · acme.sh · Caddy · Traefik · cert-manager</span></div>
+                    <div className="todo"><span className="todo-dot">2</span> Request the certificate for your domain <span className="todo-sub">renewals run on their own after that</span></div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <b>The CA is provisioning your enrollment — usually a few minutes.</b>{' '}
+                  Use "Check my setup", or just wait: this page re-checks automatically.
+                </>
+              )}
+            </div>
           ) : (
-            <>
-              <b>The CA is provisioning your enrollment — usually a few minutes.</b>{' '}
-              Use "Check my setup" below, or just wait: this page re-checks automatically.
-            </>
+            <div className="plan-note">
+              <b>You're {d.agentInstalled ? '1 step' : 'about 5 minutes'} away.</b>
+              <ol className="checklist">
+                <li className={d.setupLink ? '' : 'muted'}>Open your personal setup portal.</li>
+                <li className={d.agentInstalled ? 'done' : ''}>Copy the one-line install command onto your server and run it.</li>
+                <li className={d.vendorDomains.length ? 'done' : ''}>Add the domain you want secured — we'll detect it automatically.</li>
+              </ol>
+            </div>
           )}
         </div>
-      ) : (
-        <div className="plan-note">
-          <b>You're {d.agentInstalled ? '1 step' : 'about 5 minutes'} away.</b>
-          <ol className="checklist">
-            <li className={d.setupLink ? '' : 'muted'}>Open your personal setup portal below.</li>
-            <li className={d.agentInstalled ? 'done' : ''}>Copy the one-line install command onto your server and run it.</li>
-            <li className={d.vendorDomains.length ? 'done' : ''}>Add the domain you want secured — we'll detect it automatically.</li>
-          </ol>
-        </div>
-      )}
-
-      {d.vendorDomains.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-        <div className="meta-label" style={{ marginBottom: 6 }}>Domains</div>
-        <div className="chips">
-          {d.vendorDomains.map((dom) => {
-            const name = typeof dom === 'string' ? dom : dom?.name || dom?.domain || ''
-            return d.activated ? (
-              <span className="chip lock" key={name} title="Secured — certificate active">🔒 {name}</span>
-            ) : (
-              <span className="chip" key={name} title="Registered with the CA — no certificate issued yet">{name} · awaiting cert</span>
-            )
-          })}
-        </div>
-        </div>
-      )}
-
-      <div className="plan-actions">
-        {d.setupLink && (
-          <a className="btn primary" href={d.setupLink} target="_blank" rel="noreferrer">
-            {d.activated ? 'Open automation portal →' : 'Activate — open setup portal →'}
-          </a>
-        )}
-        {!d.activated && onCheck && (
-          <button className="btn ghost" type="button" disabled={checking} onClick={() => onCheck(order)}>
-            {checking ? 'Checking…' : 'Check my setup'}
-          </button>
-        )}
       </div>
 
-      {d.isAcme && !isReseller && (
-        <p className="hint" style={{ fontSize: '0.78rem', marginTop: 10 }}>
-          Need another domain on this subscription? Domains are added by your provider
-          (billing is pro-rated) — contact your reseller and it appears here automatically.
-        </p>
-      )}
-
-      {order.last_synced_at && (
-        <p className="sync-line">⟳ Synced from the CA today at {fmtTime(order.last_synced_at)} — updates automatically.</p>
+      {d.isAcme && d.enrollReady && !d.activated && (
+        <div className="pc-creds">
+          <div className="cred-card">
+            <div className="cred-card-title">Your ACME credentials <span className="cred-live">live from the CA</span></div>
+            <CredRow label="ACME server URL" value={d.acme.server_url} />
+            <CredRow label="EAB key ID" value={d.acme.eab_kid} />
+            <CredRow label="EAB HMAC key" value={d.acme.eab_hmac_key} />
+            <p className="hint" style={{ fontSize: '0.76rem', marginTop: 8 }}>
+              Treat these like a password — they're yours alone. Every ACME client
+              (certbot, acme.sh, Caddy, Traefik, cert-manager) accepts these three values.
+            </p>
+          </div>
+          <div className="cred-card cmd">
+            <div className="cred-card-title">
+              Quick start with certbot
+              <CopyBtn label="Copy command" text={`certbot register --server ${d.acme.server_url} --eab-kid ${d.acme.eab_kid} --eab-hmac-key ${d.acme.eab_hmac_key}`} />
+            </div>
+            <pre className="acme-creds">{`certbot register \\
+  --server ${d.acme.server_url} \\
+  --eab-kid ${d.acme.eab_kid} \\
+  --eab-hmac-key ${d.acme.eab_hmac_key}`}</pre>
+          </div>
+        </div>
       )}
 
       {d.acme && d.activated && (
@@ -333,17 +346,6 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
         </details>
       )}
 
-      {servers && (
-        <div className="server-pick">
-          <label htmlFor={'srv-' + order.id}>Server</label>
-          <select id={'srv-' + order.id} value={order.server_id || ''} onChange={(e) => onAssignServer(order.id, e.target.value)}>
-            <option value="">— not assigned —</option>
-            {servers.map((s) => (
-              <option key={s.id} value={s.id}>{s.name} ({s.environment})</option>
-            ))}
-          </select>
-        </div>
-      )}
       {children}
     </div>
   )
