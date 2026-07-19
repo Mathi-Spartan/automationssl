@@ -124,35 +124,12 @@ const METHODS = [
   },
 ]
 
-function ReissueCompare({ slices, armed }) {
-  const [step, setStep] = useState(-1)
-  const [run, setRun] = useState(0)
-  const timer = useRef(null)
+function ReissueCompare({ slices, drawn, onReplay }) {
   const n = slices.length
-
-  useEffect(() => {
-    if (!armed) return
-    const reduce = typeof window !== 'undefined' && window.matchMedia
-      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (timer.current) clearInterval(timer.current)
-    if (reduce) { setStep(n); return }
-    setStep(-1)
-    // let the chip track finish landing first
-    const lead = setTimeout(() => {
-      let i = -1
-      timer.current = setInterval(() => {
-        i += 1
-        setStep(i)
-        if (i >= n) { clearInterval(timer.current); timer.current = null }
-      }, 900)
-    }, n * 260 + 500)
-    return () => { clearTimeout(lead); if (timer.current) clearInterval(timer.current) }
-  }, [armed, n, run])
-
-  useEffect(() => () => { if (timer.current) clearInterval(timer.current) }, [])
-
-  const done = step >= n
-  const shown = Math.min(Math.max(step, -1), n - 1)
+  // drawn is the same counter that drives the chip track above, so a chip
+  // and its comparison step land on the same tick.
+  const done = drawn >= n
+  const shown = Math.min(drawn - 1, n - 1)
   const manual = shown < 0 ? 0 : shown
   const label = shown === 0 ? 'Original certificate installed' : `Reissue ${shown} installed`
 
@@ -165,7 +142,7 @@ function ReissueCompare({ slices, armed }) {
         </div>
         <div className="rc-controls">
           <span className="rc-clock">{done ? 'One year complete' : shown < 0 ? 'Ready' : `Certificate ${shown + 1} of ${n}`}</span>
-          <button type="button" className="rc-replay" onClick={() => setRun((r) => r + 1)}>⟳ Replay</button>
+          <button type="button" className="rc-replay" onClick={onReplay}>⟳ Replay</button>
         </div>
       </div>
 
@@ -188,7 +165,7 @@ function ReissueCompare({ slices, armed }) {
               <><b className="bad">Reissue {shown} due</b><span>request it, install it, verify it</span></>
             )}
           </div>
-          <div className="rc-tally"><span className="rc-num bad">{done ? n - 1 : manual}</span><span className="rc-num-l">reissues you run</span></div>
+          <div className="rc-tally"><span className="rc-num bad">{done ? n - 1 : manual}</span><span className="rc-num-l">{(done ? n - 1 : manual) === 1 ? 'reissue' : 'reissues'} you run</span></div>
         </div>
 
         <div className="rc-panel win">
@@ -237,7 +214,7 @@ export default function AutomationTheatre() {
       i += 1
       setDrawn(i)
       if (i >= count) stop()
-    }, 260)
+    }, 420)
   }, [])
 
   useEffect(() => {
@@ -348,7 +325,7 @@ export default function AutomationTheatre() {
           </div>
         </div>
 
-        <ReissueCompare slices={slices} armed={armed} />
+        <ReissueCompare slices={slices} drawn={drawn} onReplay={() => play(model.total)} />
       </div>
 
       <div className="lc-methods">
