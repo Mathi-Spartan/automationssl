@@ -149,12 +149,31 @@ spec:
 ]
 
 function AcmeClients({ acme, domain }) {
+  const [open, setOpen] = useState(false)
   const [pick, setPick] = useState('certbot')
   const client = ACME_CLIENTS.find((c) => c.key === pick) || ACME_CLIENTS[0]
   const cmd = client.build(acme, domain)
+  const panelId = 'acme-panel-' + (acme?.eab_kid || 'x')
+
+  if (!open) {
+    return (
+      <button type="button" className="acme-toggle" aria-expanded="false" aria-controls={panelId}
+        onClick={() => setOpen(true)}>
+        <i className="ti ti-terminal-2" aria-hidden="true" />
+        <span className="acme-toggle-t">Show setup instructions</span>
+        <span className="acme-toggle-n">certbot · acme.sh · Caddy · lego · cert-manager</span>
+        <i className="ti ti-chevron-down acme-toggle-c" aria-hidden="true" />
+      </button>
+    )
+  }
+
   return (
-    <div className="cred-card cmd acme-clients">
-      <div className="acme-clients-title">Register your ACME client</div>
+    <div className="cred-card cmd acme-clients" id={panelId}>
+      <div className="acme-clients-head">
+        <span className="acme-clients-title">Register your ACME client</span>
+        <button type="button" className="acme-hide" aria-expanded="true" aria-controls={panelId}
+          onClick={() => setOpen(false)}>Hide</button>
+      </div>
       <div className="acme-tabs" role="tablist" aria-label="ACME client">
         {ACME_CLIENTS.map((c) => (
           <button key={c.key} type="button" role="tab" aria-selected={c.key === pick}
