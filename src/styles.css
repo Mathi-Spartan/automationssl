@@ -1267,8 +1267,10 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .pb-card { background: #fff; border: 1px solid #e4ecf4; border-radius: 16px; padding: 20px 18px 18px; display: flex; flex-direction: column; position: relative; transition: transform .3s cubic-bezier(.22,1,.36,1), border-color .3s, box-shadow .3s; }
 .pb-card:hover { transform: translateY(-6px); border-color: #3375b1; box-shadow: 0 14px 34px rgba(10,37,64,.1); }
 .pb-card-hi { border-color: #3375b1; }
-.pb-ribbon { position: absolute; top: -9px; left: 18px; background: #3375b1; color: #fff; font-size: 0.62rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; }
+.pb-ribbon { position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #3375b1, #2a5f92); color: #fff; font-size: 0.6rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; padding: 5px 12px 5px 14px; border-radius: 0 16px 0 12px; box-shadow: 0 2px 8px rgba(51,117,177,.28); z-index: 3; }
 .pb-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.pb-card-hi .pb-card-top { padding-right: 4px; }
+.pb-card-hi .pb-tag { margin-top: 22px; }
 .pb-mark { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 .pb-tag { font-size: 0.62rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; }
 .pb-name { font-family: var(--display); font-size: 1rem; font-weight: 800; color: #0a2540; letter-spacing: -.02em; line-height: 1.25; margin-bottom: 4px; }
@@ -1642,3 +1644,36 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .export-custom { display: flex; flex-direction: column; gap: 5px; padding: 5px 8px 6px; }
 .export-custom-row { display: flex; align-items: center; gap: 5px; }
 .export-custom input[type="date"] { flex: 1; min-width: 0; font-size: 0.74rem; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-family: inherit; color: #0a2540; }
+
+/* ══════════════════════════════════════════════════
+   GLASS + MOTION POLISH
+══════════════════════════════════════════════════ */
+
+/* --- plan card brand tile: depth, sheen, tilt --- */
+.pb-mark { position: relative; overflow: hidden; border-radius: 12px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 3px rgba(10,37,64,.1); transition: transform .34s cubic-bezier(.22,1,.36,1), box-shadow .34s; }
+.pb-mark::before { content: ''; position: absolute; inset: 0; background: linear-gradient(150deg, rgba(255,255,255,.75), rgba(255,255,255,0) 55%); pointer-events: none; }
+.pb-mark::after { content: ''; position: absolute; top: 0; left: -60%; width: 45%; height: 100%; background: linear-gradient(105deg, transparent, rgba(255,255,255,.85), transparent); transform: skewX(-18deg); opacity: 0; }
+.pb-card:hover .pb-mark { transform: scale(1.12) rotate(-5deg); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 6px 18px var(--ca, #3375b1); }
+.pb-card:hover .pb-mark::after { animation: pb-sheen .7s cubic-bezier(.22,1,.36,1) forwards; }
+@keyframes pb-sheen { 0% { left: -60%; opacity: 0; } 25% { opacity: 1; } 100% { left: 115%; opacity: 0; } }
+.pb-mark svg { position: relative; z-index: 1; transition: transform .34s cubic-bezier(.22,1,.36,1); }
+.pb-card:hover .pb-mark svg { transform: scale(1.06); }
+
+/* --- glassy hero CTAs --- */
+/* keeps the existing ::before fill-rise; adds a sheen on ::after only */
+.b-btn-primary::after { content: ''; position: absolute; top: 0; left: -70%; width: 50%; height: 100%; background: linear-gradient(105deg, transparent, rgba(255,255,255,.32), transparent); transform: skewX(-18deg); pointer-events: none; z-index: 2; }
+.b-btn-primary:hover::after { animation: pb-sheen .8s cubic-bezier(.22,1,.36,1) forwards; }
+.b-btn-primary:hover { box-shadow: 0 10px 28px rgba(10,37,64,.26); }
+.b-btn-primary .b-arrow { display: inline-block; transition: transform .3s cubic-bezier(.22,1,.36,1); }
+.b-btn-primary:hover .b-arrow { transform: translateX(5px); }
+
+.b-btn-ghost { position: relative; overflow: hidden; backdrop-filter: blur(10px) saturate(1.4); -webkit-backdrop-filter: blur(10px) saturate(1.4); background: rgba(255,255,255,.55); box-shadow: inset 0 1px 0 rgba(255,255,255,.85); transition: background .26s, border-color .26s, transform .26s cubic-bezier(.22,1,.36,1), box-shadow .26s; }
+.b-btn-ghost:hover { background: rgba(255,255,255,.92); border-color: #3375b1; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(51,117,177,.16); }
+
+/* --- trust row: staggered rise, hover lift --- */
+.b-trust span, .b-trust > * { transition: color .24s, transform .24s cubic-bezier(.22,1,.36,1); }
+.b-trust > *:hover { color: #3375b1; transform: translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-mark, .pb-mark::after, .b-btn-primary::after, .pb-card:hover .pb-mark { animation: none !important; transition: none !important; transform: none !important; }
+}

@@ -77,8 +77,7 @@ export function Footer() {
           RapidSSL · GeoTrust · Sectigo ACME
         </div>
         <div className="mono">
-          Launch testing phase — all plans free of charge.
-          <br />© {new Date().getFullYear()} AutomationSSL — part of the{' '}
+          © {new Date().getFullYear()} AutomationSSL — part of the{' '}
           <a href="https://easysecurity.in" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>easysecurity.in</a> family
         </div>
       </div>
