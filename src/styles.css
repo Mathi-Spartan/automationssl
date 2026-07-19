@@ -1697,3 +1697,73 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 @media (prefers-reduced-motion: reduce) {
   .pb-dual { transition: none !important; }
 }
+
+/* ══════════════════════════════════════════════════
+   PREMIUM HOVER — staged cascade + sibling focus
+   Rest state is untouched; everything here is hover-only.
+══════════════════════════════════════════════════ */
+
+/* the grid dims its non-hovered children so the target gains focus */
+.pb-grid { --pb-ease: cubic-bezier(.16,1,.3,1); }
+.pb-grid:hover .pb-card { transform: scale(.988); opacity: .62; filter: saturate(.72); }
+.pb-grid .pb-card { transition:
+  transform .5s var(--pb-ease),
+  opacity .38s ease,
+  filter .38s ease,
+  box-shadow .5s var(--pb-ease),
+  border-color .3s ease; }
+
+/* the hovered card overrides the dim and rises */
+.pb-grid:hover .pb-card:hover,
+.pb-grid .pb-card:hover {
+  transform: translateY(-8px) scale(1.022);
+  opacity: 1;
+  filter: saturate(1.04);
+  border-color: var(--ca, #3375b1);
+  box-shadow: 0 1px 2px rgba(10,37,64,.05), 0 8px 18px rgba(10,37,64,.07), 0 22px 48px rgba(10,37,64,.13);
+  z-index: 4;
+}
+
+/* staged reveal inside the card — each element on its own delay */
+.pb-card .pb-mark { transition: transform .5s var(--pb-ease) 0s, box-shadow .5s var(--pb-ease) 0s; }
+.pb-card .pb-pick, .pb-card .pb-ribbon { transition: transform .45s var(--pb-ease) .04s, letter-spacing .45s var(--pb-ease) .04s; }
+.pb-card .pb-price { transition: transform .5s var(--pb-ease) .06s, color .35s ease .06s; transform-origin: left center; }
+.pb-card .pb-dual { transition: transform .45s var(--pb-ease) .08s, background .3s ease, color .3s ease; transform-origin: left center; }
+.pb-card .pb-features li { transition: transform .45s var(--pb-ease), color .3s ease; }
+.pb-card .pb-cta { transition: background .35s var(--pb-ease) .1s, color .3s ease .1s, box-shadow .4s var(--pb-ease) .1s; }
+
+.pb-card:hover .pb-pick, .pb-card:hover .pb-ribbon { transform: translateX(2px); letter-spacing: .055em; }
+.pb-card:hover .pb-price { transform: scale(1.045); }
+.pb-card:hover .pb-dual { transform: translateX(2px); }
+.pb-card:hover .pb-cta { box-shadow: 0 6px 16px rgba(51,117,177,.28); }
+
+/* features ripple in sequence — the detail that reads as considered */
+.pb-card:hover .pb-features li:nth-child(1) { transform: translateX(3px); transition-delay: .10s; }
+.pb-card:hover .pb-features li:nth-child(2) { transform: translateX(3px); transition-delay: .145s; }
+.pb-card:hover .pb-features li:nth-child(3) { transform: translateX(3px); transition-delay: .19s; }
+.pb-card:hover .pb-features li:nth-child(4) { transform: translateX(3px); transition-delay: .235s; }
+.pb-card:hover .pb-features li .ti { color: var(--ca, #3375b1); }
+
+/* the accent rule across the top draws left-to-right, slower and smoother */
+.pb-card::before { transition: transform .55s var(--pb-ease) !important; height: 3px; }
+
+/* arrow in the CTA settles rather than snapping */
+.pb-cta .b-arrow { display: inline-block; transition: transform .45s var(--pb-ease) .12s; }
+.pb-card:hover .pb-cta .b-arrow { transform: translateX(4px); }
+
+/* keyboard parity — focus gets the same treatment */
+.pb-card:focus-within { transform: translateY(-8px) scale(1.022); opacity: 1; border-color: var(--ca, #3375b1); box-shadow: 0 22px 48px rgba(10,37,64,.13); z-index: 4; }
+
+@media (hover: none) {
+  .pb-grid:hover .pb-card { transform: none; opacity: 1; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pb-grid:hover .pb-card,
+  .pb-grid .pb-card:hover,
+  .pb-card:hover .pb-features li,
+  .pb-card:hover .pb-price,
+  .pb-card:hover .pb-pick,
+  .pb-card:hover .pb-ribbon,
+  .pb-card:hover .pb-dual,
+  .pb-card:hover .pb-cta .b-arrow { transform: none !important; opacity: 1 !important; filter: none !important; transition: none !important; }
+}
