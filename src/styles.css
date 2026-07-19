@@ -1509,7 +1509,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 
 .lc-track-wrap { padding: 20px 24px 4px; }
 .lc-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; font-weight: 600; color: #9aacba; margin-bottom: 8px; }
-.lc-track { display: flex; gap: 3px; align-items: stretch; height: 60px; }
+.lc-track { display: flex; gap: 3px; align-items: stretch; height: 74px; }
 .lc-slice { position: relative; overflow: visible; flex-basis: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 4px; border-radius: 6px; background: hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc(var(--lum, 34) * 1%)); opacity: 0; transform: scaleX(.4) translateY(6px); transform-origin: left center; transition: opacity .42s cubic-bezier(.22,1,.36,1), transform .42s cubic-bezier(.16,1,.3,1), box-shadow .42s cubic-bezier(.16,1,.3,1); }
 .lc-slice.in { opacity: 1; transform: scaleX(1) translateY(0); }
 
@@ -1549,6 +1549,8 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .lc-slice.in .lc-slice-days, .lc-slice.in .lc-slice-exp { opacity: 1; transform: translateY(0); }
 
 .lc-slice-days { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; line-height: 1.1; }
+.lc-slice-seq { font-family: var(--mono); font-size: 0.53rem; font-weight: 700; letter-spacing: .05em; color: rgba(255,255,255,.68); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 1px; }
+.lc-slice.ink .lc-slice-seq { color: rgba(42,26,5,.62); }
 .lc-slice.ink .lc-slice-days { color: #2a1a05; }
 .lc-slice.ink .lc-slice-exp { color: rgba(42,26,5,.78); }
 .lc-slice.ink .lc-slice-arr { color: rgba(42,26,5,.5); }
@@ -1599,8 +1601,9 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .lc-stats { grid-template-columns: 1fr; }
   .lc-controls { flex-direction: column; align-items: stretch; }
   .lc-slice-days { font-size: 0.6rem; }
-  .lc-slice-exp { font-size: 0.5rem; }
-  .lc-track { height: 52px; }
+  .lc-slice-exp { font-size: 0.45rem; }
+  .lc-slice-seq { font-size: 0.46rem; }
+  .lc-track { height: 64px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lc-slice { transition: none !important; opacity: 1 !important; transform: none !important; }
