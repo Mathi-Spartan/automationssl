@@ -1267,12 +1267,11 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .pb-card { background: #fff; border: 1px solid #e4ecf4; border-radius: 16px; padding: 20px 18px 18px; display: flex; flex-direction: column; position: relative; transition: transform .3s cubic-bezier(.22,1,.36,1), border-color .3s, box-shadow .3s; }
 .pb-card:hover { transform: translateY(-6px); border-color: #3375b1; box-shadow: 0 14px 34px rgba(10,37,64,.1); }
 .pb-card-hi { border-color: #3375b1; }
-.pb-ribbon { position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #3375b1, #2a5f92); color: #fff; font-size: 0.6rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; padding: 5px 12px 5px 14px; border-radius: 0 16px 0 12px; box-shadow: 0 2px 8px rgba(51,117,177,.28); z-index: 3; }
+.pb-ribbon { display: inline-flex; align-items: center; gap: 5px; font-size: 0.61rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #3375b1; margin: 0 0 6px; white-space: nowrap; }
+.pb-ribbon::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #3375b1; flex-shrink: 0; }
 .pb-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.pb-card-hi .pb-card-top { padding-right: 4px; }
-.pb-card-hi .pb-tag { margin-top: 22px; }
 .pb-mark { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.pb-tag { font-size: 0.62rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; }
+.pb-tag { font-size: 0.58rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; opacity: .92; }
 .pb-name { font-family: var(--display); font-size: 1rem; font-weight: 800; color: #0a2540; letter-spacing: -.02em; line-height: 1.25; margin-bottom: 4px; }
 .pb-coverage { font-size: 0.76rem; color: #9aacba; margin-bottom: 14px; }
 .pb-price { font-family: var(--display); font-size: 1.75rem; font-weight: 800; color: #0a2540; letter-spacing: -.03em; line-height: 1; margin-bottom: 16px; }
@@ -1681,14 +1680,15 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 /* ══════════════════════════════════════════════════
    PLAN POSITIONING — expert-pick badges
 ══════════════════════════════════════════════════ */
-.pb-pick { position: absolute; top: 0; right: 0; background: var(--ca, #1a6bb5); color: #fff; font-size: 0.58rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 5px 12px 5px 14px; border-radius: 0 16px 0 12px; box-shadow: 0 2px 8px rgba(10,37,64,.22); z-index: 3; white-space: nowrap; }
-.pb-card-pick .pb-card-top { padding-right: 4px; }
-.pb-card-pick .pb-tag { margin-top: 22px; }
+.pb-pick { display: inline-flex; align-items: center; gap: 5px; font-size: 0.61rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ca, #1a6bb5); margin: 0 0 6px; white-space: nowrap; }
+.pb-pick::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--ca, #1a6bb5); flex-shrink: 0; }
 
 .pb-dual { display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 700; letter-spacing: .01em; color: #2b6ca8; background: #eef5fc; border-radius: 100px; padding: 4px 11px 4px 8px; margin: 7px 0 0; line-height: 1; white-space: nowrap; transition: background .24s, color .24s; }
 .pb-dual .ti { font-size: 13px; flex-shrink: 0; opacity: .75; }
 .pb-dual span { font-weight: 500; opacity: .6; padding: 0 1px; }
 .pb-card:hover .pb-dual { background: #e0edfa; color: #1a5a94; }
+.pb-dual-solo { background: #fdeef0; color: #a8112b; }
+.pb-card:hover .pb-dual-solo { background: #fbe2e6; color: #8e0d23; }
 
 /* the four dual-method cards get a touch more presence */
 .pb-card-pick { border-color: #d3e3f2; }
