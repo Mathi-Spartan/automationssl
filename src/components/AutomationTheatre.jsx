@@ -52,7 +52,7 @@ function buildTimeline(startISO) {
   return {
     start, end, slices,
     total: slices.length,
-    renewals: Math.max(0, slices.length - 1),
+    reissues: Math.max(0, slices.length - 1),
   }
 }
 
@@ -105,7 +105,7 @@ const METHODS = [
     steps: [
       'Open the setup portal from your dashboard.',
       'Install the agent on your server — once per box.',
-      'Add your domain. It validates, installs, and reinstalls at every renewal.',
+      'Add your domain. It validates, installs, and reinstalls at every reissue.',
     ],
     foot: 'Works on any server type.',
     plans: 'RapidSSL and GeoTrust +Automate',
@@ -123,6 +123,97 @@ const METHODS = [
     plans: 'All five plans',
   },
 ]
+
+function ReissueCompare({ slices, armed }) {
+  const [step, setStep] = useState(-1)
+  const [run, setRun] = useState(0)
+  const timer = useRef(null)
+  const n = slices.length
+
+  useEffect(() => {
+    if (!armed) return
+    const reduce = typeof window !== 'undefined' && window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (timer.current) clearInterval(timer.current)
+    if (reduce) { setStep(n); return }
+    setStep(-1)
+    // let the chip track finish landing first
+    const lead = setTimeout(() => {
+      let i = -1
+      timer.current = setInterval(() => {
+        i += 1
+        setStep(i)
+        if (i >= n) { clearInterval(timer.current); timer.current = null }
+      }, 900)
+    }, n * 260 + 500)
+    return () => { clearTimeout(lead); if (timer.current) clearInterval(timer.current) }
+  }, [armed, n, run])
+
+  useEffect(() => () => { if (timer.current) clearInterval(timer.current) }, [])
+
+  const done = step >= n
+  const shown = Math.min(Math.max(step, -1), n - 1)
+  const manual = shown < 0 ? 0 : shown
+  const label = shown === 0 ? 'Original certificate installed' : `Reissue ${shown} installed`
+
+  return (
+    <div className="rc">
+      <div className="rc-top">
+        <div>
+          <div className="rc-title">What that means for you</div>
+          <div className="rc-sub">Same year, same certificates — the difference is who does the work.</div>
+        </div>
+        <div className="rc-controls">
+          <span className="rc-clock">{done ? 'One year complete' : shown < 0 ? 'Ready' : `Certificate ${shown + 1} of ${n}`}</span>
+          <button type="button" className="rc-replay" onClick={() => setRun((r) => r + 1)}>⟳ Replay</button>
+        </div>
+      </div>
+
+      <div className="rc-grid">
+        <div className="rc-panel">
+          <div className="rc-head"><i className="rc-dot bad" aria-hidden="true" />Reissuing by hand</div>
+          <div className="rc-note">Someone has to remember, every time</div>
+          <div className="rc-bar">
+            {slices.map((sl, i) => (
+              <span key={sl.startsOn}
+                className={'rc-cell' + (i <= shown ? ' on' : '') + (i > 0 && i <= shown ? ' gap' : '')} />
+            ))}
+          </div>
+          <div className="rc-event">
+            {done ? (
+              <><b className="bad">{n - 1} interruptions</b><span>every one a chance to miss an expiry</span></>
+            ) : shown < 0 ? <span className="rc-idle">Waiting to start…</span> : shown === 0 ? (
+              <><b>Certificate 1 installed</b><span>the only one that happens on its own</span></>
+            ) : (
+              <><b className="bad">Reissue {shown} due</b><span>request it, install it, verify it</span></>
+            )}
+          </div>
+          <div className="rc-tally"><span className="rc-num bad">{done ? n - 1 : manual}</span><span className="rc-num-l">reissues you run</span></div>
+        </div>
+
+        <div className="rc-panel win">
+          <div className="rc-head"><i className="rc-dot good" aria-hidden="true" />With +Automate or CaaS</div>
+          <div className="rc-note">Set up once, then nothing</div>
+          <div className="rc-bar">
+            {slices.map((sl, i) => (
+              <span key={sl.startsOn}
+                className={'rc-cell' + (i <= shown ? ' on' : '')}
+                style={i <= shown ? { background: `hsl(${sl.tone.h} ${sl.tone.sat}% ${sl.tone.lum}%)` } : undefined} />
+            ))}
+          </div>
+          <div className="rc-event">
+            {done ? (
+              <><b className="good">Nothing to do</b><span>{n} certificates, none touched by hand</span></>
+            ) : shown < 0 ? <span className="rc-idle">Waiting to start…</span> : (
+              <><b className="good">{label}</b><span>reissued before expiry, hands-off</span></>
+            )}
+          </div>
+          <div className="rc-tally"><span className="rc-num good">0</span><span className="rc-num-l">reissues you run</span></div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function AutomationTheatre() {
   const [startISO, setStartISO] = useState(PRESETS[0].iso)
@@ -170,7 +261,7 @@ export default function AutomationTheatre() {
 
   if (!model) return null
 
-  const { slices, total, renewals, start, end } = model
+  const { slices, start, end } = model
   const endISO = end.toISOString().slice(0, 10)
 
   return (
@@ -257,20 +348,7 @@ export default function AutomationTheatre() {
           </div>
         </div>
 
-        <div className="lc-stats">
-          <div className="lc-stat">
-            <span className="lc-stat-num">{total}</span>
-            <span className="lc-stat-label">certificates issued across the term</span>
-          </div>
-          <div className="lc-stat">
-            <span className="lc-stat-num lc-stat-warn">{renewals}</span>
-            <span className="lc-stat-label">renewals you would run by hand</span>
-          </div>
-          <div className="lc-stat lc-stat-good">
-            <span className="lc-stat-num">0</span>
-            <span className="lc-stat-label">renewals you run with automation</span>
-          </div>
-        </div>
+        <ReissueCompare slices={slices} armed={armed} />
       </div>
 
       <div className="lc-methods">
