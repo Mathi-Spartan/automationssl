@@ -1677,3 +1677,23 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 @media (prefers-reduced-motion: reduce) {
   .pb-mark, .pb-mark::after, .b-btn-primary::after, .pb-card:hover .pb-mark { animation: none !important; transition: none !important; transform: none !important; }
 }
+
+/* ══════════════════════════════════════════════════
+   PLAN POSITIONING — expert-pick badges
+══════════════════════════════════════════════════ */
+.pb-pick { position: absolute; top: 0; right: 0; background: var(--ca, #1a6bb5); color: #fff; font-size: 0.58rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 5px 12px 5px 14px; border-radius: 0 16px 0 12px; box-shadow: 0 2px 8px rgba(10,37,64,.22); z-index: 3; white-space: nowrap; }
+.pb-card-pick .pb-card-top { padding-right: 4px; }
+.pb-card-pick .pb-tag { margin-top: 22px; }
+
+.pb-dual { display: flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 600; color: #1a6bb5; background: #eff6fd; border: 1px solid #d8e8f8; border-radius: 8px; padding: 6px 10px; margin: 8px 0 0; line-height: 1.35; }
+.pb-dual .ti { font-size: 14px; flex-shrink: 0; }
+.pb-dual strong { font-weight: 800; }
+.pb-card:hover .pb-dual { background: #e4f0fc; border-color: var(--ca, #1a6bb5); }
+
+/* the four dual-method cards get a touch more presence */
+.pb-card-pick { border-color: #d3e3f2; }
+.pb-card-pick:hover { box-shadow: 0 16px 36px rgba(10,37,64,.15); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-dual { transition: none !important; }
+}

@@ -5,11 +5,11 @@ import { Reveal, Stagger, LineReveal, CountUp } from '../components/Motion.jsx'
 import AutomationTheatre from '../components/AutomationTheatre.jsx'
 
 const META = {
-  400: { color: '#1a6bb5', tint: '#e8f0fa', tag: 'Agent', coverage: 'Single domain', features: ['www + apex domain', 'AutoInstall agent', 'Any ACME client', 'Auto-renews every cycle'] },
-  401: { color: '#1a6bb5', tint: '#e8f0fa', tag: 'Agent', coverage: 'Wildcard', features: ['All *.domain subdomains', 'AutoInstall agent', 'Any ACME client', 'Auto-renews every cycle'] },
-  402: { color: '#c26a00', tint: '#fff2e2', tag: 'Agent', coverage: 'Single domain', features: ['www + apex domain', 'AutoInstall agent', 'GeoTrust trust chain', 'Auto-renews every cycle'] },
-  403: { color: '#c26a00', tint: '#fff2e2', tag: 'Agent', coverage: 'Wildcard', features: ['All *.domain subdomains', 'AutoInstall agent', 'GeoTrust trust chain', 'Auto-renews every cycle'] },
-  300: { color: '#b8001a', tint: '#fdeaea', tag: 'ACME', coverage: 'Multi-domain', features: ['Up to 255 SANs + wildcards', 'Add domains anytime', 'certbot · acme.sh · Caddy', 'Auto-renews every cycle'] },
+  400: { color: '#1a6bb5', tint: '#e8f0fa', tag: 'Agent + ACME', coverage: 'Single domain', pick: 'Expert pick', pickNote: 'Both setup methods', features: ['www + apex domain', 'AutoInstall agent — any server', 'Or any ACME client', 'Auto-renews every cycle'] },
+  401: { color: '#1a6bb5', tint: '#e8f0fa', tag: 'Agent + ACME', coverage: 'Wildcard', pick: 'Linux admin favourite', pickNote: 'Both setup methods', features: ['All *.domain subdomains', 'AutoInstall agent — any server', 'Or any ACME client', 'Auto-renews every cycle'] },
+  402: { color: '#c26a00', tint: '#fff2e2', tag: 'Agent + ACME', coverage: 'Single domain', pick: 'Top pick', pickNote: 'Both setup methods', features: ['www + apex domain', 'AutoInstall agent — any server', 'Or any ACME client', 'GeoTrust trust chain'] },
+  403: { color: '#c26a00', tint: '#fff2e2', tag: 'Agent + ACME', coverage: 'Wildcard', pick: 'Best for teams', pickNote: 'Both setup methods', features: ['All *.domain subdomains', 'AutoInstall agent — any server', 'Or any ACME client', 'GeoTrust trust chain'] },
+  300: { color: '#b8001a', tint: '#fdeaea', tag: 'ACME only', coverage: 'Multi-domain', features: ['Up to 255 SANs + wildcards', 'Add domains anytime', 'Needs an ACME client', 'Auto-renews every cycle'] },
 }
 
 const shortPer = (note) => (note || '').split('·')[0].trim()
@@ -44,8 +44,9 @@ function PlanCards() {
       {ordered.map((p) => {
         const m = META[p.id] || META[400]
         return (
-          <article className={'pb-card' + (p.featured ? ' pb-card-hi' : '')} key={p.id} style={{ '--ca': m.color }}>
-            {p.featured && <span className="pb-ribbon">Most flexible</span>}
+          <article className={'pb-card' + (p.featured ? ' pb-card-hi' : '') + (m.pick ? ' pb-card-pick' : '')} key={p.id} style={{ '--ca': m.color }}>
+            {p.featured && <span className="pb-ribbon">Most domains</span>}
+            {m.pick && <span className="pb-pick">{m.pick}</span>}
             <div className="pb-card-top">
               <span className="pb-mark" style={{ background: m.tint }}>
                 <BrandMark brand={p.brand} color={m.color} />
@@ -54,6 +55,7 @@ function PlanCards() {
             </div>
             <h3 className="pb-name">{p.name.replace(' Plan + Automate', '').replace(' ACME Certificate-as-a-Service', ' ACME CaaS')}</h3>
             <p className="pb-coverage">{m.coverage} · DV certificate</p>
+            {m.pickNote && <p className="pb-dual"><i className="ti ti-arrows-shuffle" aria-hidden="true" />Install by agent <strong>or</strong> ACME — your choice</p>}
             <div className="pb-price">{p.price}<span className="pb-per">{shortPer(p.priceNote)}</span></div>
             <ul className="pb-features">
               {m.features.map((f) => (
