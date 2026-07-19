@@ -1703,22 +1703,15 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
    Rest state is untouched; everything here is hover-only.
 ══════════════════════════════════════════════════ */
 
-/* the grid dims its non-hovered children so the target gains focus */
 .pb-grid { --pb-ease: cubic-bezier(.16,1,.3,1); }
-.pb-grid:hover .pb-card { transform: scale(.988); opacity: .62; filter: saturate(.72); }
 .pb-grid .pb-card { transition:
   transform .5s var(--pb-ease),
-  opacity .38s ease,
-  filter .38s ease,
   box-shadow .5s var(--pb-ease),
   border-color .3s ease; }
 
-/* the hovered card overrides the dim and rises */
-.pb-grid:hover .pb-card:hover,
+/* hovered card rises; siblings are left completely alone */
 .pb-grid .pb-card:hover {
   transform: translateY(-8px) scale(1.022);
-  opacity: 1;
-  filter: saturate(1.04);
   border-color: var(--ca, #3375b1);
   box-shadow: 0 1px 2px rgba(10,37,64,.05), 0 8px 18px rgba(10,37,64,.07), 0 22px 48px rgba(10,37,64,.13);
   z-index: 4;
@@ -1752,13 +1745,12 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .pb-card:hover .pb-cta .b-arrow { transform: translateX(4px); }
 
 /* keyboard parity — focus gets the same treatment */
-.pb-card:focus-within { transform: translateY(-8px) scale(1.022); opacity: 1; border-color: var(--ca, #3375b1); box-shadow: 0 22px 48px rgba(10,37,64,.13); z-index: 4; }
+.pb-card:focus-within { transform: translateY(-8px) scale(1.022); border-color: var(--ca, #3375b1); box-shadow: 0 22px 48px rgba(10,37,64,.13); z-index: 4; }
 
 @media (hover: none) {
-  .pb-grid:hover .pb-card { transform: none; opacity: 1; filter: none; }
+  .pb-grid .pb-card:hover { transform: none; box-shadow: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pb-grid:hover .pb-card,
   .pb-grid .pb-card:hover,
   .pb-card:hover .pb-features li,
   .pb-card:hover .pb-price,
