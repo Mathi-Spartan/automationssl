@@ -203,6 +203,13 @@ function ReissueCompare({ slices, drawn, onReplay }) {
                 style={i <= shown ? { background: `hsl(${sl.tone.h} ${sl.tone.sat}% ${sl.tone.lum}%)` } : undefined} />
             ))}
           </div>
+          <div className="rc-alerts rc-alerts-ok" aria-hidden="true">
+            {slices.slice(1, Math.max(0, manual) + 1).map((sl, i) => (
+              <span className={'rc-alert ok' + (i === manual - 1 ? ' settled' : '')} key={sl.startsOn}>
+                ✓ {fmtAlert(sl.startsOn)}
+              </span>
+            ))}
+          </div>
           <div className="rc-calm">
             <span className="rc-face" key={done ? 'done' : shown} aria-hidden="true">
               {shown < 0 ? '' : done ? '\u{1F389}' : AUTO_FACES[shown % AUTO_FACES.length]}
