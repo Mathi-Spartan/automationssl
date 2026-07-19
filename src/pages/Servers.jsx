@@ -259,13 +259,20 @@ function ResellerServers({ session }) {
 
   useEffect(() => {
     const uid = session.user.id
+    // Fetch sub-account rows by explicit id rather than by excluding our own.
+    // '.neq(uid)' returns anything RLS permits that is not ours, which is
+    // wider than 'our customers' as soon as the tree is deeper than one level.
+    supabase.from('profiles').select('id, full_name').eq('parent_reseller_id', uid)
+      .then(({ data: kids }) => {
+    const ids = (kids || []).map((k) => k.id)
+    const none = Promise.resolve({ data: [] })
     Promise.all([
       supabase.from('servers').select('*').eq('owner_id', uid).order('name'),
-      supabase.from('servers').select('*').neq('owner_id', uid).order('name'),
+      ids.length ? supabase.from('servers').select('*').in('owner_id', ids).order('name') : none,
       supabase.from('orders').select('*').eq('user_id', uid),
-      supabase.from('orders').select('*').neq('user_id', uid),
-      supabase.from('profiles').select('id, full_name').eq('parent_reseller_id', uid),
-      supabase.from('tracked_domains').select('*').neq('owner_id', uid),
+      ids.length ? supabase.from('orders').select('*').in('user_id', ids) : none,
+      Promise.resolve({ data: kids || [] }),
+      ids.length ? supabase.from('tracked_domains').select('*').in('owner_id', ids) : none,
     ]).then(([os, ss, oo, so, p, sd]) => {
       setOwnServers(os.data || [])
       setSubServers(ss.data || [])
@@ -275,6 +282,7 @@ function ResellerServers({ session }) {
       setSubDomains(sd.data || [])
       setErr(os.error?.message || null)
     })
+      })
   }, [session.user.id])
 
   const allServers = [...(ownServers || []), ...subServers]
