@@ -132,7 +132,6 @@ export default function Customers({ viewAs = null }) {
   async function exportAll() {
     setExporting(true)
     try {
-      // Walk the tree level by level rather than assuming a fixed depth.
       const tree = []
       let frontier = [scopeId]
       for (let depth = 0; depth < 8 && frontier.length; depth += 1) {
@@ -151,51 +150,92 @@ export default function Customers({ viewAs = null }) {
             .in('user_id', ids)
         : { data: [] }
 
-      const byId = Object.fromEntries(tree.map((t) => [t.id, t]))
-      const parentName = (id) => byId[id]?.full_name || (id === scopeId ? 'You' : '—')
+      const byParent = {}
+      tree.forEach((t) => {
+        const k = t.parent_reseller_id
+        if (!byParent[k]) byParent[k] = []
+        byParent[k].push(t)
+      })
+      const ordersFor = (id) => (ords || []).filter((o) => o.user_id === id)
 
-      const header = ['Account', 'Type', 'Account ID', 'Company', 'Email', 'Belongs to',
-                      'Order #', 'Product', 'Domain(s)', 'Status', 'Renews', 'Ordered']
-      const rows = [header]
+      const period = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      const COLS = 9
+      const rows = []
+      const style = []
 
-      tree.forEach((acct) => {
-        const theirs = (ords || []).filter((o) => o.user_id === acct.id)
-        const base = [
-          acct.full_name || 'Unnamed',
-          acct.account_type === 'reseller' ? 'Reseller' : 'Customer',
-          acct.customer_code || '',
-          acct.company_name || '',
-          acct.email || '',
-          parentName(acct.parent_reseller_id),
-        ]
-        if (!theirs.length) {
-          rows.push([...base, '', '', '', 'No orders', '', ''])
-          return
+      const push = (cells, type) => { style.push({ r: rows.length, type }); rows.push(cells) }
+      const blank = () => push(Array(COLS).fill(''), 'blank')
+
+      push([`BILLING STATEMENT — ${(scopeProfile?.full_name || 'Account').toUpperCase()}`, '', '', '', '', '', '', '', ''], 'title')
+      push([`Period: ${period}`, '', '', '', '', '', `Generated ${new Date().toLocaleDateString('en-GB')}`, '', ''], 'meta')
+      blank()
+
+      const HEAD = ['Account', 'ID', 'Company', 'Order #', 'Product', 'Domain(s)', 'Status', 'Renews', 'Ordered']
+      let grandOrders = 0
+
+      // Indent conveys depth: Excel has no tree view, so the hierarchy has to
+      // survive as leading space in the first column.
+      const writeAccount = (acct, indent) => {
+        const pad = indent ? '      └─ ' : ''
+        const mine = ordersFor(acct.id)
+        grandOrders += mine.length
+        if (!mine.length) {
+          push([`${pad}${acct.full_name || 'Unnamed'}`, acct.customer_code || '',
+                acct.company_name || '', '—', 'No orders this period', '', '', '', ''], 'empty')
+          return 0
         }
-        theirs.forEach((o) => {
+        mine.forEach((o, i) => {
           const d = deliverables(o)
           const doms = (d.vendorDomains || [])
             .map((x) => (typeof x === 'string' ? x : x?.name || ''))
             .filter(Boolean).join(', ')
-          rows.push([
-            ...base,
+          push([
+            i === 0 ? `${pad}${acct.full_name || 'Unnamed'}` : '',
+            i === 0 ? (acct.customer_code || '') : '',
+            i === 0 ? (acct.company_name || '') : '',
             o.api_response?.order?.order_id || o.id?.slice(0, 8) || '',
             o.product_name || '',
             doms,
             d.activated ? 'Automated' : 'Needs setup',
             d.renewal ? new Date(d.renewal).toLocaleDateString('en-GB') : '',
             o.created_at ? new Date(o.created_at).toLocaleDateString('en-GB') : '',
-          ])
+          ], 'order')
         })
+        return mine.length
+      }
+
+      const direct = byParent[scopeId] || []
+      const retail = direct.filter((a) => a.account_type !== 'reseller')
+      const resellers = direct.filter((a) => a.account_type === 'reseller')
+
+      if (retail.length) {
+        push(['══ DIRECT CUSTOMERS ══', '', '', '', '', '', '', '', ''], 'section')
+        push(HEAD, 'header')
+        let n = 0
+        retail.forEach((a) => { n += writeAccount(a, 0) })
+        push(['   Subtotal · direct customers', '', '', `${n} order${n === 1 ? '' : 's'}`, '', '', '', '', ''], 'subtotal')
+        blank()
+      }
+
+      resellers.forEach((r) => {
+        push([`══ RESELLER: ${(r.full_name || 'Unnamed').toUpperCase()} ══`, r.customer_code || '',
+              r.company_name || '', '', '', '', '', '', ''], 'section')
+        push(HEAD, 'header')
+        let n = writeAccount(r, 0)
+        ;(byParent[r.id] || []).forEach((c) => { n += writeAccount(c, 1) })
+        push([`   Subtotal · ${r.full_name || 'reseller'} and their customers`, '', '', `${n} order${n === 1 ? '' : 's'}`, '', '', '', '', ''], 'subtotal')
+        blank()
       })
 
+      push([`══ TOTAL · ALL ACCOUNTS ══`, '', '', `${grandOrders} order${grandOrders === 1 ? '' : 's'}`, '', '', '', '', ''], 'total')
+
       const ws = XLSX.utils.aoa_to_sheet(rows)
-      ws['!cols'] = [{ wch: 24 }, { wch: 10 }, { wch: 12 }, { wch: 20 }, { wch: 28 },
-                     { wch: 20 }, { wch: 12 }, { wch: 34 }, { wch: 26 }, { wch: 14 },
-                     { wch: 12 }, { wch: 12 }]
+      ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 20 }, { wch: 12 },
+                     { wch: 34 }, { wch: 26 }, { wch: 13 }, { wch: 12 }, { wch: 12 }]
+
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'All accounts')
-      XLSX.writeFile(wb, `automationssl-accounts-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      XLSX.utils.book_append_sheet(wb, ws, 'Billing statement')
+      XLSX.writeFile(wb, `automationssl-billing-${new Date().toISOString().slice(0, 10)}.xlsx`)
     } catch (e) {
       setErr('Export failed: ' + (e.message || e))
     } finally {
