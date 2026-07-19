@@ -329,7 +329,7 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
         </div>
       )}
 
-      <div className="pc-cols">
+      <div className={'pc-cols' + (d.isAcme ? '' : ' pc-cols-flat')}>
         <aside className="pc-rail">
           <div className="pc-rail-actions">
             {d.setupLink && (

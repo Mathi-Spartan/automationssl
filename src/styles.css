@@ -2072,3 +2072,41 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 
 @media (max-width: 640px) { .acme-toggle-n { display: none; } }
 @media (prefers-reduced-motion: reduce) { .acme-toggle, .acme-toggle-c { transition: none !important; } }
+
+/* ══════════════════════════════════════════════════
+   AGENT CARDS — single column
+   RapidSSL / GeoTrust have no credentials block, so the
+   two-column grid left the right side empty. CaaS keeps
+   the rail; this flattens everything else.
+══════════════════════════════════════════════════ */
+/* flex column so `order` works: the lead sentence must precede the
+   action buttons, but .pc-rail comes first in the DOM */
+.pc-cols-flat { display: flex; flex-direction: column; gap: 0; }
+.pc-cols-flat .pc-rail { display: contents; }
+.pc-cols-flat .pc-main { order: 1; }
+.pc-cols-flat .pc-rail-actions { order: 2; }
+.pc-cols-flat .pc-facts { order: 3; }
+.pc-cols-flat .pc-rail-domains { order: 4; }
+.pc-cols-flat .pc-rail-sync { order: 5; }
+
+/* lead sentence first */
+.pc-cols-flat .plan-note { margin: 0 0 13px; max-width: 760px; }
+
+/* actions inline under the lead */
+.pc-cols-flat .pc-rail-actions { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; margin: 0 0 13px; }
+.pc-cols-flat .pc-rail-actions .btn { width: auto; padding: 9px 16px; font-size: 0.83rem; }
+
+/* facts as a single wrapped row */
+.pc-cols-flat .pc-facts { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 7px 20px; max-width: 760px; padding-top: 12px; border-top: 1px solid #eef2f7; }
+.pc-cols-flat .pc-fact { justify-content: flex-start; gap: 6px; }
+.pc-cols-flat .pc-fact dd { text-align: left; }
+.pc-cols-flat .pc-fact + .pc-fact::before { content: '·'; color: #dbe4ee; margin-right: 14px; }
+
+/* domains and sync sit below, full width */
+.pc-cols-flat .pc-rail-domains { max-width: 760px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eef2f7; }
+.pc-cols-flat .pc-rail-sync { max-width: 760px; }
+
+@media (max-width: 640px) {
+  .pc-cols-flat .pc-facts { gap: 6px 14px; }
+  .pc-cols-flat .pc-fact + .pc-fact::before { margin-right: 8px; }
+}
