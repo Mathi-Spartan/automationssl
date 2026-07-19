@@ -2350,3 +2350,6 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 
 /* note shown where 'Buy for this customer' sits when the account is a reseller */
 .rd-main-note { font-size: 0.74rem; color: #9aacba; font-style: italic; max-width: 280px; line-height: 1.45; text-align: right; }
+
+/* accounts page header actions */
+.cust-head-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }

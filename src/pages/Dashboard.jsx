@@ -1163,7 +1163,7 @@ function ResellerDashboard({ session, profile, readOnly = false }) {
   const custList = [
     { id: '__all__',  label: 'All subscriptions', count: (allOrders || []).length },
     { id: '__mine__', label: 'My inventory',       count: inventory.length },
-    ...subs.map(c => {
+    ...subs.filter(c => c.account_type !== 'reseller').map(c => {
       const theirs = allOrders ? allOrders.filter(o => o.user_id === c.id) : []
       const pendingOrders = theirs.filter(o => !deliverables(o).activated)
       const oldestDays = pendingOrders.length
@@ -1414,7 +1414,7 @@ function ResellerDashboard({ session, profile, readOnly = false }) {
                 <span className="rd-list-count">{c.count}</span>
               </button>
             ))}
-            <div className="rd-cust-section">Customers · {subs.length}</div>
+            <div className="rd-cust-section">Customers · {subs.filter(c => c.account_type !== 'reseller').length}</div>
             {custList.filter(c => c.id !== '__all__' && c.id !== '__mine__')
               .filter(c => !custSearch || c.label.toLowerCase().includes(custSearch.toLowerCase()) || (c.code || '').toLowerCase().includes(custSearch.toLowerCase()))
               .map(c => {

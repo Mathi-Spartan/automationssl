@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import * as XLSX from 'xlsx'
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
@@ -123,6 +124,85 @@ export default function Customers({ viewAs = null }) {
 
   const setE = k => e => setEdit({ ...edit, [k]: e.target.value })
 
+  const [exporting, setExporting] = useState(false)
+
+  /* Export every order beneath this account at any depth: direct customers,
+     sub-resellers, and those sub-resellers' own customers. RLS already limits
+     what is readable to the caller's subtree, so a broad select cannot leak. */
+  async function exportAll() {
+    setExporting(true)
+    try {
+      // Walk the tree level by level rather than assuming a fixed depth.
+      const tree = []
+      let frontier = [scopeId]
+      for (let depth = 0; depth < 8 && frontier.length; depth += 1) {
+        const { data } = await supabase.from('profiles')
+          .select('id, full_name, email, customer_code, company_name, account_type, parent_reseller_id')
+          .in('parent_reseller_id', frontier)
+        const level = data || []
+        level.forEach((r) => tree.push({ ...r, depth: depth + 1 }))
+        frontier = level.map((r) => r.id)
+      }
+
+      const ids = tree.map((t) => t.id)
+      const { data: ords } = ids.length
+        ? await supabase.from('orders')
+            .select('id, user_id, product_name, product_id, api_response, assigned_at, created_at, status')
+            .in('user_id', ids)
+        : { data: [] }
+
+      const byId = Object.fromEntries(tree.map((t) => [t.id, t]))
+      const parentName = (id) => byId[id]?.full_name || (id === scopeId ? 'You' : '—')
+
+      const header = ['Account', 'Type', 'Account ID', 'Company', 'Email', 'Belongs to',
+                      'Order #', 'Product', 'Domain(s)', 'Status', 'Renews', 'Ordered']
+      const rows = [header]
+
+      tree.forEach((acct) => {
+        const theirs = (ords || []).filter((o) => o.user_id === acct.id)
+        const base = [
+          acct.full_name || 'Unnamed',
+          acct.account_type === 'reseller' ? 'Reseller' : 'Customer',
+          acct.customer_code || '',
+          acct.company_name || '',
+          acct.email || '',
+          parentName(acct.parent_reseller_id),
+        ]
+        if (!theirs.length) {
+          rows.push([...base, '', '', '', 'No orders', '', ''])
+          return
+        }
+        theirs.forEach((o) => {
+          const d = deliverables(o)
+          const doms = (d.vendorDomains || [])
+            .map((x) => (typeof x === 'string' ? x : x?.name || ''))
+            .filter(Boolean).join(', ')
+          rows.push([
+            ...base,
+            o.api_response?.order?.order_id || o.id?.slice(0, 8) || '',
+            o.product_name || '',
+            doms,
+            d.activated ? 'Automated' : 'Needs setup',
+            d.renewal ? new Date(d.renewal).toLocaleDateString('en-GB') : '',
+            o.created_at ? new Date(o.created_at).toLocaleDateString('en-GB') : '',
+          ])
+        })
+      })
+
+      const ws = XLSX.utils.aoa_to_sheet(rows)
+      ws['!cols'] = [{ wch: 24 }, { wch: 10 }, { wch: 12 }, { wch: 20 }, { wch: 28 },
+                     { wch: 20 }, { wch: 12 }, { wch: 34 }, { wch: 26 }, { wch: 14 },
+                     { wch: 12 }, { wch: 12 }]
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'All accounts')
+      XLSX.writeFile(wb, `automationssl-accounts-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    } catch (e) {
+      setErr('Export failed: ' + (e.message || e))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="dash-page">
       <div className="cust-page-header">
@@ -130,9 +210,15 @@ export default function Customers({ viewAs = null }) {
           <span className="eyebrow">{scopeProfile?.can_create_resellers ? 'Accounts' : 'Customers'}</span>
           <h1>{scopeProfile?.can_create_resellers ? 'Your accounts' : 'Your customers'}</h1>
         </div>
-        <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
-          {showForm ? 'Cancel' : (scopeProfile?.can_create_resellers ? '+ New account' : '+ New customer')}
-        </button>
+        <div className="cust-head-actions">
+          <button className="btn ghost" type="button" onClick={exportAll} disabled={exporting || !(subs || []).length}>
+            <i className="ti ti-file-spreadsheet" style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }} aria-hidden="true" />
+            {exporting ? 'Preparing…' : 'Export all orders'}
+          </button>
+          <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
+            {showForm ? 'Cancel' : (scopeProfile?.can_create_resellers ? '+ New account' : '+ New customer')}
+          </button>
+        </div>
       </div>
 
       {/* Create form */}
