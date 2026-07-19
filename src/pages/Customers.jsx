@@ -9,7 +9,7 @@ export default function Customers() {
   const { session, profile, loading } = useAuth()
   const [subs, setSubs] = useState(null)
   const [orders, setOrders] = useState([])
-  const [form, setForm] = useState({ email: '', password: '', full_name: '', company_name: '' })
+  const [form, setForm] = useState({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer' })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
@@ -51,7 +51,7 @@ export default function Customers() {
       const body = await res.json()
       if (!res.ok || body.error) throw new Error(body.message || 'Could not create the account.')
       setMsg(`Account created for ${form.email}. Share these credentials with your customer — they can sign in right away.`)
-      setForm({ email: '', password: '', full_name: '', company_name: '' })
+      setForm({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer' })
       setShowForm(false)
       reload()
     } catch (e2) {
@@ -124,7 +124,38 @@ export default function Customers() {
       {/* Create form */}
       {showForm && (
         <form onSubmit={createSub} className="cust-create-form">
-          <h3 className="cust-form-title">Create customer account</h3>
+          <h3 className="cust-form-title">
+            {form.account_type === 'reseller' ? 'Create reseller account' : 'Create customer account'}
+          </h3>
+
+          {profile?.can_create_resellers && (
+            <div className="field mt-type-field">
+              <label>Account type</label>
+              <div className="mt-type">
+                <button type="button"
+                  className={'mt-type-opt' + (form.account_type !== 'reseller' ? ' on' : '')}
+                  onClick={() => setForm({ ...form, account_type: 'customer' })}
+                  aria-pressed={form.account_type !== 'reseller'}>
+                  <span className="mt-type-radio" aria-hidden="true" />
+                  <span>
+                    <span className="mt-type-t">Customer</span>
+                    <span className="mt-type-d">Buys and manages their own certificates</span>
+                  </span>
+                </button>
+                <button type="button"
+                  className={'mt-type-opt' + (form.account_type === 'reseller' ? ' on' : '')}
+                  onClick={() => setForm({ ...form, account_type: 'reseller' })}
+                  aria-pressed={form.account_type === 'reseller'}>
+                  <span className="mt-type-radio" aria-hidden="true" />
+                  <span>
+                    <span className="mt-type-t">Reseller</span>
+                    <span className="mt-type-d">Can create and manage their own customers</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="field-row">
             <div className="field">
               <label htmlFor="cname">Full name</label>

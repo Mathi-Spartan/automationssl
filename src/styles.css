@@ -2312,3 +2312,18 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .lc-lane { transition: none !important; }
   .lc-lane:hover { transform: none !important; }
 }
+
+/* ══════════════════════════════════════════════════
+   ACCOUNT TYPE PICKER — master accounts only
+══════════════════════════════════════════════════ */
+.mt-type-field { margin-bottom: 14px; }
+.mt-type { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 5px; }
+.mt-type-opt { display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; background: #fff; border: 1.5px solid var(--line); border-radius: 11px; padding: 11px 13px; cursor: pointer; transition: border-color .2s, background .2s; }
+.mt-type-opt:hover { border-color: var(--cert); }
+.mt-type-opt.on { border-color: var(--cert); background: #f6faff; }
+.mt-type-radio { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #cfdae6; flex-shrink: 0; position: relative; transition: border-color .2s; }
+.mt-type-opt.on .mt-type-radio { border-color: var(--cert); }
+.mt-type-opt.on .mt-type-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--cert); }
+.mt-type-t { display: block; font-size: 0.83rem; font-weight: 700; color: #06182c; }
+.mt-type-d { display: block; font-size: 0.71rem; color: #8296a8; margin-top: 1px; line-height: 1.4; }
+@media (max-width: 560px) { .mt-type { grid-template-columns: 1fr; } }

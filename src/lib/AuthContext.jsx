@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
     }
     supabase
       .from('profiles')
-      .select('id, full_name, account_type, parent_reseller_id')
+      .select('id, full_name, account_type, parent_reseller_id, can_create_resellers')
       .eq('id', session.user.id)
       .maybeSingle()
       .then(({ data }) => setProfile(data || null))

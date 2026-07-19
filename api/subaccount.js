@@ -33,16 +33,23 @@ export default async function handler(req, res) {
     if (!user?.id) return res.status(401).json({ error: true, message: 'Please sign in.' })
 
     // caller must be a reseller
-    const pr = await fetch(`${SB()}/rest/v1/profiles?id=eq.${user.id}&select=account_type`, {
+    const pr = await fetch(`${SB()}/rest/v1/profiles?id=eq.${user.id}&select=account_type,can_create_resellers`, {
       headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` },
     })
     const rows = await pr.json()
     if (rows?.[0]?.account_type !== 'reseller')
       return res.status(403).json({ error: true, message: 'Only reseller accounts can manage customer accounts.' })
+    const callerCanCreateResellers = rows?.[0]?.can_create_resellers === true
 
     if (req.method === 'PATCH') return updateCustomer(req, res, user)
 
-    const { email, password, full_name, company_name } = req.body || {}
+    const { email, password, full_name, company_name, account_type } = req.body || {}
+
+    // Only a master may create another reseller. Without this check any
+    // reseller could POST account_type:'reseller' and mint a peer.
+    const newType = account_type === 'reseller' ? 'reseller' : 'customer'
+    if (newType === 'reseller' && !callerCanCreateResellers)
+      return res.status(403).json({ error: true, message: 'Your account cannot create reseller accounts.' })
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
       return res.status(400).json({ error: true, message: 'A valid email is required.' })
     if (!password || String(password).length < 8)
@@ -69,6 +76,7 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}`, Prefer: 'return=minimal' },
       body: JSON.stringify({
         parent_reseller_id: user.id,
+        account_type: newType,
         email: String(email).trim().toLowerCase(),
         ...(company_name ? { company_name: String(company_name).trim() } : {}),
       }),
