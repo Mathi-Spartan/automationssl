@@ -1793,3 +1793,48 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .lc-slice.in:hover .lc-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
 .lc-track { overflow: visible; }
 @media (prefers-reduced-motion: reduce) { .lc-tip { transition: none !important; } }
+
+/* ══════════════════════════════════════════════════
+   DASHBOARD ROW HOVER — accounts + subscriptions
+   Only the hovered row reacts; siblings untouched.
+══════════════════════════════════════════════════ */
+
+/* --- accounts sidebar --- */
+.rd-cust-item { position: relative; transition: background .3s cubic-bezier(.16,1,.3,1), padding-left .34s cubic-bezier(.16,1,.3,1); }
+.rd-cust-item::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 3px 3px 0; background: #3375b1; transform: scaleY(0); transform-origin: center; transition: transform .34s cubic-bezier(.16,1,.3,1); }
+.rd-cust-item:hover::before { transform: scaleY(1); }
+.rd-cust-item:hover { background: #f6faff; padding-left: 17px; }
+.rd-cust-item .rd-cust-avatar { transition: transform .38s cubic-bezier(.16,1,.3,1), box-shadow .38s cubic-bezier(.16,1,.3,1); }
+.rd-cust-item:hover .rd-cust-avatar { transform: scale(1.07); box-shadow: 0 3px 10px rgba(10,37,64,.14); }
+.rd-cust-item .rd-cust-label { transition: color .28s ease, transform .38s cubic-bezier(.16,1,.3,1) .03s; }
+.rd-cust-item:hover .rd-cust-label { color: #06182c; transform: translateX(1px); }
+.rd-cust-item .rd-cust-sub { transition: transform .38s cubic-bezier(.16,1,.3,1) .06s; display: block; }
+.rd-cust-item:hover .rd-cust-sub { transform: translateX(1px); }
+.rd-cust-item.active::before { transform: scaleY(1); }
+
+/* --- subscriptions table --- */
+.rd-tbl-row-v2 { position: relative; transition: background .3s cubic-bezier(.16,1,.3,1); }
+.rd-tbl-row-v2::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; border-radius: 0 3px 3px 0; background: #3375b1; transform: scaleY(0); transition: transform .34s cubic-bezier(.16,1,.3,1); }
+.rd-order-row:hover:not(.open) .rd-tbl-row-v2::before { transform: scaleY(1); }
+.rd-order-row:hover:not(.open) .rd-tbl-row-v2 { background: #f7fbff; }
+.rd-tbl-row-v2 .rd-order-id { transition: transform .36s cubic-bezier(.16,1,.3,1), color .26s ease; display: inline-block; }
+.rd-order-row:hover:not(.open) .rd-order-id { transform: translateX(2px); }
+.rd-tbl-row-v2 .stage-pill { transition: transform .36s cubic-bezier(.16,1,.3,1) .05s, box-shadow .36s cubic-bezier(.16,1,.3,1) .05s; }
+.rd-order-row:hover:not(.open) .stage-pill { transform: translateY(-1px); box-shadow: 0 3px 9px rgba(10,37,64,.1); }
+.rd-tbl-row-v2 .rd-order-actions .ti-chevron-down { transition: transform .38s cubic-bezier(.16,1,.3,1) .06s; display: inline-block; }
+.rd-order-row:hover:not(.open) .rd-order-actions .ti-chevron-down { transform: translateY(2px); }
+
+@media (hover: none) {
+  .rd-cust-item:hover, .rd-order-row:hover:not(.open) .rd-tbl-row-v2 { padding-left: 14px; }
+  .rd-cust-item:hover::before, .rd-order-row:hover:not(.open) .rd-tbl-row-v2::before { transform: scaleY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd-cust-item, .rd-cust-item::before, .rd-cust-item:hover,
+  .rd-cust-item:hover .rd-cust-avatar, .rd-cust-item:hover .rd-cust-label,
+  .rd-cust-item:hover .rd-cust-sub, .rd-tbl-row-v2::before,
+  .rd-order-row:hover:not(.open) .rd-order-id,
+  .rd-order-row:hover:not(.open) .stage-pill,
+  .rd-order-row:hover:not(.open) .rd-order-actions .ti-chevron-down {
+    transform: none !important; transition: none !important; padding-left: 14px;
+  }
+}
