@@ -390,32 +390,21 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
               {d.renewal && <> — covered until <b>{fmtDate(d.renewal)}</b>{days != null && <> ({days} days), renews automatically</>}</>}.
             </p>
           ) : d.isAcme ? (
-            <div className="plan-note">
+            <p className="plan-note">
               {d.enrollReady ? (
-                <>
-                  <b>Your enrollment credentials are ready — two steps left.</b>
-                  <div className="todo-steps">
-                    <div className="todo done"><span className="todo-dot">✓</span> Enrollment provisioned by the CA</div>
-                    <div className="todo current"><span className="todo-dot">1</span> Register your ACME client with the credentials below <span className="todo-sub">certbot · acme.sh · Caddy · Traefik · cert-manager</span></div>
-                    <div className="todo"><span className="todo-dot">2</span> Request the certificate for your domain <span className="todo-sub">renewals run on their own after that</span></div>
-                  </div>
-                </>
+                <><b>Your credentials are ready.</b> Register your ACME client below, then request the certificate for your domain — reissues run on their own after that.</>
               ) : (
-                <>
-                  <b>The CA is provisioning your enrollment — usually a few minutes.</b>{' '}
-                  Use "Check status with the CA", or just wait: this page re-checks automatically.
-                </>
+                <><b>The CA is provisioning your enrollment — usually a few minutes.</b>{' '}
+                Use "Check status with the CA", or just wait: this page re-checks automatically.</>
               )}
-            </div>
+            </p>
           ) : (
-            <div className="plan-note">
-              <b>You're {d.agentInstalled ? '1 step' : 'about 5 minutes'} away.</b>
-              <ol className="checklist">
-                <li className={d.setupLink ? '' : 'muted'}>Open your personal setup portal.</li>
-                <li className={d.agentInstalled ? 'done' : ''}>Copy the one-line install command onto your server and run it.</li>
-                <li className={d.vendorDomains.length ? 'done' : ''}>Add the domain you want secured — we'll detect it automatically.</li>
-              </ol>
-            </div>
+            <p className="plan-note">
+              <b>You're {d.agentInstalled ? '1 step' : 'about 5 minutes'} away.</b>{' '}
+              {d.agentInstalled
+                ? 'Add the domain you want secured — we\'ll detect it automatically.'
+                : 'Open your setup portal, run the one-line install command on your server, then add your domain.'}
+            </p>
           )}
 
         {d.isAcme && d.enrollReady && !d.activated && (

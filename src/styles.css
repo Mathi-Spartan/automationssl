@@ -232,10 +232,6 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .plan-note { font-size: 0.9rem; margin-top: 12px; }
 .plan-note.ok-note { background: var(--cert-soft, #eaf5ee); border-radius: 10px; padding: 10px 14px; }
 .plan-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
-.checklist { margin: 8px 0 0 18px; padding: 0; display: grid; gap: 5px; font-size: 0.88rem; }
-.checklist li.done { color: #235581; list-style: none; margin-left: -18px; }
-.checklist li.done::before { content: '✓ '; font-weight: 700; }
-.checklist li.muted { color: var(--ink-soft); }
 .celebrate { animation: pop 0.5s ease; font-size: 1rem; }
 @keyframes pop { 0% { transform: scale(0.96); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
@@ -398,7 +394,6 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .testing-note .dot { background: #b4dffc; }
 .stage-pill.ok { background: #e3eefb; color: #235581; border-color: #c3daf1; }
 .jstep.done .jdot { background: #2e6ba2; border-color: #2e6ba2; }
-.jstep.done .jlabel, .checklist li.done { color: #235581; }
 .jstep.done .jline { background: #2e6ba2; }
 .dot.ok { background: #2e6ba2; }
 .plan-card.activated { border-left-color: #2e6ba2; }
@@ -453,14 +448,6 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .status-pill.ok { background: #e3eefb; color: #235581; border: 1px solid #c3daf1; }
 .status-pill.warn { background: #fbf3e2; color: #9a6b12; border: 1px solid #ecd9ae; }
 .sync-line { font-size: 0.75rem; color: var(--ink-soft); margin-top: 12px; }
-.todo-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.todo { display: flex; align-items: baseline; gap: 10px; font-size: 0.9rem; flex-wrap: wrap; }
-.todo-dot { width: 21px; height: 21px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; border: 2px solid var(--line); color: var(--ink-soft); flex: none; align-self: center; }
-.todo.done { color: #235581; }
-.todo.done .todo-dot { background: #2e6ba2; border-color: #2e6ba2; color: #fff; }
-.todo.current { font-weight: 600; }
-.todo.current .todo-dot { border-color: #d9a441; color: #9a6b12; }
-.todo-sub { font-size: 0.76rem; color: var(--ink-soft); font-weight: 400; width: 100%; margin-left: 31px; }
 
 .caas-row { padding: 14px 16px; }
 .caas-row + .caas-row { border-top: 1px solid var(--line); }
@@ -1879,10 +1866,9 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .cred-card.cmd { max-width: 760px; }
 .cred-card.cmd .acme-creds { font-size: 0.72rem; line-height: 1.75; white-space: pre-wrap; word-break: normal; overflow-wrap: anywhere; }
 
-/* checklist and steps sit in the same measure */
-.plan-note, .todo-steps, .checklist { max-width: 760px; }
+/* main column measure */
+.plan-note { max-width: 760px; }
 .plan-note { font-size: 0.86rem; line-height: 1.6; }
-.checklist li, .todo { font-size: 0.85rem; line-height: 1.55; }
 
 /* actions row: buttons grouped, server picker joins the same line */
 .plan-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; max-width: 760px; margin-top: 14px; }
