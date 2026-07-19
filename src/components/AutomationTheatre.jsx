@@ -368,26 +368,62 @@ export default function AutomationTheatre() {
         <ReissueCompare slices={slices} drawn={drawn} onReplay={() => play(model.total)} />
       </div>
 
-      <div className="lc-methods">
-        {METHODS.map((m) => (
-          <div className="lc-method" key={m.key}>
-            <div className="lc-method-head">
-              <span className="lc-method-icon"><i className={'ti ' + m.icon} aria-hidden="true" /></span>
-              <span className="lc-method-title">{m.title}</span>
-            </div>
-            <ol className="lc-method-steps">
-              {m.steps.map((s, i) => (
-                <li key={i}>
-                  <span className="lc-method-n">{String(i + 1).padStart(2, '0')}</span>
-                  <span>{s}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="lc-method-foot">
-              {m.foot} <strong>{m.plans}</strong>
-            </div>
+      <div className="lc-paths">
+        <div className="lc-paths-head">
+          <div className="lc-paths-k">SETUP</div>
+          <div className="lc-paths-t">Two paths. One outcome.</div>
+          <div className="lc-paths-s">
+            +Automate plans accept either — the certificate lifecycle is identical from there.
           </div>
-        ))}
+        </div>
+
+        <div className="lc-node lc-node-start">
+          <span className="lc-node-pill">Order active at the CA</span>
+        </div>
+
+        <div className="lc-fork" aria-hidden="true">
+          <svg viewBox="0 0 400 26" preserveAspectRatio="none">
+            <path d="M200 0 L200 9 Q200 15 190 15 L110 15 Q100 15 100 21 L100 26" fill="none" stroke="#3375b1" strokeWidth="1.5" />
+            <path d="M200 0 L200 9 Q200 15 210 15 L290 15 Q300 15 300 21 L300 26" fill="none" stroke="#7c5cbf" strokeWidth="1.5" />
+          </svg>
+        </div>
+
+        <div className="lc-lanes">
+          {METHODS.map((m) => (
+            <div className={'lc-lane lc-lane-' + m.key} key={m.key}>
+              <div className="lc-lane-head">
+                <span className="lc-lane-icon"><i className={'ti ' + m.icon} aria-hidden="true" /></span>
+                <span className="lc-lane-title">{m.title}</span>
+              </div>
+              <ol className="lc-lane-steps">
+                {m.steps.map((step, i) => (
+                  <li key={i}>
+                    <span className="lc-lane-n">{String(i + 1).padStart(2, '0')}</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="lc-lane-foot">
+                {m.foot} <strong>{m.plans}</strong>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="lc-join" aria-hidden="true">
+          <svg viewBox="0 0 400 26" preserveAspectRatio="none">
+            <path d="M100 0 L100 5 Q100 11 110 11 L190 11 Q200 11 200 17 L200 26" fill="none" stroke="#3375b1" strokeWidth="1.5" />
+            <path d="M300 0 L300 5 Q300 11 290 11 L210 11 Q200 11 200 17 L200 26" fill="none" stroke="#7c5cbf" strokeWidth="1.5" />
+          </svg>
+        </div>
+
+        <div className="lc-node lc-node-end">
+          <span className="lc-node-out">
+            <i className="ti ti-check" aria-hidden="true" />
+            Unattended reissuance
+            <small>every cycle, no operator action</small>
+          </span>
+        </div>
       </div>
 
       <div className="lc-rule">
