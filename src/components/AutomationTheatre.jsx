@@ -124,6 +124,21 @@ const METHODS = [
   },
 ]
 
+/* Fixed sets so every visitor sees the same sequence. The times are
+   illustrative of when an expiry can fall, not data from any account. */
+const MANUAL_TIMES = ['Tue 09:14', 'Sat 22:40', 'Thu 03:12', 'Mon 18:05', 'Sun 06:33', 'Fri 23:51', 'Wed 02:27']
+const AUTO_FACES = ['\u{1F60A}', '\u{1F604}', '\u{1F44D}', '\u{1F60E}', '\u{1F64C}', '\u2728', '\u{1F60C}', '\u{1F389}']
+const AUTO_LINES = [
+  'All set — nothing needed',
+  'Handled while you worked',
+  'Done, no ticket raised',
+  'Reissued overnight',
+  'You did not lift a finger',
+  'Quietly taken care of',
+  'Still hands-off',
+  'Another one, automatically',
+]
+
 function ReissueCompare({ slices, drawn, onReplay }) {
   const n = slices.length
   // drawn is the same counter that drives the chip track above, so a chip
@@ -147,7 +162,7 @@ function ReissueCompare({ slices, drawn, onReplay }) {
       </div>
 
       <div className="rc-grid">
-        <div className="rc-panel">
+        <div className={'rc-panel' + (manual >= 3 ? ' strain' : '')}>
           <div className="rc-head"><i className="rc-dot bad" aria-hidden="true" />Reissuing by hand</div>
           <div className="rc-note">Someone has to remember, every time</div>
           <div className="rc-bar">
@@ -156,13 +171,18 @@ function ReissueCompare({ slices, drawn, onReplay }) {
                 className={'rc-cell' + (i <= shown ? ' on' : '') + (i > 0 && i <= shown ? ' gap' : '')} />
             ))}
           </div>
+          <div className="rc-alerts" aria-hidden="true">
+            {MANUAL_TIMES.slice(0, Math.max(0, manual)).map((t, i) => (
+              <span className={'rc-alert' + (i === manual - 1 ? ' fresh' : '')} key={t}>⚠ {t}</span>
+            ))}
+          </div>
           <div className="rc-event">
             {done ? (
-              <><b className="bad">{n - 1} interruptions</b><span>every one a chance to miss an expiry</span></>
+              <><b className="bad">{n - 1} interruptions</b><span>several of them outside working hours</span></>
             ) : shown < 0 ? <span className="rc-idle">Waiting to start…</span> : shown === 0 ? (
               <><b>Certificate 1 installed</b><span>the only one that happens on its own</span></>
             ) : (
-              <><b className="bad">Reissue {shown} due</b><span>request it, install it, verify it</span></>
+              <><b className="bad">Reissue {shown} due</b><span>drop everything: request, install, verify</span></>
             )}
           </div>
           <div className="rc-tally"><span className="rc-num bad">{done ? n - 1 : manual}</span><span className="rc-num-l">{(done ? n - 1 : manual) === 1 ? 'reissue' : 'reissues'} you run</span></div>
@@ -178,11 +198,19 @@ function ReissueCompare({ slices, drawn, onReplay }) {
                 style={i <= shown ? { background: `hsl(${sl.tone.h} ${sl.tone.sat}% ${sl.tone.lum}%)` } : undefined} />
             ))}
           </div>
+          <div className="rc-calm">
+            <span className="rc-face" key={done ? 'done' : shown} aria-hidden="true">
+              {shown < 0 ? '' : done ? '\u{1F389}' : AUTO_FACES[shown % AUTO_FACES.length]}
+            </span>
+            <span className="rc-calm-t">
+              {shown < 0 ? 'Ready when you are' : done ? 'Never needed you once' : AUTO_LINES[shown % AUTO_LINES.length]}
+            </span>
+          </div>
           <div className="rc-event">
             {done ? (
               <><b className="good">Nothing to do</b><span>{n} certificates, none touched by hand</span></>
             ) : shown < 0 ? <span className="rc-idle">Waiting to start…</span> : (
-              <><b className="good">{label}</b><span>reissued before expiry, hands-off</span></>
+              <><b className="good">{label}</b><span>issued and deployed automatically</span></>
             )}
           </div>
           <div className="rc-tally"><span className="rc-num good">0</span><span className="rc-num-l">reissues you run</span></div>
