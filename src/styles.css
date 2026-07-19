@@ -2110,3 +2110,27 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .pc-cols-flat .pc-facts { gap: 6px 14px; }
   .pc-cols-flat .pc-fact + .pc-fact::before { margin-right: 8px; }
 }
+
+/* ══════════════════════════════════════════════════
+   ORDER DESTINATION PICKER
+   Stock page only — send the plan to inventory or
+   straight to one of the reseller's customers.
+══════════════════════════════════════════════════ */
+.of-dest { margin: 0 0 22px; }
+.of-dest-label { font-size: 0.82rem; font-weight: 700; color: #06182c; margin-bottom: 9px; }
+.of-dest-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.of-dest-opt { display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; background: #fff; border: 1.5px solid var(--line); border-radius: 11px; padding: 12px 14px; cursor: pointer; transition: border-color .2s, background .2s; }
+.of-dest-opt:hover:not(:disabled) { border-color: var(--cert); }
+.of-dest-opt.on { border-color: var(--cert); background: #f6faff; }
+.of-dest-opt:disabled { opacity: .55; cursor: not-allowed; }
+.of-dest-radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #cfdae6; flex-shrink: 0; position: relative; transition: border-color .2s; }
+.of-dest-opt.on .of-dest-radio { border-color: var(--cert); }
+.of-dest-opt.on .of-dest-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--cert); }
+.of-dest-t { display: block; font-size: 0.85rem; font-weight: 700; color: #06182c; }
+.of-dest-d { display: block; font-size: 0.73rem; color: #8296a8; margin-top: 1px; }
+.of-dest-pick { margin-top: 11px; }
+.of-dest-pick select { width: 100%; font: inherit; font-size: 0.87rem; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 9px; background: #fff; color: #06182c; }
+.of-dest-pick select:focus { outline: none; border-color: var(--cert); box-shadow: 0 0 0 3px rgba(51,117,177,.12); }
+.of-dest-hint { font-size: 0.74rem; color: #8296a8; margin: 7px 0 0; line-height: 1.5; }
+
+@media (max-width: 560px) { .of-dest-opts { grid-template-columns: 1fr; } }
