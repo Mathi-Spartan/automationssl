@@ -2335,3 +2335,15 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 /* sidebar exit while viewing another account */
 .dash-nav-exit { margin-top: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.12); opacity: .82; }
 .dash-nav-exit:hover { opacity: 1; }
+
+/* ══════════════════════════════════════════════════
+   ACCOUNT LIST — resellers and customers separated
+══════════════════════════════════════════════════ */
+.cust-section + .cust-section { margin-top: 22px; }
+.cust-section-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin-bottom: 9px; padding-left: 2px; }
+.cust-section-t { font-size: 0.83rem; font-weight: 800; color: #06182c; letter-spacing: -.01em; }
+.cust-section-n { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #55708a; background: #eef2f7; padding: 2px 8px; border-radius: 100px; }
+.cust-section-d { font-size: 0.74rem; color: #9aacba; }
+
+/* read-only note where the buy button sits while impersonating */
+.dash-head-hint-ro { display: inline-block; max-width: 260px; text-align: right; line-height: 1.45; color: #9aacba; font-style: italic; }

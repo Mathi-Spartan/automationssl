@@ -994,7 +994,7 @@ function ExportDropdown({ rows, custLabel, inclCust, custName }) {
 
 // ---------- reseller view ----------
 
-function ResellerDashboard({ session, profile }) {
+function ResellerDashboard({ session, profile, readOnly = false }) {
   const [own, setOwn] = useState(null)
   const [subOrders, setSubOrders] = useState([])
   const [subs, setSubs] = useState([])
@@ -1343,13 +1343,21 @@ function ResellerDashboard({ session, profile }) {
           <span className="eyebrow">Reseller dashboard</span>
           <h1>{profile?.full_name ? `${profile.full_name.split(' ')[0]}'s business` : 'Your business'}</h1>
         </div>
-        <div className="dash-head-buy">
-          <Link to="/order-for/stock" className="btn primary">
-            <i className="ti ti-shopping-cart" style={{fontSize:14,verticalAlign:-2,marginRight:6}} aria-hidden="true"/>
-            Buy now
-          </Link>
-          <span className="dash-head-hint">buys to your stock — assign to any customer</span>
-        </div>
+        {readOnly ? (
+          <div className="dash-head-buy">
+            <span className="dash-head-hint dash-head-hint-ro">
+              Only {profile?.full_name || 'this reseller'} can buy on their own account.
+            </span>
+          </div>
+        ) : (
+          <div className="dash-head-buy">
+            <Link to="/order-for/stock" className="btn primary">
+              <i className="ti ti-shopping-cart" style={{fontSize:14,verticalAlign:-2,marginRight:6}} aria-hidden="true"/>
+              Buy now
+            </Link>
+            <span className="dash-head-hint">buys to your stock — assign to any customer</span>
+          </div>
+        )}
       </div>
 
       {/* KPI strip */}
@@ -1526,7 +1534,7 @@ export function DashboardAsCustomer() {
         <Link to={backTo} className="as-exit">{backTo === '/dashboard/customers' ? '← Back to my account' : '← Back one level'}</Link>
       </div>
       {target.account_type === 'reseller'
-        ? <ResellerDashboard session={asSession} profile={target} />
+        ? <ResellerDashboard session={asSession} profile={target} readOnly />
         : <CustomerDashboard session={asSession} profile={target} />}
     </>
   )

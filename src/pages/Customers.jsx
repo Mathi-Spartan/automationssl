@@ -220,14 +220,19 @@ export default function Customers({ viewAs = null }) {
         </div>
       )}
 
-      <Stagger className="cust-list" step={70}>
-        {(subs || [])
-          .filter(c => {
-            if (!search.trim()) return true
-            const q = search.trim().toLowerCase()
-            return (c.full_name || '').toLowerCase().includes(q) || (c.customer_code || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.company_name || '').toLowerCase().includes(q)
-          })
-          .map(c => {
+      {(() => {
+        const q = search.trim().toLowerCase()
+        const match = (c) => !q
+          || (c.full_name || '').toLowerCase().includes(q)
+          || (c.customer_code || '').toLowerCase().includes(q)
+          || (c.email || '').toLowerCase().includes(q)
+          || (c.company_name || '').toLowerCase().includes(q)
+
+        const all = (subs || []).filter(match)
+        const resellers = all.filter((c) => c.account_type === 'reseller')
+        const customers = all.filter((c) => c.account_type !== 'reseller')
+
+        const renderRow = (c) => {
           const co = orders.filter(o => o.user_id === c.id)
           const activated = co.filter(o => deliverables(o).activated).length
           const pending = co.length - activated
@@ -267,8 +272,36 @@ export default function Customers({ viewAs = null }) {
               </div>
             </div>
           )
-        })}
-      </Stagger>
+        }
+
+        return (
+          <>
+            {resellers.length > 0 && (
+              <section className="cust-section">
+                <div className="cust-section-head">
+                  <span className="cust-section-t">Resellers</span>
+                  <span className="cust-section-n">{resellers.length}</span>
+                  <span className="cust-section-d">Manage their own customers</span>
+                </div>
+                <Stagger className="cust-list" step={70}>
+                  {resellers.map(renderRow)}
+                </Stagger>
+              </section>
+            )}
+
+            <section className="cust-section">
+              <div className="cust-section-head">
+                <span className="cust-section-t">{resellers.length > 0 ? 'Direct customers' : 'Customers'}</span>
+                <span className="cust-section-n">{customers.length}</span>
+                <span className="cust-section-d">Buy and manage their own certificates</span>
+              </div>
+              <Stagger className="cust-list" step={70}>
+                {customers.map(renderRow)}
+              </Stagger>
+            </section>
+          </>
+        )
+      })()}
 
       {editMsg && <div className="alert ok" style={{ marginTop: 12 }}>{editMsg}</div>}
 
