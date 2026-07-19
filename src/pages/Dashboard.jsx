@@ -31,7 +31,7 @@ function ordersToRows(orders, includeCustomer = true, customerName = null) {
   return [header, ...rows]
 }
 
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 
@@ -1437,6 +1437,56 @@ function ResellerDashboard({ session, profile }) {
 }
 
 // ---------- entry ----------
+
+/* Reseller opens a customer's dashboard. The reseller stays signed in as
+   themselves — every query still runs under their own auth. This renders the
+   same CustomerDashboard the customer sees, scoped to their id. */
+export function DashboardAsCustomer() {
+  const { session, profile, loading } = useAuth()
+  const { customerId } = useParams()
+  const [target, setTarget] = useState(undefined)
+
+  useEffect(() => {
+    if (!session || !customerId) return
+    let alive = true
+    supabase.from('profiles')
+      .select('id, full_name, customer_code, email, company_name, parent_reseller_id, account_type')
+      .eq('id', customerId).maybeSingle()
+      .then(({ data }) => { if (alive) setTarget(data || null) })
+    return () => { alive = false }
+  }, [session, customerId])
+
+  if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
+  if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard' }} />
+  if (profile.account_type !== 'reseller') return <Navigate to="/dashboard" replace />
+  if (target === undefined) return <div className="form-page"><p>Loading…</p></div>
+  if (!target || target.parent_reseller_id !== session.user.id) {
+    return (
+      <div className="form-page">
+        <p><strong>Not found.</strong> That customer is not on your account.</p>
+        <Link to="/dashboard/customers" className="btn ghost">← Back to customers</Link>
+      </div>
+    )
+  }
+
+  const asSession = { ...session, user: { ...session.user, id: target.id } }
+  const initial = (target.full_name || target.email || '?')[0].toUpperCase()
+
+  return (
+    <>
+      <div className="as-bar">
+        <span className="as-av">{initial}</span>
+        <span className="as-txt">
+          Viewing <b>{target.full_name || target.email}</b>
+          {target.customer_code && <span className="as-code">{target.customer_code}</span>}
+          <span className="as-note">— their dashboard, as they see it. Anything you do here applies to their account.</span>
+        </span>
+        <Link to="/dashboard/customers" className="as-exit">← Back to my account</Link>
+      </div>
+      <CustomerDashboard session={asSession} profile={target} />
+    </>
+  )
+}
 
 export default function Dashboard() {
   const { session, profile, loading } = useAuth()

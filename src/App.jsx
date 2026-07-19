@@ -5,7 +5,7 @@ import Product from './pages/Product.jsx'
 import Order from './pages/Order.jsx'
 import Status from './pages/Status.jsx'
 import { Login } from './pages/Auth.jsx'
-import Dashboard from './pages/Dashboard.jsx'
+import Dashboard, { DashboardAsCustomer } from './pages/Dashboard.jsx'
 import Servers from './pages/Servers.jsx'
 import Customers from './pages/Customers.jsx'
 import OrderFor from './pages/OrderFor.jsx'
@@ -139,6 +139,7 @@ function Chrome() {
           <Route path="/dashboard" element={<DashShell><Dashboard /></DashShell>} />
           <Route path="/dashboard/servers" element={<DashShell><Servers /></DashShell>} />
           <Route path="/dashboard/customers" element={<DashShell><Customers /></DashShell>} />
+          <Route path="/dashboard/as/:customerId" element={<DashShell><DashboardAsCustomer /></DashShell>} />
           <Route path="/order-for/:customerId" element={<DashShell><OrderFor /></DashShell>} />
         </Routes>
       </main>

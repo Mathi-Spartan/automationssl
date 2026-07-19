@@ -2053,3 +2053,21 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .b-trust > span[data-ca] { transition: none; }
   .b-trust > span.ca-lit { transform: none; }
 }
+
+/* ══════════════════════════════════════════════════
+   VIEWING A CUSTOMER'S DASHBOARD
+   Reseller stays signed in as themselves.
+══════════════════════════════════════════════════ */
+.as-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #0a2540; color: #fff; padding: 8px 16px; border-radius: 10px; margin-bottom: 14px; font-size: 0.79rem; line-height: 1.4; }
+.as-av { width: 22px; height: 22px; border-radius: 50%; background: #3375b1; color: #fff; font-size: 0.62rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.as-txt { min-width: 0; }
+.as-txt b { font-weight: 700; }
+.as-code { font-family: var(--mono); font-size: 0.68rem; background: rgba(255,255,255,.13); padding: 1px 7px; border-radius: 4px; margin-left: 6px; }
+.as-note { color: #9fc0dd; margin-left: 6px; }
+.as-exit { margin-left: auto; background: #fff; color: #0a2540; font-size: 0.73rem; font-weight: 700; padding: 5px 13px; border-radius: 100px; text-decoration: none; white-space: nowrap; flex-shrink: 0; transition: background .2s; }
+.as-exit:hover { background: #e8f0fa; }
+
+@media (max-width: 700px) {
+  .as-note { display: none; }
+  .as-exit { margin-left: 0; }
+}

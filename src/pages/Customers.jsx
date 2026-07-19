@@ -159,7 +159,7 @@ export default function Customers() {
               </div>
               <div className="cust-row-actions-v2">
                 <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>+ Buy plan</Link>
-                <Link to="/dashboard" className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>View orders</Link>
+                <Link to={`/dashboard/as/${c.id}`} className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>Open their dashboard</Link>
               </div>
             </div>
           )
