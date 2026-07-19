@@ -2327,3 +2327,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .mt-type-t { display: block; font-size: 0.83rem; font-weight: 700; color: #06182c; }
 .mt-type-d { display: block; font-size: 0.71rem; color: #8296a8; margin-top: 1px; line-height: 1.4; }
 @media (max-width: 560px) { .mt-type { grid-template-columns: 1fr; } }
+
+/* ── account type badge on the customer list ── */
+.acct-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 5px; flex-shrink: 0; }
+.acct-reseller { background: #f0eafb; color: #5b3fa0; }

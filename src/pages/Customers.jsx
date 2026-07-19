@@ -22,7 +22,7 @@ export default function Customers() {
 
   async function reload() {
     const [p, o] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, created_at, customer_code, email, company_name').eq('parent_reseller_id', session.user.id).order('created_at'),
+      supabase.from('profiles').select('id, full_name, created_at, customer_code, email, company_name, account_type, can_create_resellers').eq('parent_reseller_id', session.user.id).order('created_at'),
       supabase.from('orders').select('id, user_id, product_name, product_id, api_response, assigned_at, status').neq('user_id', session.user.id),
     ])
     setSubs(p.data || [])
@@ -113,11 +113,11 @@ export default function Customers() {
     <div className="dash-page">
       <div className="cust-page-header">
         <div>
-          <span className="eyebrow">Customers</span>
-          <h1>Your customers</h1>
+          <span className="eyebrow">{profile?.can_create_resellers ? 'Accounts' : 'Customers'}</span>
+          <h1>{profile?.can_create_resellers ? 'Your accounts' : 'Your customers'}</h1>
         </div>
         <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
-          {showForm ? 'Cancel' : '+ New customer'}
+          {showForm ? 'Cancel' : (profile?.can_create_resellers ? '+ New account' : '+ New customer')}
         </button>
       </div>
 
@@ -225,6 +225,9 @@ export default function Customers() {
               <div className="cust-info">
                 <div className="cust-info-top">
                   <span className="cust-name-v2">{c.full_name || 'Unnamed customer'}</span>
+                  {c.account_type === 'reseller' && (
+                    <span className="acct-badge acct-reseller" title="Can create and manage their own customers">Reseller</span>
+                  )}
                   {c.customer_code && <span className="cust-code">{c.customer_code}</span>}
                   {c.company_name && <span className="cust-company-v2">{c.company_name}</span>}
                 </div>
@@ -242,7 +245,7 @@ export default function Customers() {
                 <button type="button" className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px' }}
                   onClick={() => openEdit(c)}>Edit</button>
                 <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>+ Buy plan</Link>
-                <Link to={`/dashboard/as/${c.id}`} className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>Login as customer</Link>
+                <Link to={`/dashboard/as/${c.id}`} className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>{c.account_type === 'reseller' ? 'Login as reseller' : 'Login as customer'}</Link>
               </div>
             </div>
           )
