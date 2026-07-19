@@ -240,6 +240,7 @@ export default function AutomationTheatre() {
                   ? `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)} — only ${s.days} days of the term remained, so it is issued short of the ${s.cap}-day maximum`
                   : `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)}`}
               >
+                <span className="lc-tip" aria-hidden="true">{`${s.days}-day cert · ${fmt(s.startsOn)} → ${fmt(s.endsOn)}`}</span>
                 <span className="lc-slice-days">{s.days}d</span>
                 <span className="lc-slice-exp">{fmtSlice(s.startsOn)} <i className="lc-slice-arr" aria-hidden="true">→</i> {fmtSlice(s.endsOn)}</span>
               </div>
