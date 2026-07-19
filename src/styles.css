@@ -1509,7 +1509,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .lc-track-wrap { padding: 20px 24px 4px; }
 .lc-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; font-weight: 600; color: #9aacba; margin-bottom: 8px; }
 .lc-track { display: flex; gap: 3px; align-items: stretch; height: 60px; }
-.lc-slice { position: relative; overflow: hidden; flex-basis: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 4px; border-radius: 6px; background: hsl(var(--tone, 212) 46% calc(var(--lum, 30) * 1%)); opacity: 0; transform: scaleX(.4) translateY(6px); transform-origin: left center; transition: opacity .42s cubic-bezier(.22,1,.36,1), transform .42s cubic-bezier(.22,1,.36,1), box-shadow .3s ease; }
+.lc-slice { position: relative; overflow: hidden; flex-basis: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 4px; border-radius: 6px; background: hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc(var(--lum, 34) * 1%)); opacity: 0; transform: scaleX(.4) translateY(6px); transform-origin: left center; transition: opacity .42s cubic-bezier(.22,1,.36,1), transform .42s cubic-bezier(.22,1,.36,1), box-shadow .3s ease; }
 .lc-slice.in { opacity: 1; transform: scaleX(1) translateY(0); }
 
 /* light sweeps across each block the moment it lands */
@@ -1518,19 +1518,23 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 @keyframes lc-sweep { to { transform: translateX(120%); } }
 
 /* the block that just landed breathes until the next one arrives */
-.lc-track.running .lc-slice.newest { box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 4px 16px hsl(var(--tone, 212) 50% 40% / .45); }
+.lc-track.running .lc-slice.newest { box-shadow: 0 0 0 2px rgba(255,255,255,.7), 0 4px 18px hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc(var(--lum, 34) * 1%) / .55); }
 .lc-track.done .lc-slice { box-shadow: 0 1px 3px hsl(212 40% 20% / .18); }
-.lc-slice:hover { box-shadow: 0 0 0 2px rgba(255,255,255,.6), 0 6px 20px hsl(var(--tone, 212) 50% 38% / .5); z-index: 2; }
+.lc-slice:hover { box-shadow: 0 0 0 2px rgba(255,255,255,.75), 0 6px 22px hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc(var(--lum, 34) * 1%) / .6); z-index: 2; }
 
 /* content fades up just behind the block itself */
 .lc-slice .lc-slice-days, .lc-slice .lc-slice-exp { opacity: 0; transform: translateY(4px); transition: opacity .34s ease, transform .34s ease; transition-delay: calc(var(--i, 0) * 40ms + 180ms); }
 .lc-slice.in .lc-slice-days, .lc-slice.in .lc-slice-exp { opacity: 1; transform: translateY(0); }
-.lc-slice.first { background: #0a2540; }
+
 .lc-slice-days { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; line-height: 1.1; }
+.lc-slice.ink .lc-slice-days { color: #2a1a05; }
+.lc-slice.ink .lc-slice-exp { color: rgba(42,26,5,.78); }
+.lc-slice.ink .lc-slice-arr { color: rgba(42,26,5,.5); }
+.lc-slice.ink::after { background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%); }
 .lc-slice-exp { font-family: var(--mono); font-size: 0.6rem; font-weight: 500; color: rgba(255,255,255,.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; }
 .lc-slice-arr { font-style: normal; color: rgba(255,255,255,.5); padding: 0 1px; }
-.lc-slice.first .lc-slice-exp { color: rgba(255,255,255,.62); }
-.lc-slice.partial { background: repeating-linear-gradient(135deg, hsl(var(--tone, 212) 46% calc(var(--lum, 30) * 1%)), hsl(var(--tone, 212) 46% calc(var(--lum, 30) * 1%)) 7px, hsl(var(--tone, 212) 50% calc((var(--lum, 30) + 12) * 1%)) 7px, hsl(var(--tone, 212) 50% calc((var(--lum, 30) + 12) * 1%)) 14px); background-size: 200% 100%; animation: lc-drift 9s linear infinite; }
+
+.lc-slice.partial { background: repeating-linear-gradient(135deg, hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc(var(--lum, 34) * 1%)), hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc(var(--lum, 34) * 1%)) 7px, hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc((var(--lum, 34) + 11) * 1%)) 7px, hsl(var(--tone, 212) calc(var(--sat, 52) * 1%) calc((var(--lum, 34) + 11) * 1%)) 14px); background-size: 200% 100%; animation: lc-drift 9s linear infinite; }
 @keyframes lc-drift { to { background-position: 40px 0; } }
 
 /* replay control */
@@ -1539,7 +1543,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .lc-replay:active { transform: rotate(-180deg) scale(.92); }
 .lc-legend { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 0.76rem; color: #7c90a3; }
 .lc-legend-item { display: inline-flex; align-items: center; gap: 6px; }
-.lc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cert); display: inline-block; }
+.lc-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(90deg, hsl(212 52% 34%), hsl(45 95% 57%)); display: inline-block; }
 .lc-legend-sep { flex: 1; height: 1px; background: #eaf1f8; }
 .lc-legend-note { font-family: var(--mono); font-size: 0.72rem; font-weight: 600; color: var(--cert); }
 

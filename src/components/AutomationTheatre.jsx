@@ -44,6 +44,11 @@ function buildTimeline(startISO) {
     cursor = sliceEnd
   }
 
+  const n = slices.length
+  slices.forEach((sl, i) => {
+    sl.tone = rampAt(n <= 1 ? 0 : i / (n - 1))
+  })
+
   return {
     start, end, slices,
     total: slices.length,
@@ -64,6 +69,26 @@ function fmtShort(iso) {
 function fmtSlice(iso) {
   const d = new Date(iso + 'T00:00:00Z')
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+}
+
+/* Blue -> orange -> yellow. Hue routed up through violet/red (212 -> 386)
+   so the ramp never passes through green. Returns HSL parts plus whether
+   the swatch is light enough to need dark text. */
+function rampAt(t) {
+  let h, sat, lum
+  if (t <= 0.55) {
+    const k = t / 0.55
+    const e = k * k * 0.55 + k * 0.45
+    h = Math.round(212 + (386 - 212) * e) % 360
+    sat = Math.round(52 + (88 - 52) * e)
+    lum = Math.round(34 + (52 - 34) * e)
+  } else {
+    const k = (t - 0.55) / 0.45
+    h = Math.round(26 + (45 - 26) * k)
+    sat = Math.round(88 + (95 - 88) * k)
+    lum = Math.round(52 + (57 - 52) * k)
+  }
+  return { h, sat, lum, dark: t > 0.55 }
 }
 
 const PRESETS = [
@@ -202,13 +227,14 @@ export default function AutomationTheatre() {
             {slices.map((s, i) => (
               <div
                 key={s.startsOn}
-                className={'lc-slice' + (i < drawn ? ' in' : '') + (i === 0 ? ' first' : '') + (s.partial ? ' partial' : '') + (i === drawn - 1 ? ' newest' : '')}
+                className={'lc-slice' + (i < drawn ? ' in' : '') + (i === 0 ? ' first' : '') + (s.partial ? ' partial' : '') + (i === drawn - 1 ? ' newest' : '') + (s.tone.dark ? ' ink' : '')}
                 style={{
                   flexGrow: s.shown,
                   transitionDelay: (i * 40) + 'ms',
                   '--i': i,
-                  '--tone': Math.round(210 + (i / Math.max(1, slices.length - 1)) * 14),
-                  '--lum': Math.round(26 + (i / Math.max(1, slices.length - 1)) * 26),
+                  '--tone': s.tone.h,
+                  '--sat': s.tone.sat,
+                  '--lum': s.tone.lum,
                 }}
                 title={s.partial
                   ? `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)} — only ${s.days} days of the term remained, so it is issued short of the ${s.cap}-day maximum`
