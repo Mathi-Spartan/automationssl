@@ -11,8 +11,13 @@ export default function DashShell({ children }) {
   // While viewing another account, the sidebar must stay inside that view.
   // Hardcoded /dashboard links drop you back into your own account, and a
   // refresh then lands on the wrong page entirely.
-  const asMatch = useMatch('/dashboard/as/:customerId/*')
-  const viewingId = asMatch?.params?.customerId || null
+  // Two patterns: react-router's '/*' requires a trailing segment, so
+  // '/dashboard/as/:id' alone does not match it. Without the exact form the
+  // base silently falls back to /dashboard and every sidebar link leaves the
+  // impersonated view.
+  const asExact = useMatch('/dashboard/as/:customerId')
+  const asNested = useMatch('/dashboard/as/:customerId/*')
+  const viewingId = asExact?.params?.customerId || asNested?.params?.customerId || null
   const base = viewingId ? `/dashboard/as/${viewingId}` : '/dashboard'
   // Nav describes the account on screen. While impersonating that is the
   // target, not the viewer — a master viewing a retail customer should not
