@@ -1939,3 +1939,27 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .pc-rail-actions { flex-direction: row; flex-wrap: wrap; }
   .pc-rail-actions .btn { width: auto; }
 }
+
+/* ══════════════════════════════════════════════════
+   ACME CLIENT TABS
+   Replaces the single certbot block. Command text is
+   `pre` + horizontal scroll so nothing breaks mid-token.
+══════════════════════════════════════════════════ */
+.acme-clients { padding: 0; overflow: hidden; }
+.acme-clients-title { display: block; font-size: 0.66rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8fb3d4; padding: 12px 15px 0; }
+.acme-tabs { display: flex; gap: 3px; padding: 9px 15px 0; flex-wrap: wrap; }
+.acme-tab { border: none; font: inherit; font-size: 0.72rem; font-weight: 600; padding: 6px 12px; border-radius: 7px 7px 0 0; cursor: pointer; background: transparent; color: #7f9fbe; transition: background .22s cubic-bezier(.16,1,.3,1), color .22s ease; }
+.acme-tab:hover { color: #cfe4f7; }
+.acme-tab.on { background: #12314f; color: #fff; }
+.acme-panel { background: #12314f; padding: 12px 15px 14px; }
+.acme-panel-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.acme-note { font-size: 0.73rem; color: #9fc0dd; line-height: 1.5; }
+.acme-clients .acme-creds { background: transparent; padding: 0; margin: 0; font-size: 0.72rem; line-height: 1.85;
+  white-space: pre; word-break: normal; overflow-wrap: normal; overflow-x: auto; }
+.acme-clients .acme-creds::-webkit-scrollbar { height: 7px; }
+.acme-clients .acme-creds::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 4px; }
+
+@media (max-width: 700px) {
+  .acme-panel-top { flex-direction: column; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .acme-tab { transition: none; } }

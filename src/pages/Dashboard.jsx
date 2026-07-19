@@ -86,6 +86,93 @@ function CopyBtn({ text, label = 'Copy' }) {
   )
 }
 
+const ACME_CLIENTS = [
+  {
+    key: 'certbot', label: 'certbot',
+    note: 'Registers the account. Issue certificates afterwards with certbot certonly.',
+    build: (a) => `certbot register \\
+  --server ${a.server_url} \\
+  --eab-kid ${a.eab_kid} \\
+  --eab-hmac-key ${a.eab_hmac_key}`,
+  },
+  {
+    key: 'acmesh', label: 'acme.sh',
+    note: 'Registers the account against this CA. Then issue with acme.sh --issue.',
+    build: (a) => `acme.sh --register-account \\
+  --server ${a.server_url} \\
+  --eab-kid ${a.eab_kid} \\
+  --eab-hmac-key ${a.eab_hmac_key}`,
+  },
+  {
+    key: 'caddy', label: 'Caddy',
+    note: 'Add to the global options block of your Caddyfile. Caddy issues and renews on its own.',
+    build: (a) => `{
+  acme_ca ${a.server_url}
+  acme_eab {
+    key_id  ${a.eab_kid}
+    mac_key ${a.eab_hmac_key}
+  }
+}`,
+  },
+  {
+    key: 'lego', label: 'lego',
+    note: 'Single run — registers and issues together. Replace the email with your own.',
+    build: (a, dom) => `lego --server ${a.server_url} \\
+  --eab --kid ${a.eab_kid} \\
+  --hmac ${a.eab_hmac_key} \\
+  --domains ${dom || 'example.com'} \\
+  --email you@example.com run`,
+  },
+  {
+    key: 'certmgr', label: 'cert-manager',
+    note: 'Create the secret first, then apply the issuer — Kubernetes reads the HMAC from the secret, not inline.',
+    build: (a) => `kubectl create secret generic sectigo-eab \\
+  --namespace cert-manager \\
+  --from-literal=secret='${a.eab_hmac_key}'
+
+# then apply:
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: sectigo
+spec:
+  acme:
+    server: ${a.server_url}
+    privateKeySecretRef:
+      name: sectigo-account-key
+    externalAccountBinding:
+      keyID: ${a.eab_kid}
+      keySecretRef:
+        name: sectigo-eab
+        key: secret`,
+  },
+]
+
+function AcmeClients({ acme, domain }) {
+  const [pick, setPick] = useState('certbot')
+  const client = ACME_CLIENTS.find((c) => c.key === pick) || ACME_CLIENTS[0]
+  const cmd = client.build(acme, domain)
+  return (
+    <div className="cred-card cmd acme-clients">
+      <div className="acme-clients-title">Register your ACME client</div>
+      <div className="acme-tabs" role="tablist" aria-label="ACME client">
+        {ACME_CLIENTS.map((c) => (
+          <button key={c.key} type="button" role="tab" aria-selected={c.key === pick}
+            className={'acme-tab' + (c.key === pick ? ' on' : '')}
+            onClick={() => setPick(c.key)}>{c.label}</button>
+        ))}
+      </div>
+      <div className="acme-panel">
+        <div className="acme-panel-top">
+          <span className="acme-note">{client.note}</span>
+          <CopyBtn label="Copy" text={cmd} />
+        </div>
+        <pre className="acme-creds">{cmd}</pre>
+      </div>
+    </div>
+  )
+}
+
 function CredRow({ label, value }) {
   return (
     <div className="cred-row">
@@ -324,16 +411,9 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
                 (certbot, acme.sh, Caddy, Traefik, cert-manager) accepts these three values.
               </p>
             </div>
-            <div className="cred-card cmd">
-              <div className="cred-card-title">
-                Quick start with certbot
-                <CopyBtn label="Copy command" text={`certbot register --server ${d.acme.server_url} --eab-kid ${d.acme.eab_kid} --eab-hmac-key ${d.acme.eab_hmac_key}`} />
-              </div>
-              <pre className="acme-creds">{`certbot register \\
-    --server ${d.acme.server_url} \\
-    --eab-kid ${d.acme.eab_kid} \\
-    --eab-hmac-key ${d.acme.eab_hmac_key}`}</pre>
-            </div>
+            <AcmeClients acme={d.acme} domain={
+              (d.vendorDomains?.[0] && (typeof d.vendorDomains[0] === 'string' ? d.vendorDomains[0] : d.vendorDomains[0]?.name)) || order.domain
+            } />
           </div>
         )}
         </div>
