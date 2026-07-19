@@ -1685,10 +1685,10 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .pb-card-pick .pb-card-top { padding-right: 4px; }
 .pb-card-pick .pb-tag { margin-top: 22px; }
 
-.pb-dual { display: flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 600; color: #1a6bb5; background: #eff6fd; border: 1px solid #d8e8f8; border-radius: 8px; padding: 6px 10px; margin: 8px 0 0; line-height: 1.35; }
-.pb-dual .ti { font-size: 14px; flex-shrink: 0; }
-.pb-dual strong { font-weight: 800; }
-.pb-card:hover .pb-dual { background: #e4f0fc; border-color: var(--ca, #1a6bb5); }
+.pb-dual { display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 700; letter-spacing: .01em; color: #2b6ca8; background: #eef5fc; border-radius: 100px; padding: 4px 11px 4px 8px; margin: 7px 0 0; line-height: 1; white-space: nowrap; transition: background .24s, color .24s; }
+.pb-dual .ti { font-size: 13px; flex-shrink: 0; opacity: .75; }
+.pb-dual span { font-weight: 500; opacity: .6; padding: 0 1px; }
+.pb-card:hover .pb-dual { background: #e0edfa; color: #1a5a94; }
 
 /* the four dual-method cards get a touch more presence */
 .pb-card-pick { border-color: #d3e3f2; }

@@ -55,7 +55,7 @@ function PlanCards() {
             </div>
             <h3 className="pb-name">{p.name.replace(' Plan + Automate', '').replace(' ACME Certificate-as-a-Service', ' ACME CaaS')}</h3>
             <p className="pb-coverage">{m.coverage} · DV certificate</p>
-            {m.pickNote && <p className="pb-dual"><i className="ti ti-arrows-shuffle" aria-hidden="true" />Install by agent <strong>or</strong> ACME — your choice</p>}
+            {m.pickNote && <p className="pb-dual"><i className="ti ti-arrows-shuffle" aria-hidden="true" />Agent <span>or</span> ACME</p>}
             <div className="pb-price">{p.price}<span className="pb-per">{shortPer(p.priceNote)}</span></div>
             <ul className="pb-features">
               {m.features.map((f) => (
