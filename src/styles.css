@@ -2353,3 +2353,13 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 
 /* accounts page header actions */
 .cust-head-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+
+/* ── discount / markup slab picker ── */
+.slab-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.slab-opt { font: inherit; font-size: 0.78rem; font-weight: 600; padding: 7px 13px; border-radius: 8px; border: 1.5px solid var(--line); background: #fff; color: #55708a; cursor: pointer; transition: border-color .2s, background .2s, color .2s; }
+.slab-opt:hover { border-color: var(--cert); }
+.slab-opt.on { border-color: var(--cert); background: #f2f8ff; color: #1a5a94; }
+.price-note { font-size: 0.74rem; color: #8296a8; line-height: 1.5; margin-top: 6px; }
+.price-note.capped { color: #8a5a00; }
+.acct-slab { background: #eaf7ef; color: #1a7a45; }
+.acct-slab-none { background: #fdeef0; color: #a8112b; }

@@ -32,7 +32,7 @@ export default function Customers({ viewAs = null }) {
     // .neq(scopeId) would return the VIEWER's other customers' orders while
     // impersonating, because the session is still the viewer's.
     const p = await supabase.from('profiles')
-      .select('id, full_name, created_at, customer_code, email, company_name, account_type, can_create_resellers')
+      .select('id, full_name, created_at, customer_code, email, company_name, account_type, can_create_resellers, discount_pct, markup_pct')
       .eq('parent_reseller_id', scopeId).order('created_at')
     const ids = (p.data || []).map((c) => c.id)
     const o = ids.length
@@ -86,6 +86,9 @@ export default function Customers({ viewAs = null }) {
       company_name: c.company_name || '',
       email: c.email || '',
       password: '',
+      account_type: c.account_type || 'customer',
+      discount_pct: c.discount_pct ?? '',
+      markup_pct: c.markup_pct ?? '',
     })
   }
 
@@ -99,6 +102,9 @@ export default function Customers({ viewAs = null }) {
         full_name: edit.full_name,
         company_name: edit.company_name,
         email: edit.email,
+      }
+      if (edit.account_type === 'reseller') {
+        payload.discount_pct = edit.discount_pct === '' ? null : Number(edit.discount_pct)
       }
       if (edit.password) payload.password = edit.password
       const res = await fetch('/api/subaccount', {
@@ -146,7 +152,7 @@ export default function Customers({ viewAs = null }) {
       const ids = tree.map((t) => t.id)
       const { data: ords } = ids.length
         ? await supabase.from('orders')
-            .select('id, user_id, product_name, product_id, api_response, assigned_at, created_at, status')
+            .select('id, user_id, product_name, product_id, api_response, assigned_at, created_at, status, bill_price, sale_price')
             .in('user_id', ids)
         : { data: [] }
 
@@ -170,8 +176,10 @@ export default function Customers({ viewAs = null }) {
       push([`Period: ${period}`, '', '', '', '', '', `Generated ${new Date().toLocaleDateString('en-GB')}`, '', ''], 'meta')
       blank()
 
-      const HEAD = ['Account', 'ID', 'Company', 'Order #', 'Product', 'Domain(s)', 'Status', 'Renews', 'Ordered']
+      const HEAD = ['Account', 'ID', 'Company', 'Order #', 'Product', 'Domain(s)', 'Status', 'Renews', 'Billed (USD)']
       let grandOrders = 0
+      let grandValue = 0
+      let sectionTotal = 0
 
       // Indent conveys depth: Excel has no tree view, so the hierarchy has to
       // survive as leading space in the first column.
@@ -198,8 +206,9 @@ export default function Customers({ viewAs = null }) {
             doms,
             d.activated ? 'Automated' : 'Needs setup',
             d.renewal ? new Date(d.renewal).toLocaleDateString('en-GB') : '',
-            o.created_at ? new Date(o.created_at).toLocaleDateString('en-GB') : '',
+            o.bill_price != null ? Number(o.bill_price).toFixed(2) : '—',
           ], 'order')
+          sectionTotal += Number(o.bill_price || 0)
         })
         return mine.length
       }
@@ -213,7 +222,8 @@ export default function Customers({ viewAs = null }) {
         push(HEAD, 'header')
         let n = 0
         retail.forEach((a) => { n += writeAccount(a, 0) })
-        push(['   Subtotal · direct customers', '', '', `${n} order${n === 1 ? '' : 's'}`, '', '', '', '', ''], 'subtotal')
+        push(['   Subtotal · direct customers', '', '', `${n} order${n === 1 ? '' : 's'}`, '', '', '', '', sectionTotal.toFixed(2)], 'subtotal')
+        grandValue += sectionTotal; sectionTotal = 0
         blank()
       }
 
@@ -223,11 +233,13 @@ export default function Customers({ viewAs = null }) {
         push(HEAD, 'header')
         let n = writeAccount(r, 0)
         ;(byParent[r.id] || []).forEach((c) => { n += writeAccount(c, 1) })
-        push([`   Subtotal · ${r.full_name || 'reseller'} and their customers`, '', '', `${n} order${n === 1 ? '' : 's'}`, '', '', '', '', ''], 'subtotal')
+        push([`   Subtotal · ${r.full_name || 'reseller'} and their customers`, '', '', `${n} order${n === 1 ? '' : 's'}`, '', '', '', '', sectionTotal.toFixed(2)], 'subtotal')
+        grandValue += sectionTotal; sectionTotal = 0
         blank()
       })
 
-      push([`══ TOTAL · ALL ACCOUNTS ══`, '', '', `${grandOrders} order${grandOrders === 1 ? '' : 's'}`, '', '', '', '', ''], 'total')
+      push([`══ TOTAL · ALL ACCOUNTS ══`, '', '', `${grandOrders} order${grandOrders === 1 ? '' : 's'}`, '', '', '', 'USD', grandValue.toFixed(2)], 'total')
+      push(['Prices as recorded at time of order. A later slab change does not alter past orders.', '', '', '', '', '', '', '', ''], 'meta')
 
       const ws = XLSX.utils.aoa_to_sheet(rows)
       ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 20 }, { wch: 12 },
@@ -373,6 +385,14 @@ export default function Customers({ viewAs = null }) {
                   {c.account_type === 'reseller' && (
                     <span className="acct-badge acct-reseller" title="Can create and manage their own customers">Reseller</span>
                   )}
+                  {c.account_type === 'reseller' && (
+                    <span className={'acct-badge ' + (c.discount_pct ? 'acct-slab' : 'acct-slab-none')}
+                      title={c.discount_pct
+                        ? `Buys at list price less ${c.discount_pct}%`
+                        : 'No discount slab set — they cannot place orders until you set one'}>
+                      {c.discount_pct ? `${c.discount_pct}% off` : 'No slab set'}
+                    </span>
+                  )}
                   {c.customer_code && <span className="cust-code">{c.customer_code}</span>}
                   {c.company_name && <span className="cust-company-v2">{c.company_name}</span>}
                 </div>
@@ -449,6 +469,25 @@ export default function Customers({ viewAs = null }) {
                 <input type="email" value={edit.email} onChange={setE('email')} required />
                 <small>Changing this changes the address they sign in with.</small>
               </label>
+              {edit.account_type === 'reseller' && (
+                <div className="ce-f">
+                  <span>Discount slab <i>what they pay you</i></span>
+                  <div className="slab-row">
+                    {['', 10, 20, 30].map((v) => (
+                      <button key={String(v)} type="button"
+                        className={'slab-opt' + (String(edit.discount_pct) === String(v) ? ' on' : '')}
+                        onClick={() => setEdit({ ...edit, discount_pct: v })}>
+                        {v === '' ? 'Not set' : `${v}% off`}
+                      </button>
+                    ))}
+                  </div>
+                  <small>
+                    Applies to every product. They buy at list price minus this slab; a bigger
+                    slab lets them mark up further without exceeding your public price.
+                  </small>
+                </div>
+              )}
+
               <label className="ce-f"><span>New password <i>optional</i></span>
                 <input type="text" value={edit.password} onChange={setE('password')}
                   placeholder="Leave blank to keep the current password" autoComplete="new-password" />

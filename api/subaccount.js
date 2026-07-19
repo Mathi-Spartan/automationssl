@@ -92,12 +92,12 @@ export default async function handler(req, res) {
 /* PATCH — update one of the caller's own customers. The reseller check has
    already run; this adds the ownership check and applies the changes. */
 async function updateCustomer(req, res, user) {
-  const { customer_id, full_name, company_name, email, password } = req.body || {}
+  const { customer_id, full_name, company_name, email, password, discount_pct } = req.body || {}
   if (!customer_id) return res.status(400).json({ error: true, message: 'customer_id is required.' })
 
   // the target must be one of this reseller's own customers
   const tr = await fetch(
-    `${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(customer_id)}&select=id,parent_reseller_id,email`,
+    `${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(customer_id)}&select=id,parent_reseller_id,email,account_type`,
     { headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` } },
   )
   const target = (await tr.json())?.[0]
@@ -136,6 +136,14 @@ async function updateCustomer(req, res, user) {
 
   // profile-side changes
   const profilePatch = {}
+  // Only a reseller can hold a discount slab; a retail customer always pays list.
+  if (discount_pct !== undefined) {
+    if (target.account_type !== 'reseller')
+      return res.status(400).json({ error: true, message: 'Only reseller accounts can have a discount slab.' })
+    if (discount_pct !== null && ![10, 20, 30].includes(Number(discount_pct)))
+      return res.status(400).json({ error: true, message: 'Discount slab must be 10, 20 or 30 percent.' })
+    profilePatch.discount_pct = discount_pct === null ? null : Number(discount_pct)
+  }
   if (full_name != null) profilePatch.full_name = String(full_name).trim()
   if (company_name != null) profilePatch.company_name = String(company_name).trim() || null
   if (cleanEmail) profilePatch.email = cleanEmail

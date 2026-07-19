@@ -90,6 +90,30 @@ export default async function handler(req, res) {
       assignedAt = new Date().toISOString()
     }
 
+    // Price the order BEFORE placing it at the CA. resolve_price is the single
+    // source of truth — the dashboard previews through the same function, so a
+    // quote can never disagree with the charge. A missing slab is a hard stop:
+    // an order silently recorded at zero is worse than a refusal, because it is
+    // only discovered at month end.
+    let priceRow = null
+    try {
+      const prRes = await fetch(
+        `${SB()}/rest/v1/rpc/resolve_price`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+          body: JSON.stringify({ buyer: targetUserId, prod: Number(product_id) }) },
+      )
+      priceRow = (await prRes.json())?.[0] || null
+    } catch (_e) { priceRow = null }
+
+    if (!priceRow || priceRow.bill_price == null) {
+      return res.status(400).json({
+        error: true,
+        message: priceRow?.reason
+          ? `Cannot price this order: ${priceRow.reason}.`
+          : 'Cannot price this order — no price is configured for this account.',
+      })
+    }
+
     // If a server tag was chosen, it must belong to the buyer.
     let serverId = null
     if (server_id) {
@@ -197,6 +221,10 @@ export default async function handler(req, res) {
           assigned_by: assignedBy,
           assigned_at: assignedAt,
           server_id: serverId,
+          bill_price: priceRow.bill_price,
+          sale_price: priceRow.sale_price ?? priceRow.bill_price,
+          price_currency: 'USD',
+          priced_at: new Date().toISOString(),
         }),
       })
       db_ok = sbRes.ok
