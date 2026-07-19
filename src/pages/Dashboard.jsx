@@ -300,7 +300,8 @@ function StagePill({ d }) {
       ? <span className="stage-pill warn">Configure ACME client</span>
       : <span className="stage-pill warn">Enrollment provisioning</span>
   }
-  const label = !d.agentInstalled ? 'Install agent' : 'Add your domain'
+  // Until a method is used, +Automate customers can take either route.
+  const label = d.agentInstalled ? 'Add your domain' : 'Install agent or ACME'
   return <span className="stage-pill warn">{label}</span>
 }
 
@@ -728,7 +729,7 @@ function CustomerDashboard({ session, profile }) {
                           : (() => {
                               let step, label
                               if (d.isAcme) { step = d.enrollReady ? 3 : 2; label = d.enrollReady ? 'Configure ACME' : 'Provisioning' }
-                              else { step = !d.agentInstalled ? 2 : 3; label = !d.agentInstalled ? 'Install agent' : 'Add domain' }
+                              else { step = !d.agentInstalled ? 2 : 3; label = !d.agentInstalled ? 'Install agent or ACME' : 'Add domain' }
                               return (
                                 <span className="clm-step-pill">
                                   <span className="clm-step-num">{step}/4</span>

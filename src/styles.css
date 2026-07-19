@@ -2157,3 +2157,9 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .ce-f small { font-size: 0.71rem; color: #9aacba; line-height: 1.45; }
 .ce-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 13px 18px; border-top: 1px solid #eef2f7; background: #fbfcfe; border-radius: 0 0 14px 14px; }
 @media (prefers-reduced-motion: reduce) { .ce-backdrop, .ce-modal { animation: none !important; } }
+
+/* Setup-method labels: '+Automate' plans accept either method, so the pill
+   names both. Below ~1000px the STATUS column cannot hold the long form. */
+@media (max-width: 1000px) {
+  .clm-step-pill { font-size: 0.72rem; padding: 3px 8px 3px 4px; gap: 4px; }
+}
