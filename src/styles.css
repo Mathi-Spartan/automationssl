@@ -2043,3 +2043,13 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .rc-alert.ok.settled { animation: rc-alert-in .38s cubic-bezier(.16,1,.3,1) both, rc-settle .5s cubic-bezier(.16,1,.3,1) .1s; }
 @keyframes rc-settle { 0% { transform: none } 45% { transform: translateY(-3px) scale(1.04) } 100% { transform: none } }
 @media (prefers-reduced-motion: reduce) { .rc-alert.ok.settled { animation: none !important; } }
+
+/* ── trust row: rotating spotlight through the CA names ── */
+.b-trust > span[data-ca] { transition: color .55s cubic-bezier(.16,1,.3,1), transform .55s cubic-bezier(.16,1,.3,1); }
+.b-trust > span.ca-lit { color: #3375b1; transform: translateY(-2px); }
+/* hover always beats the timer */
+.b-trust > span[data-ca]:hover { color: #3375b1; transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) {
+  .b-trust > span[data-ca] { transition: none; }
+  .b-trust > span.ca-lit { transform: none; }
+}

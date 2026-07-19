@@ -75,7 +75,41 @@ function PlanCards() {
   )
 }
 
+/* Rotates a highlight through the CA names in the trust row.
+   Pauses on hover so the existing hover state still wins. */
+function useTrustSpotlight() {
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const row = document.querySelector('.b-trust')
+    if (!row) return
+    const names = Array.from(row.querySelectorAll('[data-ca]'))
+    if (names.length < 2) return
+
+    let i = 0
+    let paused = false
+    const light = () => {
+      names.forEach((el, k) => el.classList.toggle('ca-lit', k === i))
+      i = (i + 1) % names.length
+    }
+    const hold = () => { paused = true }
+    const resume = () => { paused = false }
+    row.addEventListener('mouseenter', hold)
+    row.addEventListener('mouseleave', resume)
+
+    light()
+    const id = setInterval(() => { if (!paused && !document.hidden) light() }, 3400)
+    return () => {
+      clearInterval(id)
+      row.removeEventListener('mouseenter', hold)
+      row.removeEventListener('mouseleave', resume)
+      names.forEach((el) => el.classList.remove('ca-lit'))
+    }
+  }, [])
+}
+
 export default function Home() {
+  useTrustSpotlight()
   return (
     <>
       <section className="b-hero">
@@ -103,11 +137,11 @@ export default function Home() {
           </Reveal>
 
           <Stagger className="b-trust" step={100}>
-            <span>RapidSSL</span>
+            <span data-ca="0">RapidSSL</span>
             <span className="b-trust-sep">·</span>
-            <span>GeoTrust</span>
+            <span data-ca="1">GeoTrust</span>
             <span className="b-trust-sep">·</span>
-            <span>Sectigo</span>
+            <span data-ca="2">Sectigo</span>
             <span className="b-trust-sep">·</span>
             <span>47-day lifetime ready</span>
           </Stagger>
