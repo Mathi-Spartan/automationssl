@@ -14,10 +14,6 @@ export default function Customers() {
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
   const [showForm, setShowForm] = useState(false)
-  const [edit, setEdit] = useState(null)
-  const [editBusy, setEditBusy] = useState(false)
-  const [editMsg, setEditMsg] = useState(null)
-  const [editErr, setEditErr] = useState(null)
   const [search, setSearch] = useState('')
 
   async function reload() {
@@ -62,52 +58,6 @@ export default function Customers() {
   }
 
   const set = k => e => setForm({ ...form, [k]: e.target.value })
-
-  function openEdit(c) {
-    setEditErr(null); setEditMsg(null)
-    setEdit({
-      id: c.id,
-      full_name: c.full_name || '',
-      company_name: c.company_name || '',
-      email: c.email || '',
-      password: '',
-    })
-  }
-
-  async function saveEdit(e) {
-    e.preventDefault()
-    setEditBusy(true); setEditErr(null); setEditMsg(null)
-    try {
-      const { data: sess } = await supabase.auth.getSession()
-      const payload = {
-        customer_id: edit.id,
-        full_name: edit.full_name,
-        company_name: edit.company_name,
-        email: edit.email,
-      }
-      if (edit.password) payload.password = edit.password
-      const res = await fetch('/api/customer-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
-        body: JSON.stringify(payload),
-      })
-      const body = await res.json()
-      if (!res.ok || body.error) throw new Error(body.message || 'Could not save the changes.')
-      const bits = []
-      if (body.changed?.profile?.length) bits.push('profile')
-      if (body.changed?.email) bits.push('email')
-      if (body.changed?.password) bits.push('password')
-      setEditMsg(bits.length ? `Saved — ${bits.join(', ')} updated.` : 'No changes to save.')
-      setEdit(null)
-      reload()
-    } catch (e2) {
-      setEditErr(e2.message)
-    } finally {
-      setEditBusy(false)
-    }
-  }
-
-  const setE = k => e => setEdit({ ...edit, [k]: e.target.value })
 
   return (
     <div className="dash-page">
@@ -208,8 +158,6 @@ export default function Customers() {
                 <span className={'cust-stat-v2' + (activated > 0 ? ' ok' : '')}><strong>{activated}</strong> automated</span>
               </div>
               <div className="cust-row-actions-v2">
-                <button type="button" className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px' }}
-                  onClick={() => openEdit(c)}>Edit</button>
                 <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>+ Buy plan</Link>
                 <Link to={`/dashboard/as/${c.id}`} className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>Login as customer</Link>
               </div>
@@ -217,41 +165,6 @@ export default function Customers() {
           )
         })}
       </Stagger>
-
-      {editMsg && <div className="alert ok" style={{ marginTop: 12 }}>{editMsg}</div>}
-
-      {edit && (
-        <div className="ce-backdrop" onClick={(ev) => { if (ev.target === ev.currentTarget) setEdit(null) }}>
-          <form className="ce-modal" onSubmit={saveEdit}>
-            <div className="ce-head">
-              <span className="ce-title">Edit customer</span>
-              <button type="button" className="ce-x" onClick={() => setEdit(null)} aria-label="Close">×</button>
-            </div>
-            <div className="ce-body">
-              <label className="ce-f"><span>First and last name</span>
-                <input value={edit.full_name} onChange={setE('full_name')} placeholder="Jane Smith" />
-              </label>
-              <label className="ce-f"><span>Company <i>optional</i></span>
-                <input value={edit.company_name} onChange={setE('company_name')} placeholder="Acme Ltd" />
-              </label>
-              <label className="ce-f"><span>Email address</span>
-                <input type="email" value={edit.email} onChange={setE('email')} required />
-                <small>Changing this changes the address they sign in with.</small>
-              </label>
-              <label className="ce-f"><span>New password <i>optional</i></span>
-                <input type="text" value={edit.password} onChange={setE('password')}
-                  placeholder="Leave blank to keep the current password" autoComplete="new-password" />
-                <small>At least 8 characters. They are not told automatically — you will need to pass it on.</small>
-              </label>
-              {editErr && <div className="alert error" style={{ margin: 0 }}>{editErr}</div>}
-            </div>
-            <div className="ce-foot">
-              <button type="button" className="btn ghost" onClick={() => setEdit(null)} disabled={editBusy}>Cancel</button>
-              <button type="submit" className="btn primary" disabled={editBusy}>{editBusy ? 'Saving…' : 'Save changes'}</button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   )
 }
