@@ -71,6 +71,12 @@ function fmtSlice(iso) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
+/* Alerts can span a year boundary, so they carry the year. */
+function fmtAlert(iso) {
+  const d = new Date(iso + 'T00:00:00Z')
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit', timeZone: 'UTC' })
+}
+
 /* Blue -> orange -> yellow. Hue routed up through violet/red (212 -> 386)
    so the ramp never passes through green. Returns HSL parts plus whether
    the swatch is light enough to need dark text. */
@@ -124,9 +130,6 @@ const METHODS = [
   },
 ]
 
-/* Fixed sets so every visitor sees the same sequence. The times are
-   illustrative of when an expiry can fall, not data from any account. */
-const MANUAL_TIMES = ['Tue 09:14', 'Sat 22:40', 'Thu 03:12', 'Mon 18:05', 'Sun 06:33', 'Fri 23:51', 'Wed 02:27']
 const AUTO_FACES = ['\u{1F60A}', '\u{1F604}', '\u{1F44D}', '\u{1F60E}', '\u{1F64C}', '\u2728', '\u{1F60C}', '\u{1F389}']
 const AUTO_LINES = [
   'All set — nothing needed',
@@ -172,13 +175,15 @@ function ReissueCompare({ slices, drawn, onReplay }) {
             ))}
           </div>
           <div className="rc-alerts" aria-hidden="true">
-            {MANUAL_TIMES.slice(0, Math.max(0, manual)).map((t, i) => (
-              <span className={'rc-alert' + (i === manual - 1 ? ' fresh' : '')} key={t}>⚠ {t}</span>
+            {slices.slice(1, Math.max(0, manual) + 1).map((sl, i) => (
+              <span className={'rc-alert' + (i === manual - 1 ? ' fresh' : '')} key={sl.startsOn}>
+                ⚠ {fmtAlert(sl.startsOn)}
+              </span>
             ))}
           </div>
           <div className="rc-event">
             {done ? (
-              <><b className="bad">{n - 1} interruptions</b><span>several of them outside working hours</span></>
+              <><b className="bad">{n - 1} interruptions</b><span>each one a date you have to not miss</span></>
             ) : shown < 0 ? <span className="rc-idle">Waiting to start…</span> : shown === 0 ? (
               <><b>Certificate 1 installed</b><span>the only one that happens on its own</span></>
             ) : (
