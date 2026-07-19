@@ -334,9 +334,9 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
       )}
 
       {servers && (
-        <div style={{ marginTop: 10 }}>
-          <label style={{ fontSize: '0.82rem', marginRight: 8 }}><b>Server</b></label>
-          <select value={order.server_id || ''} onChange={(e) => onAssignServer(order.id, e.target.value)}>
+        <div className="server-pick">
+          <label htmlFor={'srv-' + order.id}>Server</label>
+          <select id={'srv-' + order.id} value={order.server_id || ''} onChange={(e) => onAssignServer(order.id, e.target.value)}>
             <option value="">— not assigned —</option>
             {servers.map((s) => (
               <option key={s.id} value={s.id}>{s.name} ({s.environment})</option>
