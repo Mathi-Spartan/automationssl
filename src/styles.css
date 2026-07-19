@@ -2331,3 +2331,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 /* ── account type badge on the customer list ── */
 .acct-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 5px; flex-shrink: 0; }
 .acct-reseller { background: #f0eafb; color: #5b3fa0; }
+
+/* sidebar exit while viewing another account */
+.dash-nav-exit { margin-top: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.12); opacity: .82; }
+.dash-nav-exit:hover { opacity: 1; }

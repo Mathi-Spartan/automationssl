@@ -1,4 +1,5 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, useNavigate, useMatch } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 
@@ -6,6 +7,28 @@ export default function DashShell({ children }) {
   const { session, profile } = useAuth()
   const navigate = useNavigate()
   const isReseller = profile?.account_type === 'reseller'
+
+  // While viewing another account, the sidebar must stay inside that view.
+  // Hardcoded /dashboard links drop you back into your own account, and a
+  // refresh then lands on the wrong page entirely.
+  const asMatch = useMatch('/dashboard/as/:customerId/*')
+  const viewingId = asMatch?.params?.customerId || null
+  const base = viewingId ? `/dashboard/as/${viewingId}` : '/dashboard'
+  // Nav describes the account on screen. While impersonating that is the
+  // target, not the viewer — a master viewing a retail customer should not
+  // see a Customers link.
+  // Resolve the viewed account's type so the nav describes what is on
+  // screen. RLS already limits this read to the viewer's own subtree.
+  const [viewingType, setViewingType] = useState(null)
+  useEffect(() => {
+    if (!viewingId) { setViewingType(null); return }
+    let alive = true
+    supabase?.from('profiles').select('account_type').eq('id', viewingId).maybeSingle()
+      .then(({ data }) => { if (alive) setViewingType(data?.account_type || null) })
+    return () => { alive = false }
+  }, [viewingId])
+
+  const navIsReseller = viewingId ? viewingType === 'reseller' : isReseller
 
   async function signOut(e) {
     e.preventDefault()
@@ -25,20 +48,25 @@ export default function DashShell({ children }) {
         </Link>
 
         <nav className="dash-nav" aria-label="Dashboard">
-          <NavLink to="/dashboard" end>
+          <NavLink to={base} end>
             <span className="ic" aria-hidden="true">▦</span> Overview
           </NavLink>
-          {!isReseller && (
-            <NavLink to="/dashboard/servers">
+          {!navIsReseller && !viewingId && (
+            <NavLink to={`${base}/servers`}>
               <span className="ic" aria-hidden="true">🖥</span> Servers
             </NavLink>
           )}
-          {isReseller && (
-            <NavLink to="/dashboard/customers">
+          {navIsReseller && (
+            <NavLink to={`${base}/customers`}>
               <span className="ic" aria-hidden="true">👥</span> Customers
             </NavLink>
           )}
 
+          {viewingId && (
+            <NavLink to="/dashboard/customers" className="dash-nav-exit">
+              <span className="ic" aria-hidden="true">↩</span> Back to my account
+            </NavLink>
+          )}
         </nav>
 
         <div className="dash-user">
