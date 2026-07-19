@@ -74,12 +74,17 @@ export default async function handler(req, res) {
       if (pr?.[0]?.account_type !== 'reseller')
         return res.status(403).json({ error: true, message: 'Only reseller accounts can order on behalf of a customer.' })
       // Target must be a sub-account of this reseller
-      const custRes = await fetch(`${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(for_customer_id)}&select=id,parent_reseller_id,full_name`, {
+      const custRes = await fetch(`${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(for_customer_id)}&select=id,parent_reseller_id,full_name,account_type`, {
         headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` },
       })
       const cust = await custRes.json()
       if (!cust?.[0] || cust[0].parent_reseller_id !== user.id)
         return res.status(403).json({ error: true, message: 'That customer does not belong to your account.' })
+      // Certificates go to retail customers only. A sub-reseller buys for their
+      // own customers; a plan held by a reseller has no owner to install it.
+      // The UI already filters them out, but the API must not rely on that.
+      if (cust[0].account_type === 'reseller')
+        return res.status(400).json({ error: true, message: 'Plans cannot be bought for a reseller account. Choose one of their customers, or buy to your inventory.' })
       targetUserId = for_customer_id
       assignedBy = user.id
       assignedAt = new Date().toISOString()

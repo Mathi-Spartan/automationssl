@@ -53,12 +53,15 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: true, message: 'This subscription is permanently assigned and cannot be reassigned.' })
 
     const tgt = await (await fetch(
-      `${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(customer_id)}&select=id,parent_reseller_id,full_name`,
+      `${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(customer_id)}&select=id,parent_reseller_id,full_name,account_type`,
       { headers: H() }
     )).json()
     const target = tgt?.[0]
     if (!target || target.parent_reseller_id !== user.id)
       return res.status(400).json({ error: true, message: 'The target must be one of your own customer accounts.' })
+    // Retail customers only — a sub-reseller cannot hold an assigned plan.
+    if (target.account_type === 'reseller')
+      return res.status(400).json({ error: true, message: 'Plans cannot be assigned to a reseller account. Choose one of their customers instead.' })
 
     // Assign: move ownership, stamp provenance, clear the reseller's server tag
     // (the customer will tag it to one of their own servers).

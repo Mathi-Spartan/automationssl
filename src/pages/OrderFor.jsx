@@ -29,6 +29,9 @@ export default function OrderFor() {
     supabase.from('profiles')
       .select('id, full_name, customer_code, email')
       .eq('parent_reseller_id', session.user.id)
+      // Certificates go to retail customers only. A sub-reseller buys for
+      // their own customers; holding a plan themselves has no meaning.
+      .eq('account_type', 'customer')
       .order('created_at')
       .then(({ data }) => { if (alive) setMyCustomers(data || []) })
     return () => { alive = false }

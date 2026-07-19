@@ -34,6 +34,7 @@ function ordersToRows(orders, includeCustomer = true, customerName = null) {
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+import Customers from './Customers.jsx'
 
 // ---------- shared helpers ----------
 
@@ -1016,7 +1017,7 @@ function ResellerDashboard({ session, profile }) {
     const [o, so, p, s, ss, sd] = await Promise.all([
       supabase.from('orders').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
       supabase.from('orders').select('*').neq('user_id', uid).order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, full_name, customer_code').eq('parent_reseller_id', uid).order('created_at'),
+      supabase.from('profiles').select('id, full_name, customer_code, account_type').eq('parent_reseller_id', uid).order('created_at'),
       supabase.from('servers').select('id, name, environment').eq('owner_id', uid).order('name'),
       supabase.from('servers').select('id, owner_id').neq('owner_id', uid),
       supabase.from('tracked_domains').select('id, owner_id').neq('owner_id', uid),
@@ -1232,7 +1233,7 @@ function ResellerDashboard({ session, profile }) {
                           <span className="assign-label">Assign to customer</span>
                           <select value={assignTo[o.id]||''} onChange={e => setAssignTo({...assignTo,[o.id]:e.target.value})}>
                             <option value="">— choose customer —</option>
-                            {subs.map(c => <option key={c.id} value={c.id}>{c.full_name||c.id.slice(0,8)}</option>)}
+                            {subs.filter(c => c.account_type !== 'reseller').map(c => <option key={c.id} value={c.id}>{c.full_name||c.id.slice(0,8)}</option>)}
                           </select>
                           <button className="btn primary" type="button" disabled={!assignTo[o.id]||busyAssign===o.id} onClick={()=>assign(o)}>
                             {busyAssign===o.id?'Assigning…':'Assign permanently →'}
@@ -1501,7 +1502,57 @@ export function DashboardAsCustomer() {
         </span>
         <Link to="/dashboard/customers" className="as-exit">← Back to my account</Link>
       </div>
-      <CustomerDashboard session={asSession} profile={target} />
+      {target.account_type === 'reseller'
+        ? <ResellerDashboard session={asSession} profile={target} />
+        : <CustomerDashboard session={asSession} profile={target} />}
+    </>
+  )
+}
+
+/* Customer list for a sub-reseller, viewed by their parent. Same guards as
+   DashboardAsCustomer; passes the target down so every scope on the page is
+   the sub-reseller rather than the signed-in viewer. */
+export function CustomersAsReseller() {
+  const { session, profile, loading } = useAuth()
+  const { customerId } = useParams()
+  const [target, setTarget] = useState(undefined)
+
+  useEffect(() => {
+    if (!session || !customerId) return
+    let alive = true
+    supabase.from('profiles')
+      .select('id, full_name, customer_code, email, company_name, parent_reseller_id, account_type, can_create_resellers')
+      .eq('id', customerId).maybeSingle()
+      .then(({ data }) => { if (alive) setTarget(data || null) })
+    return () => { alive = false }
+  }, [session, customerId])
+
+  if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
+  if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard' }} />
+  if (profile.account_type !== 'reseller') return <Navigate to="/dashboard" replace />
+  if (target === undefined) return <div className="form-page"><p>Loading…</p></div>
+  if (!target || target.parent_reseller_id !== session.user.id || target.account_type !== 'reseller') {
+    return (
+      <div className="form-page">
+        <p><strong>Not found.</strong> That reseller is not on your account.</p>
+        <Link to="/dashboard/customers" className="btn ghost">← Back to customers</Link>
+      </div>
+    )
+  }
+
+  const initial = (target.full_name || target.email || '?')[0].toUpperCase()
+  return (
+    <>
+      <div className="as-bar">
+        <span className="as-av">{initial}</span>
+        <span className="as-txt">
+          Viewing <b>{target.full_name || target.email}</b>
+          {target.customer_code && <span className="as-code">{target.customer_code}</span>}
+          <span className="as-note">— their customers, as they see them.</span>
+        </span>
+        <Link to="/dashboard/customers" className="as-exit">← Back to my account</Link>
+      </div>
+      <Customers viewAs={target} />
     </>
   )
 }

@@ -5,8 +5,14 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import { deliverables } from './Dashboard.jsx'
 import { Stagger } from '../components/Motion.jsx'
 
-export default function Customers() {
+export default function Customers({ viewAs = null }) {
   const { session, profile, loading } = useAuth()
+  // When a reseller opens a sub-reseller's dashboard, every scope on this
+  // page must be that sub-reseller — not the signed-in account. Without
+  // this the page shows the viewer's own customers under someone else's
+  // name.
+  const scopeId = viewAs?.id || session?.user?.id
+  const scopeProfile = viewAs || profile
   const [subs, setSubs] = useState(null)
   const [orders, setOrders] = useState([])
   const [form, setForm] = useState({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer' })
@@ -22,8 +28,8 @@ export default function Customers() {
 
   async function reload() {
     const [p, o] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, created_at, customer_code, email, company_name, account_type, can_create_resellers').eq('parent_reseller_id', session.user.id).order('created_at'),
-      supabase.from('orders').select('id, user_id, product_name, product_id, api_response, assigned_at, status').neq('user_id', session.user.id),
+      supabase.from('profiles').select('id, full_name, created_at, customer_code, email, company_name, account_type, can_create_resellers').eq('parent_reseller_id', scopeId).order('created_at'),
+      supabase.from('orders').select('id, user_id, product_name, product_id, api_response, assigned_at, status').neq('user_id', scopeId),
     ])
     setSubs(p.data || [])
     setOrders(o.data || [])
@@ -31,8 +37,8 @@ export default function Customers() {
   }
 
   useEffect(() => {
-    if (session?.user && profile?.account_type === 'reseller') reload()
-  }, [session?.user?.id, profile?.account_type])
+    if (scopeId && scopeProfile?.account_type === 'reseller') reload()
+  }, [scopeId, scopeProfile?.account_type])
 
   if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
   if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard/customers' }} />
@@ -113,11 +119,11 @@ export default function Customers() {
     <div className="dash-page">
       <div className="cust-page-header">
         <div>
-          <span className="eyebrow">{profile?.can_create_resellers ? 'Accounts' : 'Customers'}</span>
-          <h1>{profile?.can_create_resellers ? 'Your accounts' : 'Your customers'}</h1>
+          <span className="eyebrow">{scopeProfile?.can_create_resellers ? 'Accounts' : 'Customers'}</span>
+          <h1>{scopeProfile?.can_create_resellers ? 'Your accounts' : 'Your customers'}</h1>
         </div>
         <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
-          {showForm ? 'Cancel' : (profile?.can_create_resellers ? '+ New account' : '+ New customer')}
+          {showForm ? 'Cancel' : (scopeProfile?.can_create_resellers ? '+ New account' : '+ New customer')}
         </button>
       </div>
 
@@ -128,7 +134,7 @@ export default function Customers() {
             {form.account_type === 'reseller' ? 'Create reseller account' : 'Create customer account'}
           </h3>
 
-          {profile?.can_create_resellers && (
+          {scopeProfile?.can_create_resellers && (
             <div className="field mt-type-field">
               <label>Account type</label>
               <div className="mt-type">
@@ -244,8 +250,12 @@ export default function Customers() {
               <div className="cust-row-actions-v2">
                 <button type="button" className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px' }}
                   onClick={() => openEdit(c)}>Edit</button>
-                <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>+ Buy plan</Link>
-                <Link to={`/dashboard/as/${c.id}`} className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>{c.account_type === 'reseller' ? 'Login as reseller' : 'Login as customer'}</Link>
+                {c.account_type !== 'reseller' && (
+                  <Link to={`/order-for/${c.id}`} className="btn primary" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>+ Buy plan</Link>
+                )}
+                <Link to={c.account_type === 'reseller' ? `/dashboard/as/${c.id}/customers` : `/dashboard/as/${c.id}`}
+                  className="btn ghost" style={{ fontSize: '0.78rem', padding: '6px 13px', textDecoration:'none' }}>
+                  {c.account_type === 'reseller' ? 'Login as reseller' : 'Login as customer'}</Link>
               </div>
             </div>
           )
