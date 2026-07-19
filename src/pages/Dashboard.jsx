@@ -1014,14 +1014,31 @@ function ResellerDashboard({ session, profile }) {
 
   const load = useCallback(async () => {
     const uid = session.user.id
-    const [o, so, p, s, ss, sd] = await Promise.all([
+
+    // Sub-account rows must be fetched by explicit ownership, not by
+    // "everything that isn't mine". While a master views a sub-reseller,
+    // uid is the sub-reseller but the session is still the master — so
+    // .neq(uid) returns the master's own customers' rows, which RLS then
+    // permits because they are inside the master's subtree.
+    const kids = await supabase.from('profiles')
+      .select('id, full_name, customer_code, account_type')
+      .eq('parent_reseller_id', uid).order('created_at')
+    const kidIds = (kids.data || []).map((k) => k.id)
+
+    const [o, so, s, ss, sd] = await Promise.all([
       supabase.from('orders').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
-      supabase.from('orders').select('*').neq('user_id', uid).order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, full_name, customer_code, account_type').eq('parent_reseller_id', uid).order('created_at'),
+      kidIds.length
+        ? supabase.from('orders').select('*').in('user_id', kidIds).order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
       supabase.from('servers').select('id, name, environment').eq('owner_id', uid).order('name'),
-      supabase.from('servers').select('id, owner_id').neq('owner_id', uid),
-      supabase.from('tracked_domains').select('id, owner_id').neq('owner_id', uid),
+      kidIds.length
+        ? supabase.from('servers').select('id, owner_id').in('owner_id', kidIds)
+        : Promise.resolve({ data: [] }),
+      kidIds.length
+        ? supabase.from('tracked_domains').select('id, owner_id').in('owner_id', kidIds)
+        : Promise.resolve({ data: [] }),
     ])
+    const p = kids
     setOwn(o.data || [])
     setSubOrders(so.data || [])
     setSubs(p.data || [])

@@ -27,10 +27,18 @@ export default function Customers({ viewAs = null }) {
   const [search, setSearch] = useState('')
 
   async function reload() {
-    const [p, o] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, created_at, customer_code, email, company_name, account_type, can_create_resellers').eq('parent_reseller_id', scopeId).order('created_at'),
-      supabase.from('orders').select('id, user_id, product_name, product_id, api_response, assigned_at, status').neq('user_id', scopeId),
-    ])
+    // Fetch children first, then their orders by explicit id. Using
+    // .neq(scopeId) would return the VIEWER's other customers' orders while
+    // impersonating, because the session is still the viewer's.
+    const p = await supabase.from('profiles')
+      .select('id, full_name, created_at, customer_code, email, company_name, account_type, can_create_resellers')
+      .eq('parent_reseller_id', scopeId).order('created_at')
+    const ids = (p.data || []).map((c) => c.id)
+    const o = ids.length
+      ? await supabase.from('orders')
+          .select('id, user_id, product_name, product_id, api_response, assigned_at, status')
+          .in('user_id', ids)
+      : { data: [] }
     setSubs(p.data || [])
     setOrders(o.data || [])
     setErr(p.error?.message || null)
