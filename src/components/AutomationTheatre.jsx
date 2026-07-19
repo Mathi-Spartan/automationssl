@@ -172,6 +172,13 @@ export default function AutomationTheatre() {
               onClick={() => setStartISO(p.iso)}
             >{p.label}</button>
           ))}
+          <button
+            type="button"
+            className="lc-replay"
+            onClick={() => play(model.total)}
+            aria-label="Replay the timeline"
+            title="Replay"
+          ><i className="ti ti-refresh" aria-hidden="true" /></button>
         </div>
       </div>
 
@@ -191,12 +198,18 @@ export default function AutomationTheatre() {
             <span>{fmtShort(endISO)}</span>
           </div>
 
-          <div className="lc-track">
+          <div className={'lc-track' + (drawn >= slices.length ? ' done' : ' running')}>
             {slices.map((s, i) => (
               <div
                 key={s.startsOn}
-                className={'lc-slice' + (i < drawn ? ' in' : '') + (i === 0 ? ' first' : '') + (s.partial ? ' partial' : '')}
-                style={{ flexGrow: s.shown, transitionDelay: (i * 40) + 'ms' }}
+                className={'lc-slice' + (i < drawn ? ' in' : '') + (i === 0 ? ' first' : '') + (s.partial ? ' partial' : '') + (i === drawn - 1 ? ' newest' : '')}
+                style={{
+                  flexGrow: s.shown,
+                  transitionDelay: (i * 40) + 'ms',
+                  '--i': i,
+                  '--tone': Math.round(210 + (i / Math.max(1, slices.length - 1)) * 14),
+                  '--lum': Math.round(26 + (i / Math.max(1, slices.length - 1)) * 26),
+                }}
                 title={s.partial
                   ? `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)} — only ${s.days} days of the term remained, so it is issued short of the ${s.cap}-day maximum`
                   : `${s.days}-day certificate issued ${fmt(s.startsOn)}, expires ${fmt(s.endsOn)}`}
