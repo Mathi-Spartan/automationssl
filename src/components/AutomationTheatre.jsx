@@ -132,14 +132,14 @@ const METHODS = [
 
 const AUTO_FACES = ['\u{1F60A}', '\u{1F604}', '\u{1F44D}', '\u{1F60E}', '\u{1F64C}', '\u2728', '\u{1F60C}', '\u{1F389}']
 const AUTO_LINES = [
-  'All set — nothing needed',
-  'Handled while you worked',
-  'Done, no ticket raised',
-  'Reissued overnight',
-  'You did not lift a finger',
-  'Quietly taken care of',
-  'Still hands-off',
-  'Another one, automatically',
+  'Enrolment complete',
+  'Reissued on schedule',
+  'No change request raised',
+  'Deployed outside business hours',
+  'Zero operator involvement',
+  'Chain verified automatically',
+  'Renewal window met',
+  'Reissued without downtime',
 ]
 
 function ReissueCompare({ slices, drawn, onReplay }) {
@@ -155,8 +155,8 @@ function ReissueCompare({ slices, drawn, onReplay }) {
     <div className="rc">
       <div className="rc-top">
         <div>
-          <div className="rc-title">What that means for you</div>
-          <div className="rc-sub">Same year, same certificates — the difference is who does the work.</div>
+          <div className="rc-title">Operational impact</div>
+          <div className="rc-sub">Identical certificate schedule. The difference is who performs each reissue.</div>
         </div>
         <div className="rc-controls">
           <span className="rc-clock">{done ? 'One year complete' : shown < 0 ? 'Ready' : `Certificate ${shown + 1} of ${n}`}</span>
@@ -166,8 +166,8 @@ function ReissueCompare({ slices, drawn, onReplay }) {
 
       <div className="rc-grid">
         <div className={'rc-panel' + (manual >= 3 ? ' strain' : '')}>
-          <div className="rc-head"><i className="rc-dot bad" aria-hidden="true" />Reissuing by hand</div>
-          <div className="rc-note">Someone has to remember, every time</div>
+          <div className="rc-head"><i className="rc-dot bad" aria-hidden="true" />Manual reissuance</div>
+          <div className="rc-note">CSR generation, validation and deployment, per cycle</div>
           <div className="rc-bar">
             {slices.map((sl, i) => (
               <span key={sl.startsOn}
@@ -183,19 +183,19 @@ function ReissueCompare({ slices, drawn, onReplay }) {
           </div>
           <div className="rc-event">
             {done ? (
-              <><b className="bad">{n - 1} interruptions</b><span>each one a date you have to not miss</span></>
+              <><b className="bad">{n - 1} scheduled interventions</b><span>each a hard deadline; a missed one is an outage</span></>
             ) : shown < 0 ? <span className="rc-idle">Waiting to start…</span> : shown === 0 ? (
-              <><b>Certificate 1 installed</b><span>the only one that happens on its own</span></>
+              <><b>Initial certificate issued</b><span>the only cycle covered by the original order</span></>
             ) : (
-              <><b className="bad">Reissue {shown} due</b><span>drop everything: request, install, verify</span></>
+              <><b className="bad">Reissue {shown} due</b><span>submit CSR, complete validation, deploy, verify chain</span></>
             )}
           </div>
-          <div className="rc-tally"><span className="rc-num bad">{done ? n - 1 : manual}</span><span className="rc-num-l">{(done ? n - 1 : manual) === 1 ? 'reissue' : 'reissues'} you run</span></div>
+          <div className="rc-tally"><span className="rc-num bad">{done ? n - 1 : manual}</span><span className="rc-num-l">manual {(done ? n - 1 : manual) === 1 ? 'reissue' : 'reissues'}</span></div>
         </div>
 
         <div className="rc-panel win">
           <div className="rc-head"><i className="rc-dot good" aria-hidden="true" />With +Automate or CaaS</div>
-          <div className="rc-note">Set up once, then nothing</div>
+          <div className="rc-note">One-time enrolment, then unattended</div>
           <div className="rc-bar">
             {slices.map((sl, i) => (
               <span key={sl.startsOn}
@@ -215,17 +215,17 @@ function ReissueCompare({ slices, drawn, onReplay }) {
               {shown < 0 ? '' : done ? '\u{1F389}' : AUTO_FACES[shown % AUTO_FACES.length]}
             </span>
             <span className="rc-calm-t">
-              {shown < 0 ? 'Ready when you are' : done ? 'Never needed you once' : AUTO_LINES[shown % AUTO_LINES.length]}
+              {shown < 0 ? 'Awaiting first issuance' : done ? 'Zero operator interventions' : AUTO_LINES[shown % AUTO_LINES.length]}
             </span>
           </div>
           <div className="rc-event">
             {done ? (
-              <><b className="good">Nothing to do</b><span>{n} certificates, none touched by hand</span></>
+              <><b className="good">No operator action required</b><span>{n} certificates issued and deployed unattended</span></>
             ) : shown < 0 ? <span className="rc-idle">Waiting to start…</span> : (
-              <><b className="good">{label}</b><span>issued and deployed automatically</span></>
+              <><b className="good">{label}</b><span>validated, issued and deployed automatically</span></>
             )}
           </div>
-          <div className="rc-tally"><span className="rc-num good">0</span><span className="rc-num-l">reissues you run</span></div>
+          <div className="rc-tally"><span className="rc-num good">0</span><span className="rc-num-l">manual reissues</span></div>
         </div>
       </div>
     </div>
