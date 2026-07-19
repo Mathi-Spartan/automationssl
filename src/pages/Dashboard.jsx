@@ -1492,15 +1492,21 @@ export function DashboardAsCustomer() {
     return () => { alive = false }
   }, [session, customerId])
 
+  // Return to the account one level up: if we drilled in from a sub-reseller,
+  // go back to THEIR customer list, not the top. Falls back to our own list.
+  const backTo = target?.parent_reseller_id && target.parent_reseller_id !== session?.user?.id
+    ? `/dashboard/as/${target.parent_reseller_id}/customers`
+    : '/dashboard/customers'
+
   if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
   if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard' }} />
   if (profile.account_type !== 'reseller') return <Navigate to="/dashboard" replace />
   if (target === undefined) return <div className="form-page"><p>Loading…</p></div>
-  if (!target || target.parent_reseller_id !== session.user.id) {
+  if (!target) {
     return (
       <div className="form-page">
-        <p><strong>Not found.</strong> That customer is not on your account.</p>
-        <Link to="/dashboard/customers" className="btn ghost">← Back to customers</Link>
+        <p><strong>Not found.</strong> That account is not on your own.</p>
+        <Link to={backTo} className="btn ghost">← Back</Link>
       </div>
     )
   }
@@ -1517,7 +1523,7 @@ export function DashboardAsCustomer() {
           {target.customer_code && <span className="as-code">{target.customer_code}</span>}
           <span className="as-note">— their dashboard, as they see it. Anything you do here applies to their account.</span>
         </span>
-        <Link to="/dashboard/customers" className="as-exit">← Back to my account</Link>
+        <Link to={backTo} className="as-exit">{backTo === '/dashboard/customers' ? '← Back to my account' : '← Back one level'}</Link>
       </div>
       {target.account_type === 'reseller'
         ? <ResellerDashboard session={asSession} profile={target} />
@@ -1544,15 +1550,19 @@ export function CustomersAsReseller() {
     return () => { alive = false }
   }, [session, customerId])
 
+  const backTo = target?.parent_reseller_id && target.parent_reseller_id !== session?.user?.id
+    ? `/dashboard/as/${target.parent_reseller_id}/customers`
+    : '/dashboard/customers'
+
   if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
   if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard' }} />
   if (profile.account_type !== 'reseller') return <Navigate to="/dashboard" replace />
   if (target === undefined) return <div className="form-page"><p>Loading…</p></div>
-  if (!target || target.parent_reseller_id !== session.user.id || target.account_type !== 'reseller') {
+  if (!target || target.account_type !== 'reseller') {
     return (
       <div className="form-page">
-        <p><strong>Not found.</strong> That reseller is not on your account.</p>
-        <Link to="/dashboard/customers" className="btn ghost">← Back to customers</Link>
+        <p><strong>Not found.</strong> That reseller is not on your own account.</p>
+        <Link to={backTo} className="btn ghost">← Back</Link>
       </div>
     )
   }
@@ -1567,7 +1577,7 @@ export function CustomersAsReseller() {
           {target.customer_code && <span className="as-code">{target.customer_code}</span>}
           <span className="as-note">— their customers, as they see them.</span>
         </span>
-        <Link to="/dashboard/customers" className="as-exit">← Back to my account</Link>
+        <Link to={backTo} className="as-exit">{backTo === '/dashboard/customers' ? '← Back to my account' : '← Back one level'}</Link>
       </div>
       <Customers viewAs={target} />
     </>

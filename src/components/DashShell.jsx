@@ -25,15 +25,22 @@ export default function DashShell({ children }) {
   // Resolve the viewed account's type so the nav describes what is on
   // screen. RLS already limits this read to the viewer's own subtree.
   const [viewingType, setViewingType] = useState(null)
+  const [viewingParent, setViewingParent] = useState(null)
   useEffect(() => {
-    if (!viewingId) { setViewingType(null); return }
+    if (!viewingId) { setViewingType(null); setViewingParent(null); return }
     let alive = true
-    supabase?.from('profiles').select('account_type').eq('id', viewingId).maybeSingle()
-      .then(({ data }) => { if (alive) setViewingType(data?.account_type || null) })
+    supabase?.from('profiles').select('account_type, parent_reseller_id').eq('id', viewingId).maybeSingle()
+      .then(({ data }) => { if (alive) { setViewingType(data?.account_type || null); setViewingParent(data?.parent_reseller_id || null) } })
     return () => { alive = false }
   }, [viewingId])
 
   const navIsReseller = viewingId ? viewingType === 'reseller' : isReseller
+  // Leaving should step back one level, not jump to the top. Drilling
+  // master → reseller → customer and hitting exit should land on the
+  // reseller's list, which is where you came from.
+  const exitTo = viewingParent && viewingParent !== session?.user?.id
+    ? `/dashboard/as/${viewingParent}/customers`
+    : '/dashboard/customers'
 
   async function signOut(e) {
     e.preventDefault()
@@ -68,8 +75,9 @@ export default function DashShell({ children }) {
           )}
 
           {viewingId && (
-            <NavLink to="/dashboard/customers" className="dash-nav-exit">
-              <span className="ic" aria-hidden="true">↩</span> Back to my account
+            <NavLink to={exitTo} className="dash-nav-exit">
+              <span className="ic" aria-hidden="true">↩</span>
+              {exitTo === '/dashboard/customers' ? ' Back to my account' : ' Back one level'}
             </NavLink>
           )}
         </nav>
