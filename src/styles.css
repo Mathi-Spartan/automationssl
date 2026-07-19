@@ -1924,8 +1924,14 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .pc-rail-hint { font-size: 0.72rem; color: #9aacba; line-height: 1.5; margin: 7px 0 0; }
 .pc-rail-sync { font-size: 0.71rem; color: #b0becb; margin: 11px 0 0; }
 
-.pc-creds { margin-top: 14px; }
-.pc-creds .cred-card { max-width: none; }
+.pc-creds { margin-top: 13px; }
+.pc-creds .cred-card { max-width: none; margin-top: 0; }
+.pc-creds .cred-card + .cred-card { margin-top: 9px; }
+/* narrower column: stack label above value so the row does not squeeze */
+.pc-creds .cred-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label copy' 'value copy'; gap: 3px 10px; align-items: center; }
+.pc-creds .cred-row > :first-child { grid-area: label; font-size: 0.72rem; color: #7f93a6; }
+.pc-creds .cred-row > :nth-child(2) { grid-area: value; }
+.pc-creds .cred-row > :last-child { grid-area: copy; }
 
 @media (max-width: 900px) {
   .pc-cols { grid-template-columns: 1fr; gap: 14px; }

@@ -311,33 +311,33 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
               </ol>
             </div>
           )}
+
+        {d.isAcme && d.enrollReady && !d.activated && (
+          <div className="pc-creds">
+            <div className="cred-card">
+              <div className="cred-card-title">Your ACME credentials <span className="cred-live">live from the CA</span></div>
+              <CredRow label="ACME server URL" value={d.acme.server_url} />
+              <CredRow label="EAB key ID" value={d.acme.eab_kid} />
+              <CredRow label="EAB HMAC key" value={d.acme.eab_hmac_key} />
+              <p className="hint" style={{ fontSize: '0.76rem', marginTop: 8 }}>
+                Treat these like a password — they're yours alone. Every ACME client
+                (certbot, acme.sh, Caddy, Traefik, cert-manager) accepts these three values.
+              </p>
+            </div>
+            <div className="cred-card cmd">
+              <div className="cred-card-title">
+                Quick start with certbot
+                <CopyBtn label="Copy command" text={`certbot register --server ${d.acme.server_url} --eab-kid ${d.acme.eab_kid} --eab-hmac-key ${d.acme.eab_hmac_key}`} />
+              </div>
+              <pre className="acme-creds">{`certbot register \\
+    --server ${d.acme.server_url} \\
+    --eab-kid ${d.acme.eab_kid} \\
+    --eab-hmac-key ${d.acme.eab_hmac_key}`}</pre>
+            </div>
+          </div>
+        )}
         </div>
       </div>
-
-      {d.isAcme && d.enrollReady && !d.activated && (
-        <div className="pc-creds">
-          <div className="cred-card">
-            <div className="cred-card-title">Your ACME credentials <span className="cred-live">live from the CA</span></div>
-            <CredRow label="ACME server URL" value={d.acme.server_url} />
-            <CredRow label="EAB key ID" value={d.acme.eab_kid} />
-            <CredRow label="EAB HMAC key" value={d.acme.eab_hmac_key} />
-            <p className="hint" style={{ fontSize: '0.76rem', marginTop: 8 }}>
-              Treat these like a password — they're yours alone. Every ACME client
-              (certbot, acme.sh, Caddy, Traefik, cert-manager) accepts these three values.
-            </p>
-          </div>
-          <div className="cred-card cmd">
-            <div className="cred-card-title">
-              Quick start with certbot
-              <CopyBtn label="Copy command" text={`certbot register --server ${d.acme.server_url} --eab-kid ${d.acme.eab_kid} --eab-hmac-key ${d.acme.eab_hmac_key}`} />
-            </div>
-            <pre className="acme-creds">{`certbot register \\
-  --server ${d.acme.server_url} \\
-  --eab-kid ${d.acme.eab_kid} \\
-  --eab-hmac-key ${d.acme.eab_hmac_key}`}</pre>
-          </div>
-        </div>
-      )}
 
       {d.acme && d.activated && (
         <details style={{ marginTop: 10 }}>
