@@ -68,6 +68,12 @@ export function deliverables(order) {
     vendorDomains,
     agentInstalled: Boolean(item?.autoinstall?.installation_method) || (aiStatus && aiStatus !== 'incomplete'),
     isAcme,
+    // What the customer has actually done, as opposed to what the product
+    // family allows. +Automate plans support BOTH agent and ACME, so until a
+    // method is used we must not claim one. null = not yet chosen.
+    methodUsed: isAcme
+      ? 'acme'
+      : (item?.autoinstall?.installation_method || (aiStatus && aiStatus !== 'incomplete') ? 'agent' : null),
     enrollReady,
     activated: isAcme ? clientRegistered : Boolean(aiStatus && aiStatus !== 'incomplete'),
   }
@@ -696,7 +702,10 @@ function CustomerDashboard({ session, profile }) {
                       <td>
                         <div className="clm-row-top">
                           <span className="clm-cert-name">{o.product_name}</span>
-                          <span className={'clm-method-badge ' + (d.isAcme ? 'clm-method-acme' : 'clm-method-agent')}>{d.isAcme ? 'ACME' : 'Agent'}</span>
+                          <span className={'clm-method-badge ' + (d.methodUsed === 'acme' ? 'clm-method-acme' : d.methodUsed === 'agent' ? 'clm-method-agent' : 'clm-method-either')}
+                            title={d.methodUsed ? undefined : 'This plan works with either method — the customer picks when they set it up'}>
+                            {d.methodUsed === 'acme' ? 'ACME' : d.methodUsed === 'agent' ? 'Agent' : 'Agent or ACME'}
+                          </span>
                         </div>
                         <div className="clm-cert-meta">
                           <span className="clm-meta-id">#{o.gogetssl_order_id}</span>

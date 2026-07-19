@@ -844,6 +844,7 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .clm-method-badge { font-size: 0.63rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; flex-shrink: 0; }
 .clm-method-acme { background: #e8f2ff; color: #2e6ba2; }
 .clm-method-agent { background: #eaf3ec; color: #1a5e2a; }
+.clm-method-either { background: #eef2f7; color: #55708a; letter-spacing: .04em; }
 
 .clm-action-cell { vertical-align: middle; }
 .clm-inline-action { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
@@ -864,6 +865,7 @@ section.block.alt { background: var(--card); border-top: 1px solid var(--line); 
 .clm-method-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
 .clm-method-acme { background: #e8f2ff; color: #2e6ba2; }
 .clm-method-agent { background: #eaf3ec; color: #1a5e2a; }
+.clm-method-either { background: #eef2f7; color: #55708a; letter-spacing: .04em; }
 
 /* compact action row */
 .clm-action-row { display: flex; align-items: center; gap: 6px; }
