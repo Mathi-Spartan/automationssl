@@ -420,8 +420,8 @@ export default function AutomationTheatre() {
         <div className="lc-node lc-node-end">
           <span className="lc-node-out">
             <i className="ti ti-check" aria-hidden="true" />
-            Unattended reissuance
-            <small>every cycle, no operator action</small>
+            Automated certificate management
+            <small>every reissue, unattended</small>
           </span>
         </div>
       </div>

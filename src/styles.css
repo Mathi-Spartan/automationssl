@@ -2302,6 +2302,11 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .lc-fork, .lc-join { display: none; }
   .lc-lanes { grid-template-columns: 1fr; margin: 12px 0; }
 }
+/* the end-node label is long; stack it rather than let the pill wrap mid-phrase */
+@media (max-width: 520px) {
+  .lc-node-out { flex-direction: column; gap: 3px; text-align: center; border-radius: 16px; padding: 12px 18px; line-height: 1.35; }
+  .lc-node-out small { font-size: 0.72rem; }
+}
 @media (prefers-reduced-motion: reduce) {
   .lc-fork path, .lc-join path { animation: none !important; stroke-dashoffset: 0 !important; }
   .lc-lane { transition: none !important; }
