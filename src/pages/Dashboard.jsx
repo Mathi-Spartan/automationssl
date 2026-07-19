@@ -181,35 +181,6 @@ function OriginBadge({ order, isReseller }) {
   return <span className="badge">{text}</span>
 }
 
-function Journey({ d }) {
-  const steps = d.isAcme
-    ? [
-        { label: 'Ordered', done: true },
-        { label: 'Enrollment ready', done: d.enrollReady },
-        { label: 'Configure ACME client', done: d.activated },
-        { label: 'Automated', done: d.activated },
-      ]
-    : [
-        { label: 'Ordered', done: true },
-        { label: 'Install agent', done: d.agentInstalled },
-        { label: 'Add your domain', done: d.vendorDomains.length > 0 },
-        { label: 'Automated', done: d.activated && d.vendorDomains.length > 0 },
-      ]
-  const current = steps.findIndex((s) => !s.done)
-  return (
-    <div className="journey" role="list" aria-label="Activation progress">
-      {steps.map((s, i) => (
-        <div key={s.label} role="listitem"
-          className={'jstep' + (s.done ? ' done' : i === current ? ' current' : '')}>
-          <span className="jdot">{s.done ? '✓' : i + 1}</span>
-          <span className="jlabel">{s.label}</span>
-          {i < steps.length - 1 && <span className="jline" aria-hidden="true" />}
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function StagePill({ d }) {
   if (d.activated) return <span className="stage-pill ok">Automated ✓</span>
   if (d.isAcme) {
@@ -252,7 +223,14 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
         </div>
       )}
 
-      <Journey d={d} />
+      <div className="pc-strip">
+        {d.begin && <span className="pc-strip-item">Began <b>{fmtDate(d.begin)}</b></span>}
+        {d.renewal && <span className="pc-strip-item">Renews <b>{fmtDate(d.renewal)}</b>{days != null && <i> ({days}d)</i>}</span>}
+        {d.caOrderStatus && <span className="pc-strip-item">CA order <StatusVal value={d.caOrderStatus} /></span>}
+        {d.isAcme && d.acmeAccountStatus && <span className="pc-strip-item">ACME <StatusVal value={d.acmeAccountStatus} /></span>}
+        {d.aiStatus && <span className="pc-strip-item">AutoInstall <StatusVal value={d.aiStatus} /></span>}
+        {!noHead && <span className="pc-strip-item pc-strip-id">#{order.gogetssl_order_id}</span>}
+      </div>
 
       {d.activated ? (
         <p className="plan-note ok-note">
@@ -307,15 +285,6 @@ function PlanCard({ order, isReseller, servers, onAssignServer, onCheck, checkin
           </ol>
         </div>
       )}
-
-      <div className="meta-grid">
-        <div className="meta-cell"><span className="meta-label">Order ID</span><span className="meta-value mono-v">{order.gogetssl_order_id}</span></div>
-        {d.begin && <div className="meta-cell"><span className="meta-label">Subscription began</span><span className="meta-value">{fmtDate(d.begin)}</span></div>}
-        {d.renewal && <div className="meta-cell"><span className="meta-label">Next renewal</span><span className="meta-value">{fmtDate(d.renewal)}</span></div>}
-        {d.caOrderStatus && <div className="meta-cell"><span className="meta-label">CA order</span><StatusVal value={d.caOrderStatus} /></div>}
-        {d.isAcme && d.acmeAccountStatus && <div className="meta-cell"><span className="meta-label">ACME account</span><StatusVal value={d.acmeAccountStatus} /></div>}
-        {d.aiStatus && <div className="meta-cell"><span className="meta-label">AutoInstall</span><StatusVal value={d.aiStatus} /></div>}
-      </div>
 
       {d.vendorDomains.length > 0 && (
         <div style={{ marginTop: 12 }}>
