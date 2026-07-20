@@ -2448,3 +2448,72 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .inv-cap-edit input { width: 78px; padding: 5px 8px; border: 1px solid #d7e3ee; border-radius: 7px;
   font-size: .78rem; text-align: right; font-variant-numeric: tabular-nums; }
 .inv-cap-save { font-size: .72rem; padding: 5px 10px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile — iOS and Android
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. iOS Safari zooms the entire page when a focused field is under 16px,
+      and never zooms back out. Every input here is 12–14px by design, so on
+      small screens the size is forced up. !important is deliberate: these
+      sizes come from many specific selectors, and a field added later must
+      not silently reintroduce the zoom. */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* 2. Safe areas. viewport-fit=cover in index.html lets the layout reach the
+      screen edge; without these insets the notch and home indicator would sit
+      on top of content. max() keeps the normal padding on devices with no
+      inset, where env() resolves to 0. */
+@supports (padding: max(0px)) {
+  .dash-side {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .dash-main { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+  .site-footer { padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 900px) {
+  /* Under 900px the sidebar becomes a top bar, so it meets the notch. */
+  @supports (padding: max(0px)) {
+    .dash-side { padding-top: max(12px, env(safe-area-inset-top)); }
+  }
+}
+
+/* 3. The edit modal is centred with no height limit. On a short screen the
+      taller version — name, company, email, slabs, password — overflowed past
+      both edges with no way to scroll to Save. It now pins to the top and
+      scrolls internally. dvh tracks the iOS toolbar as it hides and shows;
+      the vh line above it is the fallback for browsers without dvh. */
+@media (max-width: 640px) {
+  .ce-backdrop {
+    align-items: flex-start;
+    padding: 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ce-modal {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .ce-body { overflow-y: auto; }
+  .ce-head, .ce-foot { flex: none; }
+}
+
+/* 4. Touch targets. 44px is Apple's minimum; below it these pills and ghost
+      buttons are hit-or-miss with a thumb. pointer: coarse rather than a width
+      query, so a tablet gets them too and a narrow desktop window does not. */
+@media (pointer: coarse) {
+  .btn,
+  .slab-opt,
+  .mt-type-opt,
+  .inv-cap-save,
+  .ce-x { min-height: 44px; }
+  .slab-opt { padding: 11px 16px; }
+  .ce-x { min-width: 44px; }
+  .inv-cap-edit input { min-height: 44px; }
+  .slab-row { gap: 8px; }
+}
