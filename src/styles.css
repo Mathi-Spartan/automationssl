@@ -2376,3 +2376,9 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .markup-bar-eg { font-size: 0.79rem; color: #55708a; line-height: 1.55; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #eef2f7; }
 .markup-bar-eg b { color: #06182c; font-weight: 700; }
 .markup-bar-capped { color: #8a5a00; }
+
+/* ── In-portal plans page ── */
+.plans-note{font-size:.82rem;color:#5b6b7c;margin:0 0 16px}
+.plans-card{cursor:default;display:flex;flex-direction:column;gap:6px}
+.plans-card.is-blocked{opacity:.62}
+.plans-buy{margin-top:auto;align-self:flex-start;font-size:.82rem;padding:8px 16px}

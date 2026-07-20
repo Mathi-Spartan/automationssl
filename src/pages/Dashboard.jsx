@@ -622,7 +622,7 @@ function CustomerDashboard({ session, profile }) {
           </div>
         </div>
         <div className="clm-kpi" style={{ marginLeft: 'auto' }}>
-          <Link to="/#plans" className="btn primary" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>+ Buy plans</Link>
+          <Link to="/dashboard/plans" className="btn primary" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>+ Buy plans</Link>
         </div>
       </div>
 
@@ -634,7 +634,7 @@ function CustomerDashboard({ session, profile }) {
           <i className="ti ti-certificate" style={{ fontSize: 32, color: '#b4dffc' }} aria-hidden="true" />
           <h3>No certificates yet</h3>
           <p>Purchase a plan and your certificates appear here — ready to activate automation.</p>
-          <Link to="/#plans" className="btn primary">Browse plans →</Link>
+          <Link to="/dashboard/plans" className="btn primary">Browse plans →</Link>
         </div>
       ) : (
         <div className="clm-table-wrap">

@@ -553,7 +553,7 @@ export default function Customers({ viewAs = null }) {
                 <div className="ce-f">
                   <span>Discount slab <i>what they pay you</i></span>
                   <div className="slab-row">
-                    {['', 10, 20, 30].map((v) => (
+                    {['', 40, 50, 60].map((v) => (
                       <button key={String(v)} type="button"
                         className={'slab-opt' + (String(edit.discount_pct) === String(v) ? ' on' : '')}
                         onClick={() => setEdit({ ...edit, discount_pct: v })}>

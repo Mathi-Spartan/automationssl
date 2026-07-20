@@ -140,8 +140,8 @@ async function updateCustomer(req, res, user) {
   if (discount_pct !== undefined) {
     if (target.account_type !== 'reseller')
       return res.status(400).json({ error: true, message: 'Only reseller accounts can have a discount slab.' })
-    if (discount_pct !== null && ![10, 20, 30].includes(Number(discount_pct)))
-      return res.status(400).json({ error: true, message: 'Discount slab must be 10, 20 or 30 percent.' })
+    if (discount_pct !== null && ![40, 50, 60].includes(Number(discount_pct)))
+      return res.status(400).json({ error: true, message: 'Discount slab must be 40, 50 or 60 percent.' })
     profilePatch.discount_pct = discount_pct === null ? null : Number(discount_pct)
   }
   if (full_name != null) profilePatch.full_name = String(full_name).trim()
