@@ -3,3 +3,9 @@ dist
 .env
 .env.local
 .vercel
+
+# downloaded bundles used for verifying deploys
+prod*.js
+prod*.css
+app.js
+page.html
