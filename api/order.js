@@ -92,7 +92,18 @@ export default async function handler(req, res) {
         headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` },
       })
       const cust = await custRes.json()
-      if (!cust?.[0] || cust[0].parent_reseller_id !== user.id)
+      // Subtree, not direct children. A master buying for a sub-reseller's
+      // customer reaches them THROUGH the sub-reseller, so parent === caller is
+      // false and the order was refused. descendants_of is the same function
+      // the RLS read policy uses, so API permission and row visibility cannot
+      // drift apart.
+      let inTree = cust?.[0]?.parent_reseller_id === user.id
+      if (cust?.[0] && !inTree) {
+        const rows = await rpc('descendants_of', { root: user.id }).catch(() => null)
+        inTree = Array.isArray(rows)
+          && rows.some((x) => (typeof x === 'string' ? x : x?.descendants_of) === for_customer_id)
+      }
+      if (!cust?.[0] || !inTree)
         return res.status(403).json({ error: true, message: 'That customer does not belong to your account.' })
       // Certificates go to retail customers only. A sub-reseller buys for their
       // own customers; a plan held by a reseller has no owner to install it.

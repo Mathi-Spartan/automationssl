@@ -68,7 +68,10 @@ export default function OrderFor() {
         // Retail customers only. A reseller buys on their own account and
         // assigns to their own customers; the route is reachable by URL, so
         // hiding the buttons is not enough on its own.
-        if (!data || data.parent_reseller_id !== session.user.id || data.account_type === 'reseller') setNotFound(true)
+        // RLS only returns rows in this caller's own subtree, so a row coming
+        // back is already proof of ownership. Testing parent === me on top of
+        // that refused a master buying for a sub-reseller's customer.
+        if (!data || data.id === session.user.id || data.account_type === 'reseller') setNotFound(true)
         else {
           setCustomer(data)
           setForm(f => ({ ...f, email: '' }))
