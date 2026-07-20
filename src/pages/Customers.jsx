@@ -73,7 +73,9 @@ export default function Customers({ viewAs = null }) {
       const res = await fetch('/api/subaccount', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
-        body: JSON.stringify(form),
+        // Without parent_id the API attaches the account to the token holder,
+        // which is the master when drilled into a sub-reseller's page.
+        body: JSON.stringify(viewAs?.id ? { ...form, parent_id: viewAs.id } : form),
       })
       const body = await res.json()
       if (!res.ok || body.error) throw new Error(body.message || 'Could not create the account.')
@@ -145,16 +147,22 @@ export default function Customers({ viewAs = null }) {
   async function saveMarkup(v) {
     setSavingMarkup(true); setErr(null); setEditMsg(null)
     try {
-      // Read the row back rather than trusting the write: a silent RLS refusal
-      // would otherwise look like a successful save.
-      const { data, error } = await supabase.from('profiles')
-        .update({ markup_pct: v }).eq('id', scopeId).select('markup_pct').maybeSingle()
-      if (error) throw new Error(error.message)
-      if (!data) throw new Error('the update was not applied')
-      setSlabs((s0) => ({ ...s0, markup_pct: data.markup_pct }))
-      setEditMsg(data.markup_pct == null
+      // Goes through the service-role API, not a direct write: the profiles
+      // UPDATE policy is id = auth.uid(), so writing to the VIEWED account
+      // matched zero rows whenever a master was drilled into a sub-reseller.
+      const { data: sess } = await supabase.auth.getSession()
+      const res = await fetch('/api/subaccount', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
+        body: JSON.stringify({ customer_id: scopeId, markup_pct: v === '' ? null : v }),
+      })
+      const body = await res.json()
+      if (!res.ok || body.error) throw new Error(body.message || 'the update was not applied')
+      const saved = body.applied?.markup_pct ?? null
+      setSlabs((s0) => ({ ...s0, markup_pct: saved }))
+      setEditMsg(saved == null
         ? 'Markup cleared — your customers will not be able to order until you set one.'
-        : `Saved. Your customers now pay your cost plus ${data.markup_pct}%.`)
+        : `Saved. Your customers now pay your cost plus ${saved}%.`)
     } catch (e) {
       setErr('Could not save the markup: ' + (e.message || e))
     } finally { setSavingMarkup(false) }

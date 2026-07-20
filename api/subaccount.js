@@ -43,11 +43,28 @@ export default async function handler(req, res) {
 
     if (req.method === 'PATCH') return updateCustomer(req, res, user)
 
-    const { email, password, full_name, company_name, account_type } = req.body || {}
+    const { email, password, full_name, company_name, account_type, parent_id } = req.body || {}
+
+    // The account is created under whoever is being VIEWED, not whoever holds
+    // the token. A master drilled into a sub-reseller's customers page is still
+    // authenticated as the master, so using user.id here silently attached the
+    // new account to the master instead of the reseller on screen.
+    let parentId = user.id
+    if (parent_id && parent_id !== user.id) {
+      const target = await getProfile(parent_id)
+      if (!target || target.account_type !== 'reseller')
+        return res.status(400).json({ error: true, message: 'That parent account cannot hold customers.' })
+      if (!(await inSubtree(user.id, parent_id)))
+        return res.status(403).json({ error: true, message: 'That account is not on your hierarchy.' })
+      parentId = parent_id
+    }
 
     // Only a master may create another reseller. Without this check any
     // reseller could POST account_type:'reseller' and mint a peer.
-    const newType = account_type === 'reseller' ? 'reseller' : 'customer'
+    // Creating on someone else's behalf can only ever make a retail customer.
+    // A reseller under a sub-reseller would be a third level, and the model is
+    // master -> reseller -> customer.
+    const newType = (parentId !== user.id || account_type !== 'reseller') ? 'customer' : 'reseller'
     if (newType === 'reseller' && !callerCanCreateResellers)
       return res.status(403).json({ error: true, message: 'Your account cannot create reseller accounts.' })
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
@@ -75,7 +92,7 @@ export default async function handler(req, res) {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}`, Prefer: 'return=minimal' },
       body: JSON.stringify({
-        parent_reseller_id: user.id,
+        parent_reseller_id: parentId,
         account_type: newType,
         email: String(email).trim().toLowerCase(),
         ...(company_name ? { company_name: String(company_name).trim() } : {}),
@@ -89,21 +106,53 @@ export default async function handler(req, res) {
   }
 }
 
+/* One profile row, service role. */
+async function getProfile(id) {
+  const r = await fetch(
+    `${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=id,parent_reseller_id,email,account_type`,
+    { headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` } },
+  )
+  return (await r.json())?.[0] || null
+}
+
+/* Is `id` anywhere below `root`? Uses the same descendants_of the RLS read
+   policy uses, so API permission and row visibility cannot drift apart. */
+async function inSubtree(root, id) {
+  const r = await fetch(`${SB()}/rest/v1/rpc/descendants_of`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+    body: JSON.stringify({ root }),
+  })
+  if (!r.ok) return false
+  const rows = await r.json()
+  return (rows || []).some((x) => (typeof x === 'string' ? x : x?.descendants_of) === id)
+}
+
 /* PATCH — update one of the caller's own customers. The reseller check has
    already run; this adds the ownership check and applies the changes. */
 async function updateCustomer(req, res, user) {
-  const { customer_id, full_name, company_name, email, password, discount_pct } = req.body || {}
+  const { customer_id, full_name, company_name, email, password, discount_pct, markup_pct } = req.body || {}
   if (!customer_id) return res.status(400).json({ error: true, message: 'customer_id is required.' })
 
-  // the target must be one of this reseller's own customers
-  const tr = await fetch(
-    `${SB()}/rest/v1/profiles?id=eq.${encodeURIComponent(customer_id)}&select=id,parent_reseller_id,email,account_type`,
-    { headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` } },
-  )
-  const target = (await tr.json())?.[0]
+  const target = await getProfile(customer_id)
   if (!target) return res.status(404).json({ error: true, message: 'Customer not found.' })
-  if (target.parent_reseller_id !== user.id)
+
+  // A reseller sets their OWN markup, so the target may be the caller. That is
+  // the only field self-editing may touch: this runs under the service role, so
+  // guard_profile_self_update (which keys on auth.uid()) does not fire here and
+  // a self-PATCH of discount_pct would be straight privilege escalation.
+  const isSelf = customer_id === user.id
+  if (isSelf) {
+    const touchesAnythingElse =
+      discount_pct !== undefined || full_name != null || company_name != null ||
+      (email != null && String(email).length > 0) || (password != null && String(password).length > 0)
+    if (touchesAnythingElse)
+      return res.status(403).json({ error: true, message: 'Only your markup can be changed on your own account.' })
+  } else if (target.parent_reseller_id !== user.id && !(await inSubtree(user.id, customer_id))) {
+    // Direct children were the only ones allowed before, which refused every
+    // edit made while viewing a sub-reseller's customers.
     return res.status(403).json({ error: true, message: 'That customer is not on your account.' })
+  }
 
   const cleanEmail = email == null ? null : String(email).trim().toLowerCase()
   if (cleanEmail !== null && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanEmail))
@@ -144,6 +193,14 @@ async function updateCustomer(req, res, user) {
       return res.status(400).json({ error: true, message: 'Discount slab must be 40, 50 or 60 percent.' })
     profilePatch.discount_pct = discount_pct === null ? null : Number(discount_pct)
   }
+  // Markup lives on the reseller who is selling, not on a retail customer.
+  if (markup_pct !== undefined) {
+    if (target.account_type !== 'reseller')
+      return res.status(400).json({ error: true, message: 'Only reseller accounts can have a markup slab.' })
+    if (markup_pct !== null && ![10, 20, 30].includes(Number(markup_pct)))
+      return res.status(400).json({ error: true, message: 'Markup slab must be 10, 20 or 30 percent.' })
+    profilePatch.markup_pct = markup_pct === null ? null : Number(markup_pct)
+  }
   if (full_name != null) profilePatch.full_name = String(full_name).trim()
   if (company_name != null) profilePatch.company_name = String(company_name).trim() || null
   if (cleanEmail) profilePatch.email = cleanEmail
@@ -170,5 +227,8 @@ async function updateCustomer(req, res, user) {
       email: !!authPatch.email,
       password: !!authPatch.password,
     },
+    // Echo what was written so the caller can render the saved value without a
+    // second round trip; the profile PATCH uses return=minimal.
+    applied: profilePatch,
   })
 }
