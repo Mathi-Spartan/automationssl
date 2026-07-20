@@ -193,10 +193,20 @@ async function updateCustomer(req, res, user) {
       return res.status(400).json({ error: true, message: 'Discount slab must be 40, 50 or 60 percent.' })
     profilePatch.discount_pct = discount_pct === null ? null : Number(discount_pct)
   }
-  // Markup lives on the reseller who is selling, not on a retail customer.
+  // markup_pct means two things by row type: on a reseller it is their default
+  // for all their customers; on a customer it overrides that default for them
+  // alone, with null meaning inherit. A master's direct customer always pays
+  // list, so an override there would be silently ignored by resolve_price —
+  // refuse it rather than store a number that does nothing.
   if (markup_pct !== undefined) {
-    if (target.account_type !== 'reseller')
-      return res.status(400).json({ error: true, message: 'Only reseller accounts can have a markup slab.' })
+    if (target.account_type !== 'reseller') {
+      const parent = target.parent_reseller_id ? await getProfile(target.parent_reseller_id) : null
+      if (!parent || parent.account_type !== 'reseller' || !parent.parent_reseller_id)
+        return res.status(400).json({
+          error: true,
+          message: 'Only a sub-reseller\'s customers can have their own markup.',
+        })
+    }
     if (markup_pct !== null && ![10, 20, 30].includes(Number(markup_pct)))
       return res.status(400).json({ error: true, message: 'Markup slab must be 10, 20 or 30 percent.' })
     profilePatch.markup_pct = markup_pct === null ? null : Number(markup_pct)

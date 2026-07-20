@@ -106,6 +106,11 @@ export default function Customers({ viewAs = null }) {
 
   const set = k => e => setForm({ ...form, [k]: e.target.value })
 
+  // A master's direct customers always pay list, so an override is only
+  // meaningful one level down.
+  const canOverrideMarkup =
+    scopeProfile?.account_type === 'reseller' && !scopeProfile?.can_create_resellers
+
   function openEdit(c) {
     setEditErr(null); setEditMsg(null)
     setEdit({
@@ -133,6 +138,8 @@ export default function Customers({ viewAs = null }) {
       }
       if (edit.account_type === 'reseller') {
         payload.discount_pct = edit.discount_pct === '' ? null : Number(edit.discount_pct)
+      } else if (canOverrideMarkup) {
+        payload.markup_pct = edit.markup_pct === '' ? null : Number(edit.markup_pct)
       }
       if (edit.password) payload.password = edit.password
       const res = await fetch('/api/subaccount', {
@@ -606,6 +613,41 @@ export default function Customers({ viewAs = null }) {
                   <small>
                     Applies to every product. They buy at list price minus this slab; a bigger
                     slab lets them mark up further without exceeding your public price.
+                  </small>
+                </div>
+              )}
+              {edit.account_type !== 'reseller' && canOverrideMarkup && (
+                <div className="ce-f">
+                  <span>Their price <i>markup on your cost</i></span>
+                  <div className="slab-row">
+                    {['', 10, 20, 30].map((v) => (
+                      <button key={String(v)} type="button"
+                        className={'slab-opt' + (String(edit.markup_pct) === String(v) ? ' on' : '')}
+                        onClick={() => setEdit({ ...edit, markup_pct: v })}>
+                        {v === ''
+                          ? `My default${slabs.markup_pct != null ? ` (+${slabs.markup_pct}%)` : ''}`
+                          : `+${v}%`}
+                      </button>
+                    ))}
+                  </div>
+                  <small>
+                    {(() => {
+                      const eg = priceRows.find((r) => Number(r.bill_price) > 0)
+                      const mk = edit.markup_pct === '' ? slabs.markup_pct : Number(edit.markup_pct)
+                      if (!eg || mk == null) {
+                        return 'Overrides your default for this customer only. Never charged above the public list price.'
+                      }
+                      const cost = Number(eg.bill_price)
+                      const list = Number(eg.list_price)
+                      const charged = Math.min(cost * (1 + mk / 100), list)
+                      return (
+                        <>
+                          Overrides your default for this one customer. On {eg.name} they would
+                          pay <b>${charged.toFixed(2)}</b>, leaving you <b>${(charged - cost).toFixed(2)}</b>.
+                          Never charged above the ${list.toFixed(2)} list price.
+                        </>
+                      )
+                    })()}
                   </small>
                 </div>
               )}
