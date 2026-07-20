@@ -168,10 +168,12 @@ function ReissueCompare({ slices, drawn, onReplay }) {
         <div className={'rc-panel' + (manual >= 3 ? ' strain' : '')}>
           <div className="rc-head"><i className="rc-dot bad" aria-hidden="true" />Manual management</div>
           <div className="rc-note">CSR generation, validation and deployment, per cycle</div>
-          <div className="rc-bar">
+          <div className={'rc-bar' + (n > 10 ? ' compact' : '')}>
             {slices.map((sl, i) => (
-              <span key={sl.startsOn}
-                className={'rc-cell' + (i <= shown ? ' on' : '') + (i > 0 && i <= shown ? ' gap' : '')} />
+              <span key={sl.startsOn} title={`Certificate ${i + 1}`}
+                className={'rc-cell' + (i <= shown ? ' on' : '') + (i > 0 && i <= shown ? ' gap' : '')}>
+                <span className="rc-cell-l"><span className="rc-cell-w">Cert </span>{i + 1}</span>
+              </span>
             ))}
           </div>
           <div className="rc-alerts" aria-hidden="true">
@@ -196,11 +198,16 @@ function ReissueCompare({ slices, drawn, onReplay }) {
         <div className="rc-panel win">
           <div className="rc-head"><i className="rc-dot good" aria-hidden="true" />With +Automate or CaaS</div>
           <div className="rc-note">One-time enrolment, then unattended</div>
-          <div className="rc-bar">
+          <div className={'rc-bar' + (n > 10 ? ' compact' : '')}>
             {slices.map((sl, i) => (
-              <span key={sl.startsOn}
+              <span key={sl.startsOn} title={`Certificate ${i + 1}`}
                 className={'rc-cell' + (i <= shown ? ' on' : '')}
-                style={i <= shown ? { background: `hsl(${sl.tone.h} ${sl.tone.sat}% ${sl.tone.lum}%)` } : undefined} />
+                style={i <= shown ? {
+                  background: `hsl(${sl.tone.h} ${sl.tone.sat}% ${sl.tone.lum}%)`,
+                  color: sl.tone.lum < 62 ? '#fff' : '#06182c',
+                } : undefined}>
+                <span className="rc-cell-l"><span className="rc-cell-w">Cert </span>{i + 1}</span>
+              </span>
             ))}
           </div>
           <div className="rc-alerts rc-alerts-ok" aria-hidden="true">

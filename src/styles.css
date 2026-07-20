@@ -1973,11 +1973,21 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .rc-dot.good { background: #1a8a4f; }
 .rc-note { font-size: 0.73rem; color: #9aacba; margin: 2px 0 11px; }
 
-.rc-bar { display: flex; gap: 2px; height: 22px; margin-bottom: 11px; }
-.rc-cell { flex: 1; border-radius: 4px; background: #f0f3f7; opacity: .35; transform: scaleY(.6); transition: opacity .45s cubic-bezier(.16,1,.3,1), transform .45s cubic-bezier(.16,1,.3,1), background .45s ease; }
+.rc-bar { display: flex; gap: 2px; height: 24px; margin-bottom: 11px; }
+.rc-cell { flex: 1; border-radius: 4px; background: #f0f3f7; opacity: .35; transform: scaleY(.6);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .01em; color: #7f93a6; white-space: nowrap;
+  transition: opacity .45s cubic-bezier(.16,1,.3,1), transform .45s cubic-bezier(.16,1,.3,1), background .45s ease; }
+.rc-cell-l { transform: scaleY(1.6667); transition: transform .45s cubic-bezier(.16,1,.3,1); }
+.rc-cell.on .rc-cell-l { transform: none; }
 .rc-cell.on { opacity: 1; transform: scaleY(1); }
 .rc-cell.on.gap { background: repeating-linear-gradient(135deg, #dba9a9, #dba9a9 4px, #efd2d2 4px, #efd2d2 8px) !important; }
-.rc-panel:not(.win) .rc-cell.on:not(.gap) { background: #93a7bb; }
+.rc-panel:not(.win) .rc-cell.on:not(.gap) { background: #93a7bb; color: #fff; }
+.rc-cell.on.gap { color: #8c3f3f; }
+/* Too many cells to fit the word, or too little width — the number alone still
+   reads, and the full label stays on the title attribute. */
+.rc-bar.compact .rc-cell-w { display: none; }
+@media (max-width: 640px) { .rc-cell-w { display: none; } }
 
 .rc-event { min-height: 40px; font-size: 0.77rem; line-height: 1.5; color: #7f93a6; }
 .rc-event b { display: block; font-size: 0.79rem; margin-bottom: 1px; color: #06182c; }
@@ -1997,6 +2007,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 }
 @media (prefers-reduced-motion: reduce) {
   .rc-cell { transition: none !important; opacity: 1 !important; transform: none !important; }
+  .rc-cell-l { transform: none !important; transition: none !important; }
 }
 
 /* ── comparison: strain on the left, ease on the right ── */
