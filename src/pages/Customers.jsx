@@ -26,6 +26,12 @@ export default function Customers({ viewAs = null }) {
   const [editMsg, setEditMsg] = useState(null)
   const [editErr, setEditErr] = useState(null)
   const [search, setSearch] = useState('')
+  // These two must stay here. React requires hooks to run in the same order on
+  // every render; declared below the early returns at line ~52 they are skipped
+  // whenever a guard fires, and the next render throws "Rendered more hooks
+  // than during the previous render" — which blanks the page.
+  const [savingMarkup, setSavingMarkup] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   async function reload() {
     // Fetch children first, then their orders by explicit id. Using
@@ -130,7 +136,6 @@ export default function Customers({ viewAs = null }) {
 
   const setE = k => e => setEdit({ ...edit, [k]: e.target.value })
 
-  const [savingMarkup, setSavingMarkup] = useState(false)
   async function saveMarkup(v) {
     setSavingMarkup(true); setErr(null)
     try {
@@ -143,8 +148,6 @@ export default function Customers({ viewAs = null }) {
       setErr('Could not save the markup: ' + (e.message || e))
     } finally { setSavingMarkup(false) }
   }
-
-  const [exporting, setExporting] = useState(false)
 
   /* Export every order beneath this account at any depth: direct customers,
      sub-resellers, and those sub-resellers' own customers. RLS already limits
