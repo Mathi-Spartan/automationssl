@@ -4,6 +4,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { deliverables } from './Dashboard.jsx'
+import ExportRange from '../components/ExportRange.jsx'
 import { PRODUCTS } from '../catalog.js'
 import { Stagger } from '../components/Motion.jsx'
 
@@ -175,7 +176,7 @@ export default function Customers({ viewAs = null }) {
   /* Export every order beneath this account at any depth: direct customers,
      sub-resellers, and those sub-resellers' own customers. RLS already limits
      what is readable to the caller's subtree, so a broad select cannot leak. */
-  async function exportAll() {
+  async function exportAll(range) {
     setExporting(true)
     try {
       const tree = []
@@ -190,7 +191,7 @@ export default function Customers({ viewAs = null }) {
       }
 
       const ids = [scopeId, ...tree.map((t) => t.id)]
-      const { data: ords } = ids.length
+      let { data: ords } = ids.length
         ? await supabase.from('orders')
             .select('id, user_id, product_name, product_id, api_response, assigned_at, created_at, status, bill_price, sale_price')
             .in('user_id', ids)
@@ -202,9 +203,19 @@ export default function Customers({ viewAs = null }) {
         if (!byParent[k]) byParent[k] = []
         byParent[k].push(t)
       })
+      // Previously unfiltered: the sheet was stamped with the current month
+      // and then contained every order ever placed, which would overbill a
+      // sub-reseller the moment there was more than one month of history.
+      if (range?.from && range?.to) {
+        ords = (ords || []).filter((o) => {
+          const d = new Date(o.created_at)
+          return d >= range.from && d <= range.to
+        })
+      }
+
       const ordersFor = (id) => (ords || []).filter((o) => o.user_id === id)
 
-      const period = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      const period = range?.label || 'All time'
       const money = (v) => (v == null ? '—' : Number(v).toFixed(2))
 
       // ── Sub-reseller statement ──────────────────────────────────────────
@@ -409,10 +420,11 @@ export default function Customers({ viewAs = null }) {
           <h1>{scopeProfile?.can_create_resellers ? 'Your accounts' : 'Your customers'}</h1>
         </div>
         <div className="cust-head-actions">
-          <button className="btn ghost" type="button" onClick={exportAll} disabled={exporting || !(subs || []).length}>
-            <i className="ti ti-file-spreadsheet" style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }} aria-hidden="true" />
-            {exporting ? 'Preparing…' : (scopeProfile?.can_create_resellers ? 'Export all orders' : 'Export customer billing')}
-          </button>
+          <ExportRange
+            onPick={exportAll}
+            busy={exporting}
+            disabled={!(subs || []).length}
+            label={scopeProfile?.can_create_resellers ? 'Export all orders' : 'Export customer billing'} />
           <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
             {showForm ? 'Cancel' : (scopeProfile?.can_create_resellers ? '+ New account' : '+ New customer')}
           </button>

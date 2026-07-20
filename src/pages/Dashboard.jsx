@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import * as XLSX from 'xlsx'
+import ExportRange from '../components/ExportRange.jsx'
 
 /* ── Excel export utility ── */
 function buildXLSX(rows, filename, sheetName = 'Orders') {
@@ -915,81 +916,23 @@ function CaasInline({ order, onChanged }) {
   )
 }
 
-/* ── Export dropdown ── */
+/* ── Export dropdown ──
+   The range UI moved to components/ExportRange.jsx so this and the billing
+   statement share one definition of a period. This wrapper keeps the filename
+   and customer-column logic, which is Dashboard's business. */
 function ExportDropdown({ rows, custLabel, inclCust, custName }) {
-  const [open, setOpen] = React.useState(false)
-  const [from, setFrom] = React.useState('')
-  const [to, setTo] = React.useState('')
-  const ref = React.useRef(null)
-  React.useEffect(() => {
-    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [])
-  function run(label, fromDate, toDate) {
-    const filtered = fromDate ? rows.filter(o => {
-      const d = new Date(o.created_at)
-      return d >= fromDate && d <= toDate
-    }) : rows
+  function run(range) {
+    const filtered = range?.from
+      ? rows.filter((o) => {
+          const d = new Date(o.created_at)
+          return d >= range.from && d <= range.to
+        })
+      : rows
     if (!filtered.length) { alert('No orders in this date range.'); return }
-    buildXLSX(ordersToRows(filtered, inclCust, custName), `orders-${custLabel}-${label}.xlsx`, 'Orders')
-    setOpen(false)
+    buildXLSX(ordersToRows(filtered, inclCust, custName),
+      `orders-${custLabel}-${range?.slug || 'all'}.xlsx`, 'Orders')
   }
-  const presets = [
-    ['Today', 0, 'ti-calendar-event'],
-    ['Last 7 days', 7, 'ti-calendar-week'],
-    ['Last 30 days', 30, 'ti-calendar-month'],
-    ['Last 90 days', 90, 'ti-calendar-stats'],
-    ['Last 6 months', 180, 'ti-calendar'],
-    ['Last 12 months', 365, 'ti-calendar'],
-  ]
-  return (
-    <div className="export-wrap" ref={ref}>
-      <button type="button" className="clm-export-btn" onClick={() => setOpen(o => !o)}>
-        <i className="ti ti-download" style={{fontSize:13,verticalAlign:-1,marginRight:4}} aria-hidden="true"/>
-        Export <i className="ti ti-chevron-down" style={{fontSize:11,verticalAlign:-1,marginLeft:2}} aria-hidden="true"/>
-      </button>
-      {open && (
-        <div className="export-panel">
-          <div className="export-panel-head">Quick range</div>
-          {presets.map(([label, days, icon]) => (
-            <button key={label} type="button" className="export-preset" onClick={() => {
-              const t = new Date(); t.setHours(23,59,59,999)
-              const f = new Date(); f.setDate(f.getDate() - days); f.setHours(0,0,0,0)
-              run(label.toLowerCase().replace(/\s+/g,'-'), f, t)
-            }}>
-              <i className={'ti ' + icon} style={{fontSize:13,color:'#3375b1',flexShrink:0}} aria-hidden="true"/>
-              {label}
-            </button>
-          ))}
-          <button type="button" className="export-preset" onClick={() => run('all', null, null)}>
-            <i className="ti ti-infinity" style={{fontSize:13,color:'#3375b1',flexShrink:0}} aria-hidden="true"/>
-            All time
-          </button>
-          <div className="export-divider"/>
-          <div className="export-custom">
-            <div className="export-panel-head" style={{padding:'0 0 3px'}}>Custom range</div>
-            <div className="export-custom-row">
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)}/>
-            </div>
-            <div className="export-custom-row">
-              <input type="date" value={to} onChange={e => setTo(e.target.value)}/>
-            </div>
-            <button type="button" className="btn primary" style={{fontSize:'0.75rem',padding:'5px 0',width:'100%',marginTop:2}}
-              disabled={!from||!to} onClick={() => {
-                const f=new Date(from); f.setHours(0,0,0,0)
-                const t=new Date(to); t.setHours(23,59,59,999)
-                if(f>t){alert('Start must be before end date.');return}
-                run(`${from}-to-${to}`, f, t)
-              }}>
-              <i className="ti ti-download" style={{fontSize:12,marginRight:4}} aria-hidden="true"/>
-              Export range
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  return <ExportRange onPick={run} disabled={!rows.length} />
 }
 
 // ---------- reseller view ----------

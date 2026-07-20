@@ -2538,3 +2538,18 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .inv-cap-edit input { min-height: 44px; }
   .slab-row { gap: 8px; }
 }
+
+/* ── Export range picker (shared by the dashboard and the billing statement) ── */
+.export-panel { width: 208px; }
+.export-tabs { display: flex; gap: 2px; padding: 2px; margin-bottom: 4px;
+  background: #f4f7fa; border-radius: 8px; }
+.export-tab { flex: 1; font: inherit; font-size: .72rem; font-weight: 600; color: #7f93a6;
+  background: none; border: 0; padding: 5px 0; border-radius: 6px; cursor: pointer; }
+.export-tab.on { background: #fff; color: #1a5a94; box-shadow: 0 1px 3px rgba(10,37,64,.10); }
+.export-tab:hover:not(.on) { color: #3375b1; }
+.export-custom-row label { font-size: .68rem; color: #8fa3b4; width: 34px; flex: none; }
+.export-custom-go { font-size: .75rem; padding: 6px 0; width: 100%; margin-top: 5px; }
+@media (max-width: 640px) {
+  /* The panel is right-anchored; on a narrow screen that pushed it off-screen. */
+  .export-panel { width: min(240px, calc(100vw - 32px)); }
+}
