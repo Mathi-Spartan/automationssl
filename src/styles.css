@@ -2397,3 +2397,23 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .mp-muted { color: #9aa8b5; }
 .mp-cap { display: block; font-size: .68rem; }
 @media (max-width: 700px) { .mp-table { font-size: .72rem; } .mp-unit { display: none; } }
+
+/* ── Pricing page (sub-reseller) ── */
+.pr-wrap { background: #fff; border: 1px solid #e2ebf4; border-radius: 12px; padding: 4px 18px 10px; overflow-x: auto; }
+.pr-table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 720px; }
+.pr-table th { text-align: right; font-weight: 600; color: #8fa3b4; font-size: .68rem;
+  text-transform: uppercase; letter-spacing: .05em; padding: 14px 0 8px; border-bottom: 1px solid #eef2f7; }
+.pr-table th.pr-plan { text-align: left; }
+.pr-table th.pr-slab { color: #3375b1; }
+.pr-table td { padding: 12px 0; border-bottom: 1px solid #f4f7fa; vertical-align: top; }
+.pr-table tr:last-child td { border-bottom: 0; }
+.pr-plan { color: #06182c; font-weight: 600; padding-right: 18px; }
+.pr-unit { display: block; font-weight: 400; color: #9aa8b5; font-size: .7rem; margin-top: 2px; }
+.pr-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 22px; }
+.pr-num b { color: #06182c; font-weight: 700; }
+.pr-muted { color: #9aa8b5; }
+.pr-cost { color: #3375b1; font-weight: 600; }
+.pr-keep { display: block; font-size: .68rem; color: #7f93a6; margin-top: 2px; }
+.pr-capped { display: block; font-size: .66rem; color: #8a5a00; margin-top: 1px; }
+.pr-note { font-size: .75rem; color: #8fa3b4; margin: 12px 0 0; }
+.hint-inline { font-weight: 400; color: #9aa8b5; font-size: .74rem; margin-left: 6px; }

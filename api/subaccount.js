@@ -43,13 +43,18 @@ export default async function handler(req, res) {
 
     if (req.method === 'PATCH') return updateCustomer(req, res, user)
 
-    const { email, password, full_name, company_name, account_type, parent_id } = req.body || {}
+    const { email, password, full_name, company_name, account_type, parent_id, markup_pct } = req.body || {}
 
     // The account is created under whoever is being VIEWED, not whoever holds
     // the token. A master drilled into a sub-reseller's customers page is still
     // authenticated as the master, so using user.id here silently attached the
     // new account to the master instead of the reseller on screen.
     let parentId = user.id
+    // Only a sub-reseller's customers carry a markup — a master's customer pays
+    // list, so resolve_price would ignore one. The caller is a sub-reseller iff
+    // they are a reseller who cannot create resellers; a named parent is one iff
+    // it has a parent of its own.
+    let parentIsSubReseller = !callerCanCreateResellers
     if (parent_id && parent_id !== user.id) {
       const target = await getProfile(parent_id)
       if (!target || target.account_type !== 'reseller')
@@ -57,7 +62,10 @@ export default async function handler(req, res) {
       if (!(await inSubtree(user.id, parent_id)))
         return res.status(403).json({ error: true, message: 'That account is not on your hierarchy.' })
       parentId = parent_id
+      parentIsSubReseller = !!target.parent_reseller_id
     }
+    if (markup_pct != null && ![10, 20, 30].includes(Number(markup_pct)))
+      return res.status(400).json({ error: true, message: 'Markup slab must be 10, 20 or 30 percent.' })
 
     // Only a master may create another reseller. Without this check any
     // reseller could POST account_type:'reseller' and mint a peer.
@@ -94,6 +102,12 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         parent_reseller_id: parentId,
         account_type: newType,
+        // Markup is set at creation now. Only a sub-reseller's customer may
+        // carry one: a master's customer pays list, so resolve_price would
+        // ignore it.
+        ...(markup_pct != null && newType === 'customer' && parentIsSubReseller
+          ? { markup_pct: Number(markup_pct) }
+          : {}),
         email: String(email).trim().toLowerCase(),
         ...(company_name ? { company_name: String(company_name).trim() } : {}),
       }),

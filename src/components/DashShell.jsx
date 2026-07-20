@@ -35,6 +35,13 @@ export default function DashShell({ children }) {
   }, [viewingId])
 
   const navIsReseller = viewingId ? viewingType === 'reseller' : isReseller
+  // Pricing is a sub-reseller's own buy/sell reference. The master has no
+  // markup of their own, so it means nothing on their account. A sub-reseller
+  // is exactly a reseller WITH a parent, which the shell already knows —
+  // no extra column or fetch needed.
+  const navIsSubReseller = viewingId
+    ? viewingType === 'reseller' && !!viewingParent
+    : isReseller && profile?.can_create_resellers !== true
   // Leaving should step back one level, not jump to the top. Drilling
   // master → reseller → customer and hitting exit should land on the
   // reseller's list, which is where you came from.
@@ -71,6 +78,11 @@ export default function DashShell({ children }) {
           {navIsReseller && (
             <NavLink to={`${base}/customers`}>
               <span className="ic" aria-hidden="true">👥</span> Customers
+            </NavLink>
+          )}
+          {navIsSubReseller && (
+            <NavLink to={`${base}/pricing`}>
+              <span className="ic" aria-hidden="true">◎</span> Pricing
             </NavLink>
           )}
 

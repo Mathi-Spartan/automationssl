@@ -20,7 +20,7 @@ export default function Customers({ viewAs = null }) {
   // cannot drift from what the order API actually charges.
   const [priceRows, setPriceRows] = useState([])
   const [orders, setOrders] = useState([])
-  const [form, setForm] = useState({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer' })
+  const [form, setForm] = useState({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer', markup_pct: '' })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
@@ -34,7 +34,6 @@ export default function Customers({ viewAs = null }) {
   // every render; declared below the early returns at line ~52 they are skipped
   // whenever a guard fires, and the next render throws "Rendered more hooks
   // than during the previous render" — which blanks the page.
-  const [savingMarkup, setSavingMarkup] = useState(false)
   const [exporting, setExporting] = useState(false)
   // scopeProfile comes from useAuth() and is cached at sign-in, so it never
   // reflects a slab saved in this session. Hold the live values locally.
@@ -89,12 +88,19 @@ export default function Customers({ viewAs = null }) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
         // Without parent_id the API attaches the account to the token holder,
         // which is the master when drilled into a sub-reseller's page.
-        body: JSON.stringify(viewAs?.id ? { ...form, parent_id: viewAs.id } : form),
+        body: JSON.stringify({
+          ...form,
+          // Only a sub-reseller's customers carry a markup; sending it for a
+          // reseller account or a master's customer would be refused.
+          markup_pct: canOverrideMarkup && form.account_type !== 'reseller' && form.markup_pct !== ''
+            ? Number(form.markup_pct) : undefined,
+          ...(viewAs?.id ? { parent_id: viewAs.id } : {}),
+        }),
       })
       const body = await res.json()
       if (!res.ok || body.error) throw new Error(body.message || 'Could not create the account.')
       setMsg(`Account created for ${form.email}. Share these credentials with your customer — they can sign in right away.`)
-      setForm({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer' })
+      setForm({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer', markup_pct: '' })
       setShowForm(false)
       reload()
     } catch (e2) {
@@ -165,29 +171,6 @@ export default function Customers({ viewAs = null }) {
 
   const setE = k => e => setEdit({ ...edit, [k]: e.target.value })
 
-  async function saveMarkup(v) {
-    setSavingMarkup(true); setErr(null); setEditMsg(null)
-    try {
-      // Goes through the service-role API, not a direct write: the profiles
-      // UPDATE policy is id = auth.uid(), so writing to the VIEWED account
-      // matched zero rows whenever a master was drilled into a sub-reseller.
-      const { data: sess } = await supabase.auth.getSession()
-      const res = await fetch('/api/subaccount', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
-        body: JSON.stringify({ customer_id: scopeId, markup_pct: v === '' ? null : v }),
-      })
-      const body = await res.json()
-      if (!res.ok || body.error) throw new Error(body.message || 'the update was not applied')
-      const saved = body.applied?.markup_pct ?? null
-      setSlabs((s0) => ({ ...s0, markup_pct: saved }))
-      setEditMsg(saved == null
-        ? 'Markup cleared — your customers will not be able to order until you set one.'
-        : `Saved. Your customers now pay your cost plus ${saved}%.`)
-    } catch (e) {
-      setErr('Could not save the markup: ' + (e.message || e))
-    } finally { setSavingMarkup(false) }
-  }
 
   /* Export every order beneath this account at any depth: direct customers,
      sub-resellers, and those sub-resellers' own customers. RLS already limits
@@ -494,6 +477,30 @@ export default function Customers({ viewAs = null }) {
               <p className="hint">Share this with your customer — they can change it after signing in.</p>
             </div>
           </div>
+          {canOverrideMarkup && form.account_type !== 'reseller' && (
+            <div className="field" style={{ marginTop: 4 }}>
+              <label>Their price <span className="hint-inline">markup on your cost</span></label>
+              <div className="slab-row">
+                {[10, 20, 30].map((v) => (
+                  <button key={v} type="button"
+                    className={'slab-opt' + (String(form.markup_pct) === String(v) ? ' on' : '')}
+                    onClick={() => setForm({ ...form, markup_pct: v })}>+{v}%</button>
+                ))}
+              </div>
+              <p className="hint">
+                {(() => {
+                  const eg = priceRows.find((r) => Number(r.bill_price) > 0)
+                  if (!eg || form.markup_pct === '') {
+                    return 'Set this now or the customer cannot place an order. You can change it later.'
+                  }
+                  const cost = Number(eg.bill_price)
+                  const list = Number(eg.list_price)
+                  const charged = Math.min(cost * (1 + Number(form.markup_pct) / 100), list)
+                  return `On ${eg.name} they would pay $${charged.toFixed(2)}, leaving you $${(charged - cost).toFixed(2)}.`
+                })()}
+              </p>
+            </div>
+          )}
           <button className="btn primary" type="submit" disabled={busy}>
             {busy ? 'Creating…' : 'Create account'}
           </button>
@@ -612,78 +619,6 @@ export default function Customers({ viewAs = null }) {
         )
       })()}
 
-      {scopeProfile?.account_type === 'reseller' && !scopeProfile?.can_create_resellers && (
-        <div className="markup-bar">
-          <div className="markup-bar-t">
-            Your customer pricing
-            {slabs.discount_pct
-              ? <span className="markup-bar-cost"> — you buy at {slabs.discount_pct}% off list</span>
-              : <span className="markup-bar-cost"> — no discount slab set yet</span>}
-          </div>
-          <div className="markup-bar-row">
-            {[10, 20, 30].map((v) => {
-              // A markup above list is clamped, so say so rather than let the
-              // partner discover their chosen slab does nothing.
-              const d = slabs.discount_pct
-              const willCap = d != null && (1 - d / 100) * (1 + v / 100) > 1
-              return (
-                <button key={v} type="button"
-                  className={'slab-opt' + (slabs.markup_pct === v ? ' on' : '')}
-                  onClick={() => saveMarkup(v)} disabled={savingMarkup}>
-                  +{v}%{willCap && <span className="slab-cap"> capped</span>}
-                </button>
-              )
-            })}
-            <button type="button" className={'slab-opt' + (slabs.markup_pct == null ? ' on' : '')}
-              onClick={() => saveMarkup(null)} disabled={savingMarkup}>Not set</button>
-          </div>
-          {slabs.discount_pct != null && priceRows.length > 0 && (
-            <div className="markup-bar-eg">
-              {slabs.markup_pct == null && (
-                <p className="mp-lead">Your cost on every plan. Choose a slab above to set what your customers pay.</p>
-              )}
-              <table className="mp-table">
-                <thead>
-                  <tr>
-                    <th>Plan</th>
-                    <th>List</th>
-                    <th>You pay</th>
-                    <th>Customer pays</th>
-                    <th>You keep</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {priceRows.map((r) => {
-                    const list = Number(r.list_price)
-                    const cost = Number(r.bill_price)
-                    if (!isFinite(list) || !isFinite(cost)) return null
-                    const raw = slabs.markup_pct == null ? null : cost * (1 + slabs.markup_pct / 100)
-                    const charged = raw == null ? null : Math.min(raw, list)
-                    const capped = raw != null && raw > list
-                    return (
-                      <tr key={r.id}>
-                        <td className="mp-name">{r.name}<span className="mp-unit">{r.unit}</span></td>
-                        <td className="mp-num mp-muted">${list.toFixed(2)}</td>
-                        <td className="mp-num">${cost.toFixed(2)}</td>
-                        <td className="mp-num">
-                          {charged == null ? '—' : <b>${charged.toFixed(2)}</b>}
-                          {capped && <span className="markup-bar-capped mp-cap">capped from ${raw.toFixed(2)}</span>}
-                        </td>
-                        <td className="mp-num">{charged == null ? '—' : <b>${(charged - cost).toFixed(2)}</b>}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="markup-bar-note">
-            Added to your own cost when your customers buy. Never charged above the public
-            list price — a slab marked <em>capped</em> would exceed it and is clamped.
-          </p>
-        </div>
-      )}
-
       {editMsg && <div className="alert ok" style={{ marginTop: 12 }}>{editMsg}</div>}
 
       {edit && (
@@ -730,25 +665,23 @@ export default function Customers({ viewAs = null }) {
                       <button key={String(v)} type="button"
                         className={'slab-opt' + (String(edit.markup_pct) === String(v) ? ' on' : '')}
                         onClick={() => setEdit({ ...edit, markup_pct: v })}>
-                        {v === ''
-                          ? `My default${slabs.markup_pct != null ? ` (+${slabs.markup_pct}%)` : ''}`
-                          : `+${v}%`}
+                        {v === '' ? 'Not set' : `+${v}%`}
                       </button>
                     ))}
                   </div>
                   <small>
                     {(() => {
                       const eg = priceRows.find((r) => Number(r.bill_price) > 0)
-                      const mk = edit.markup_pct === '' ? slabs.markup_pct : Number(edit.markup_pct)
+                      const mk = edit.markup_pct === '' ? null : Number(edit.markup_pct)
                       if (!eg || mk == null) {
-                        return 'Overrides your default for this customer only. Never charged above the public list price.'
+                        return 'Without a markup this customer cannot order. Never charged above the public list price.'
                       }
                       const cost = Number(eg.bill_price)
                       const list = Number(eg.list_price)
                       const charged = Math.min(cost * (1 + mk / 100), list)
                       return (
                         <>
-                          Overrides your default for this one customer. On {eg.name} they would
+                          On {eg.name} they would
                           pay <b>${charged.toFixed(2)}</b>, leaving you <b>${(charged - cost).toFixed(2)}</b>.
                           Never charged above the ${list.toFixed(2)} list price.
                         </>
