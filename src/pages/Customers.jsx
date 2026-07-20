@@ -32,6 +32,9 @@ export default function Customers({ viewAs = null }) {
   // than during the previous render" — which blanks the page.
   const [savingMarkup, setSavingMarkup] = useState(false)
   const [exporting, setExporting] = useState(false)
+  // scopeProfile comes from useAuth() and is cached at sign-in, so it never
+  // reflects a slab saved in this session. Hold the live values locally.
+  const [slabs, setSlabs] = useState({ discount_pct: null, markup_pct: null })
 
   async function reload() {
     // Fetch children first, then their orders by explicit id. Using
@@ -46,6 +49,9 @@ export default function Customers({ viewAs = null }) {
           .select('id, user_id, product_name, product_id, api_response, assigned_at, status')
           .in('user_id', ids)
       : { data: [] }
+    const { data: me } = await supabase.from('profiles')
+      .select('discount_pct, markup_pct').eq('id', scopeId).maybeSingle()
+    setSlabs({ discount_pct: me?.discount_pct ?? null, markup_pct: me?.markup_pct ?? null })
     setSubs(p.data || [])
     setOrders(o.data || [])
     setErr(p.error?.message || null)
@@ -137,13 +143,18 @@ export default function Customers({ viewAs = null }) {
   const setE = k => e => setEdit({ ...edit, [k]: e.target.value })
 
   async function saveMarkup(v) {
-    setSavingMarkup(true); setErr(null)
+    setSavingMarkup(true); setErr(null); setEditMsg(null)
     try {
-      const { error } = await supabase.from('profiles')
-        .update({ markup_pct: v }).eq('id', scopeId)
+      // Read the row back rather than trusting the write: a silent RLS refusal
+      // would otherwise look like a successful save.
+      const { data, error } = await supabase.from('profiles')
+        .update({ markup_pct: v }).eq('id', scopeId).select('markup_pct').maybeSingle()
       if (error) throw new Error(error.message)
-      setEditMsg(v == null ? 'Markup cleared.' : `Markup set to ${v}%.`)
-      window.location.reload()
+      if (!data) throw new Error('the update was not applied')
+      setSlabs((s0) => ({ ...s0, markup_pct: data.markup_pct }))
+      setEditMsg(data.markup_pct == null
+        ? 'Markup cleared — your customers will not be able to order until you set one.'
+        : `Saved. Your customers now pay your cost plus ${data.markup_pct}%.`)
     } catch (e) {
       setErr('Could not save the markup: ' + (e.message || e))
     } finally { setSavingMarkup(false) }
@@ -470,27 +481,47 @@ export default function Customers({ viewAs = null }) {
         <div className="markup-bar">
           <div className="markup-bar-t">
             Your customer pricing
-            {scopeProfile?.discount_pct
-              ? <span className="markup-bar-cost"> — you buy at {scopeProfile.discount_pct}% off list</span>
+            {slabs.discount_pct
+              ? <span className="markup-bar-cost"> — you buy at {slabs.discount_pct}% off list</span>
               : <span className="markup-bar-cost"> — no discount slab set yet</span>}
           </div>
           <div className="markup-bar-row">
             {[10, 20, 30].map((v) => {
               // A markup above list is clamped, so say so rather than let the
               // partner discover their chosen slab does nothing.
-              const d = scopeProfile?.discount_pct
+              const d = slabs.discount_pct
               const willCap = d != null && (1 - d / 100) * (1 + v / 100) > 1
               return (
                 <button key={v} type="button"
-                  className={'slab-opt' + (scopeProfile?.markup_pct === v ? ' on' : '')}
+                  className={'slab-opt' + (slabs.markup_pct === v ? ' on' : '')}
                   onClick={() => saveMarkup(v)} disabled={savingMarkup}>
                   +{v}%{willCap && <span className="slab-cap"> capped</span>}
                 </button>
               )
             })}
-            <button type="button" className={'slab-opt' + (scopeProfile?.markup_pct == null ? ' on' : '')}
+            <button type="button" className={'slab-opt' + (slabs.markup_pct == null ? ' on' : '')}
               onClick={() => saveMarkup(null)} disabled={savingMarkup}>Not set</button>
           </div>
+          {slabs.discount_pct != null && (
+            <p className="markup-bar-eg">
+              {(() => {
+                const list = 63
+                const cost = list * (1 - slabs.discount_pct / 100)
+                if (slabs.markup_pct == null) {
+                  return <>RapidSSL costs you <b>${cost.toFixed(2)}</b>. Choose a slab to set what your customers pay.</>
+                }
+                const raw = cost * (1 + slabs.markup_pct / 100)
+                const charged = Math.min(raw, list)
+                return (
+                  <>
+                    RapidSSL: you pay <b>${cost.toFixed(2)}</b>, your customer pays <b>${charged.toFixed(2)}</b>
+                    {raw > list && <span className="markup-bar-capped"> — {slabs.markup_pct}% would be ${raw.toFixed(2)}, capped at the ${list} list price</span>}
+                    {raw <= list && <> — you keep <b>${(charged - cost).toFixed(2)}</b></>}
+                  </>
+                )
+              })()}
+            </p>
+          )}
           <p className="markup-bar-note">
             Added to your own cost when your customers buy. Never charged above the public
             list price — a slab marked <em>capped</em> would exceed it and is clamped.

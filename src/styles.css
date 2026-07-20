@@ -2373,3 +2373,6 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .slab-cap { font-size: 0.62rem; font-weight: 700; color: #8a5a00; margin-left: 4px; }
 .of-plan-was { display: block; font-size: 0.68rem; color: #9aacba; text-decoration: line-through; margin-top: 2px; }
 .of-plan-blocked { font-size: 0.72rem; color: #a8112b; margin-top: 5px; line-height: 1.45; }
+.markup-bar-eg { font-size: 0.79rem; color: #55708a; line-height: 1.55; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #eef2f7; }
+.markup-bar-eg b { color: #06182c; font-weight: 700; }
+.markup-bar-capped { color: #8a5a00; }
