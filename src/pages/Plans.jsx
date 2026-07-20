@@ -14,11 +14,26 @@ import { useAuth } from '../lib/AuthContext.jsx'
  * the same resolver api/order.js uses when the order is actually placed.
  */
 export default function Plans() {
+  const { customerId } = useParams()
   const { session, profile, loading } = useAuth()
   const [priceFor, setPriceFor] = useState({})
   const [pricing, setPricing] = useState(true)
+  const [target, setTarget] = useState(null)
 
-  const buyer = session?.user?.id
+  // Reached through /dashboard/as/:customerId/plans, the buyer is the account
+  // being VIEWED, not the one signed in. Pricing for the signed-in reseller
+  // here showed their own buy price on their customer's Buy plans page.
+  const buyer = customerId || session?.user?.id
+
+  useEffect(() => {
+    if (!customerId) { setTarget(null); return }
+    let alive = true
+    supabase.from('profiles')
+      .select('id, full_name, account_type')
+      .eq('id', customerId).maybeSingle()
+      .then(({ data }) => { if (alive) setTarget(data || null) })
+    return () => { alive = false }
+  }, [customerId])
 
   useEffect(() => {
     if (!buyer) return
@@ -38,7 +53,9 @@ export default function Plans() {
   if (loading) return <div className="form-page"><p>Loading…</p></div>
   if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard/plans' }} />
 
-  const isReseller = profile?.account_type === 'reseller'
+  // Whose page this is decides the wording, not who is holding the session.
+  const shown = target || profile
+  const isReseller = shown?.account_type === 'reseller'
 
   return (
     <div>
@@ -46,6 +63,12 @@ export default function Plans() {
         <div className="clm-kicker">CERTIFICATE LIFECYCLE MANAGER</div>
         <h1>{isReseller ? 'Buy plans' : 'Available plans'}</h1>
       </div>
+
+      {target && (
+        <div className="alert plans-scope">
+          Prices for <b>{target.full_name || 'this account'}</b> — what they pay, not what you pay.
+        </div>
+      )}
 
       <p className="plans-note">
         {isReseller

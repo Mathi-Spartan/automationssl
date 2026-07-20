@@ -141,6 +141,7 @@ function Chrome() {
           <Route path="/signup" element={<Navigate to="/login" replace />} />
           <Route path="/dashboard" element={<DashShell><Dashboard /></DashShell>} />
           <Route path="/dashboard/plans" element={<DashShell><Plans /></DashShell>} />
+          <Route path="/dashboard/as/:customerId/plans" element={<DashShell><Plans /></DashShell>} />
           <Route path="/dashboard/servers" element={<DashShell><Servers /></DashShell>} />
           <Route path="/dashboard/inventory" element={<DashShell><Inventory /></DashShell>} />
           <Route path="/dashboard/pricing" element={<DashShell><Pricing /></DashShell>} />

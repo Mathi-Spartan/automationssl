@@ -2553,3 +2553,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   /* The panel is right-anchored; on a narrow screen that pushed it off-screen. */
   .export-panel { width: min(240px, calc(100vw - 32px)); }
 }
+
+/* Whose prices these are, when a reseller is viewing a customer's plans page. */
+.plans-scope { background: #eef4fb; color: #1d466b; border: 1px solid #c9dcf0;
+  font-size: .84rem; margin: 0 0 16px; padding: 11px 14px; }
