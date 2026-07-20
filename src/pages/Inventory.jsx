@@ -59,8 +59,9 @@ export default function Inventory() {
     setBusy(`${accountId}:${productId}`); setErr(null)
     try {
       const { data: sess } = await supabase.auth.getSession()
-      const res = await fetch('/api/allocation', {
-        method: 'POST',
+      const res = await fetch('/api/subaccount', {
+        // PUT, not POST: POST on this endpoint creates an account.
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session.access_token}` },
         body: JSON.stringify({ account_id: accountId, product_id: productId, cap: Number(cap) }),
       })

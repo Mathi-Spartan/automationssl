@@ -5,6 +5,12 @@
 //           Body: { email, password, full_name, company_name }.
 //   PATCH — update one of the caller's own customers.
 //           Body: { customer_id, full_name?, company_name?, email?, password? }.
+//   PUT   — set the inventory cap on one account/product.
+//           Body: { account_id, product_id, cap }.
+//           Folded in here rather than living at /api/allocation: the project
+//           is at the 12-function ceiling of its Vercel plan, and a 13th
+//           endpoint fails the deploy outright. Account management is the
+//           closest home for it.
 //
 // Both paths require the caller to be a reseller. PATCH additionally requires
 // the target's parent_reseller_id to equal the caller's id, so a reseller
@@ -25,7 +31,7 @@ async function resolveUser(req) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST' && req.method !== 'PATCH')
+  if (req.method !== 'POST' && req.method !== 'PATCH' && req.method !== 'PUT')
     return res.status(405).json({ error: true, message: 'Method not allowed' })
 
   try {
@@ -33,7 +39,7 @@ export default async function handler(req, res) {
     if (!user?.id) return res.status(401).json({ error: true, message: 'Please sign in.' })
 
     // caller must be a reseller
-    const pr = await fetch(`${SB()}/rest/v1/profiles?id=eq.${user.id}&select=account_type,can_create_resellers`, {
+    const pr = await fetch(`${SB()}/rest/v1/profiles?id=eq.${user.id}&select=account_type,can_create_resellers,parent_reseller_id`, {
       headers: { apikey: SRK(), Authorization: `Bearer ${SRK()}` },
     })
     const rows = await pr.json()
@@ -42,6 +48,7 @@ export default async function handler(req, res) {
     const callerCanCreateResellers = rows?.[0]?.can_create_resellers === true
 
     if (req.method === 'PATCH') return updateCustomer(req, res, user)
+    if (req.method === 'PUT') return setAllocation(req, res, user, rows?.[0] || null)
 
     const { email, password, full_name, company_name, account_type, parent_id, markup_pct } = req.body || {}
 
@@ -255,4 +262,57 @@ async function updateCustomer(req, res, user) {
     // second round trip; the profile PATCH uses return=minimal.
     applied: profilePatch,
   })
+}
+
+/* PUT — set the inventory cap on one account/product.
+
+   Who may set what:
+     - a master sets their OWN pool, and the caps of their sub-resellers
+     - a sub-reseller sets the caps of their own customers
+     - nobody raises their own cap unless they are the master, who has no
+       parent to grant to them
+
+   Caps are ceilings, not reservations, so a parent may grant more in total
+   than they hold. That is deliberate: the master's pool is protected because
+   every order decrements every ancestor, not because grants are constrained. */
+async function setAllocation(req, res, user, me) {
+  const { account_id, product_id, cap } = req.body || {}
+  if (!account_id || product_id == null)
+    return res.status(400).json({ error: true, message: 'account_id and product_id are required.' })
+
+  const n = Number(cap)
+  if (!Number.isInteger(n) || n < 0 || n > 1000000)
+    return res.status(400).json({ error: true, message: 'Limit must be a whole number of 0 or more.' })
+
+  const target = await getProfile(account_id)
+  if (!target) return res.status(404).json({ error: true, message: 'Account not found.' })
+
+  if (account_id === user.id) {
+    if (me?.can_create_resellers !== true || me?.parent_reseller_id)
+      return res.status(403).json({ error: true, message: 'Your limit is set by your provider.' })
+  } else if (target.parent_reseller_id !== user.id) {
+    return res.status(403).json({ error: true, message: 'That account is not one of yours.' })
+  }
+
+  const H = { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` }
+  const up = await fetch(
+    `${SB()}/rest/v1/allocations?account_id=eq.${encodeURIComponent(account_id)}&product_id=eq.${Number(product_id)}`,
+    { method: 'PATCH', headers: { ...H, Prefer: 'return=representation' },
+      body: JSON.stringify({ cap: n, updated_at: new Date().toISOString() }) },
+  )
+  let rows = await up.json().catch(() => [])
+  if (!up.ok) return res.status(400).json({ error: true, message: 'Could not save the limit.' })
+
+  // No row yet — a master's direct customer has none by design, and a newly
+  // created account may simply not have been seeded.
+  if (Array.isArray(rows) && rows.length === 0) {
+    const ins = await fetch(`${SB()}/rest/v1/allocations`, {
+      method: 'POST', headers: { ...H, Prefer: 'return=representation' },
+      body: JSON.stringify({ account_id, product_id: Number(product_id), cap: n, used: 0 }),
+    })
+    rows = await ins.json().catch(() => [])
+    if (!ins.ok) return res.status(400).json({ error: true, message: 'Could not create the limit.' })
+  }
+
+  return res.status(200).json({ ok: true, allocation: rows?.[0] || null })
 }
