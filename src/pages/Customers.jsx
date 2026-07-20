@@ -206,7 +206,7 @@ export default function Customers({ viewAs = null }) {
         frontier = level.map((r) => r.id)
       }
 
-      const ids = tree.map((t) => t.id)
+      const ids = [scopeId, ...tree.map((t) => t.id)]
       const { data: ords } = ids.length
         ? await supabase.from('orders')
             .select('id, user_id, product_name, product_id, api_response, assigned_at, created_at, status, bill_price, sale_price')
@@ -222,6 +222,112 @@ export default function Customers({ viewAs = null }) {
       const ordersFor = (id) => (ords || []).filter((o) => o.user_id === id)
 
       const period = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      const money = (v) => (v == null ? '—' : Number(v).toFixed(2))
+
+      // ── Sub-reseller statement ──────────────────────────────────────────
+      // A different question from the master's. The master asks "what do I
+      // invoice this account?" and answers with bill_price. A sub-reseller asks
+      // "what does each of MY customers owe ME?", which is sale_price, with
+      // bill_price alongside so they can see the margin they actually earned.
+      // Both numbers are read off the order row, never recomputed from current
+      // slabs — margin now varies per customer, and a slab or override changed
+      // next month must not rewrite last month's statement.
+      if (scopeProfile?.can_create_resellers !== true) {
+        const RCOLS = 11
+        const rrows = []
+        const rpush = (cells) => { rrows.push(cells) }
+        const rblank = () => rpush(Array(RCOLS).fill(''))
+        const RHEAD = ['Customer', 'ID', 'Company', 'Order #', 'Product', 'Domain(s)',
+                       'Status', 'Renews', 'You paid', 'They paid', 'Your margin']
+
+        rpush([`BILLING STATEMENT — ${(scopeProfile?.full_name || 'Account').toUpperCase()}`,
+               ...Array(RCOLS - 1).fill('')])
+        rpush([`Period: ${period}`, '', '', '', '', '',
+               `Generated ${new Date().toLocaleDateString('en-GB')}`, ...Array(RCOLS - 7).fill('')])
+        rblank()
+
+        let gOrders = 0, gCost = 0, gSale = 0
+
+        const myOwn = ordersFor(scopeId)
+        if (myOwn.length) {
+          rpush(['══ YOUR OWN INVENTORY ══', ...Array(RCOLS - 1).fill('')])
+          rpush(RHEAD)
+          let cost = 0
+          myOwn.forEach((o, i) => {
+            const d = deliverables(o)
+            rpush([
+              i === 0 ? 'Bought for your stock' : '', '', '',
+              o.api_response?.order?.order_id || o.id?.slice(0, 8) || '',
+              o.product_name || '',
+              (d.vendorDomains || []).map((x) => (typeof x === 'string' ? x : x?.name || '')).filter(Boolean).join(', '),
+              d.activated ? 'Automated' : 'Needs setup',
+              d.renewal ? new Date(d.renewal).toLocaleDateString('en-GB') : '',
+              money(o.bill_price), '—', '—',
+            ], 'order')
+            cost += Number(o.bill_price || 0)
+          })
+          gOrders += myOwn.length; gCost += cost
+          rpush(['   Subtotal · your own inventory', '', '',
+                 `${myOwn.length} order${myOwn.length === 1 ? '' : 's'}`, '', '', '', '',
+                 cost.toFixed(2), '—', '—'])
+          rblank()
+        }
+
+        const myCustomers = (byParent[scopeId] || []).filter((a) => a.account_type !== 'reseller')
+        myCustomers.forEach((c) => {
+          rpush([`══ CUSTOMER: ${(c.full_name || 'Unnamed').toUpperCase()} ══`, c.customer_code || '',
+                 c.company_name || '', ...Array(RCOLS - 3).fill('')])
+          rpush(RHEAD)
+          const mine = ordersFor(c.id)
+          if (!mine.length) {
+            rpush([c.full_name || 'Unnamed', c.customer_code || '', c.company_name || '',
+                   '—', 'No orders this period', ...Array(RCOLS - 5).fill('')])
+            rblank()
+            return
+          }
+          let cost = 0, sale = 0
+          mine.forEach((o, i) => {
+            const d = deliverables(o)
+            const b = o.bill_price == null ? null : Number(o.bill_price)
+            const s = o.sale_price == null ? null : Number(o.sale_price)
+            rpush([
+              i === 0 ? (c.full_name || 'Unnamed') : '',
+              i === 0 ? (c.customer_code || '') : '',
+              i === 0 ? (c.company_name || '') : '',
+              o.api_response?.order?.order_id || o.id?.slice(0, 8) || '',
+              o.product_name || '',
+              (d.vendorDomains || []).map((x) => (typeof x === 'string' ? x : x?.name || '')).filter(Boolean).join(', '),
+              d.activated ? 'Automated' : 'Needs setup',
+              d.renewal ? new Date(d.renewal).toLocaleDateString('en-GB') : '',
+              money(b), money(s),
+              b == null || s == null ? '—' : (s - b).toFixed(2),
+            ], 'order')
+            cost += b || 0; sale += s || 0
+          })
+          gOrders += mine.length; gCost += cost; gSale += sale
+          rpush([`   Subtotal · ${c.full_name || 'customer'}`, '', '',
+                 `${mine.length} order${mine.length === 1 ? '' : 's'}`, '', '', '', '',
+                 cost.toFixed(2), sale.toFixed(2), (sale - cost).toFixed(2)])
+          rblank()
+        })
+
+        rpush(['══ TOTAL · ALL CUSTOMERS ══', '', '',
+               `${gOrders} order${gOrders === 1 ? '' : 's'}`, '', '', '', 'USD',
+               gCost.toFixed(2), gSale.toFixed(2), (gSale - gCost).toFixed(2)])
+        rpush(['You paid = what you owe your provider. They paid = what to invoice your customer.',
+               ...Array(RCOLS - 1).fill('')])
+        rpush(['Prices as recorded at time of order. A later slab or override change does not alter past orders.',
+               ...Array(RCOLS - 1).fill('')])
+
+        const rws = XLSX.utils.aoa_to_sheet(rrows)
+        rws['!cols'] = [{ wch: 26 }, { wch: 11 }, { wch: 20 }, { wch: 12 }, { wch: 34 },
+                        { wch: 24 }, { wch: 13 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 13 }]
+        const rwb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(rwb, rws, 'Customer billing')
+        XLSX.writeFile(rwb, `customer-billing-${new Date().toISOString().slice(0, 10)}.xlsx`)
+        return
+      }
+
       const COLS = 9
       const rows = []
       const style = []
@@ -322,7 +428,7 @@ export default function Customers({ viewAs = null }) {
         <div className="cust-head-actions">
           <button className="btn ghost" type="button" onClick={exportAll} disabled={exporting || !(subs || []).length}>
             <i className="ti ti-file-spreadsheet" style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }} aria-hidden="true" />
-            {exporting ? 'Preparing…' : 'Export all orders'}
+            {exporting ? 'Preparing…' : (scopeProfile?.can_create_resellers ? 'Export all orders' : 'Export customer billing')}
           </button>
           <button className="btn primary" type="button" onClick={() => setShowForm(v => !v)}>
             {showForm ? 'Cancel' : (scopeProfile?.can_create_resellers ? '+ New account' : '+ New customer')}
