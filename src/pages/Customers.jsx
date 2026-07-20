@@ -130,6 +130,20 @@ export default function Customers({ viewAs = null }) {
 
   const setE = k => e => setEdit({ ...edit, [k]: e.target.value })
 
+  const [savingMarkup, setSavingMarkup] = useState(false)
+  async function saveMarkup(v) {
+    setSavingMarkup(true); setErr(null)
+    try {
+      const { error } = await supabase.from('profiles')
+        .update({ markup_pct: v }).eq('id', scopeId)
+      if (error) throw new Error(error.message)
+      setEditMsg(v == null ? 'Markup cleared.' : `Markup set to ${v}%.`)
+      window.location.reload()
+    } catch (e) {
+      setErr('Could not save the markup: ' + (e.message || e))
+    } finally { setSavingMarkup(false) }
+  }
+
   const [exporting, setExporting] = useState(false)
 
   /* Export every order beneath this account at any depth: direct customers,
@@ -448,6 +462,38 @@ export default function Customers({ viewAs = null }) {
           </>
         )
       })()}
+
+      {scopeProfile?.account_type === 'reseller' && !scopeProfile?.can_create_resellers && (
+        <div className="markup-bar">
+          <div className="markup-bar-t">
+            Your customer pricing
+            {scopeProfile?.discount_pct
+              ? <span className="markup-bar-cost"> — you buy at {scopeProfile.discount_pct}% off list</span>
+              : <span className="markup-bar-cost"> — no discount slab set yet</span>}
+          </div>
+          <div className="markup-bar-row">
+            {[10, 20, 30].map((v) => {
+              // A markup above list is clamped, so say so rather than let the
+              // partner discover their chosen slab does nothing.
+              const d = scopeProfile?.discount_pct
+              const willCap = d != null && (1 - d / 100) * (1 + v / 100) > 1
+              return (
+                <button key={v} type="button"
+                  className={'slab-opt' + (scopeProfile?.markup_pct === v ? ' on' : '')}
+                  onClick={() => saveMarkup(v)} disabled={savingMarkup}>
+                  +{v}%{willCap && <span className="slab-cap"> capped</span>}
+                </button>
+              )
+            })}
+            <button type="button" className={'slab-opt' + (scopeProfile?.markup_pct == null ? ' on' : '')}
+              onClick={() => saveMarkup(null)} disabled={savingMarkup}>Not set</button>
+          </div>
+          <p className="markup-bar-note">
+            Added to your own cost when your customers buy. Never charged above the public
+            list price — a slab marked <em>capped</em> would exceed it and is clamped.
+          </p>
+        </div>
+      )}
 
       {editMsg && <div className="alert ok" style={{ marginTop: 12 }}>{editMsg}</div>}
 

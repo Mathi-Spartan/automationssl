@@ -2363,3 +2363,13 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .price-note.capped { color: #8a5a00; }
 .acct-slab { background: #eaf7ef; color: #1a7a45; }
 .acct-slab-none { background: #fdeef0; color: #a8112b; }
+
+/* ── reseller sets their own customer markup ── */
+.markup-bar { background: #fbfcfe; border: 1px solid #e2ebf4; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+.markup-bar-t { font-size: 0.86rem; font-weight: 700; color: #06182c; margin-bottom: 9px; }
+.markup-bar-cost { font-weight: 500; color: #7f93a6; }
+.markup-bar-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.markup-bar-note { font-size: 0.74rem; color: #8fa3b4; line-height: 1.5; margin: 9px 0 0; }
+.slab-cap { font-size: 0.62rem; font-weight: 700; color: #8a5a00; margin-left: 4px; }
+.of-plan-was { display: block; font-size: 0.68rem; color: #9aacba; text-decoration: line-through; margin-top: 2px; }
+.of-plan-blocked { font-size: 0.72rem; color: #a8112b; margin-top: 5px; line-height: 1.45; }

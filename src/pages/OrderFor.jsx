@@ -44,6 +44,22 @@ export default function OrderFor() {
     : (customer?.full_name || 'this customer')
   const toStock = isStock && dest === 'stock'
 
+  // Prices must come from resolve_price, not catalog.js. The static strings are
+  // list price, which is only correct for a master's direct customer — a
+  // reseller quoted $63 but charged $56.70 is the exact mismatch the resolver
+  // exists to prevent.
+  const [priceFor, setPriceFor] = useState({})
+  const priceSubject = targetId || session?.user?.id
+  useEffect(() => {
+    if (!priceSubject) return
+    let alive = true
+    Promise.all(PRODUCTS.map((pr) =>
+      supabase.rpc('resolve_price', { buyer: priceSubject, prod: pr.id })
+        .then(({ data }) => [pr.id, data?.[0] || null])))
+      .then((pairs) => { if (alive) setPriceFor(Object.fromEntries(pairs)) })
+    return () => { alive = false }
+  }, [priceSubject])
+
   useEffect(() => {
     if (!session?.user || isStock) return
     supabase.from('profiles').select('id, full_name, parent_reseller_id, account_type')
@@ -185,7 +201,19 @@ export default function OrderFor() {
               <button key={p.id} type="button" className="of-plan-card" onClick={() => { setSelectedPlan(p); setForm(f => ({ ...f, period: p.periods[0] })) }}>
                 <div className="of-plan-name">{p.name}</div>
                 <div className="of-plan-meta">{p.coverage} · DV</div>
-                <div className="of-plan-price">{p.price}<span style={{ fontSize: '0.72rem', color: '#9aa8b5', marginLeft: 4 }}>{p.priceNote}</span></div>
+                <div className="of-plan-price">
+                  {priceFor[p.id]?.sale_price != null
+                    ? `$${Number(priceFor[p.id].sale_price).toFixed(2)}`
+                    : p.price}
+                  <span style={{ fontSize: '0.72rem', color: '#9aa8b5', marginLeft: 4 }}>{p.priceNote}</span>
+                  {priceFor[p.id]?.sale_price != null
+                    && Number(priceFor[p.id].sale_price) < Number(priceFor[p.id].list_price) && (
+                    <span className="of-plan-was">was ${Number(priceFor[p.id].list_price).toFixed(2)}</span>
+                  )}
+                </div>
+                {priceFor[p.id] && priceFor[p.id].sale_price == null && (
+                  <div className="of-plan-blocked">{priceFor[p.id].reason}</div>
+                )}
               </button>
             ))}
           </div>
