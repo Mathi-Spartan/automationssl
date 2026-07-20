@@ -85,6 +85,11 @@ export default function DashShell({ children }) {
               <span className="ic" aria-hidden="true">◎</span> Pricing
             </NavLink>
           )}
+          {navIsReseller && !viewingId && (
+            <NavLink to="/dashboard/inventory">
+              <span className="ic" aria-hidden="true">▤</span> Inventory
+            </NavLink>
+          )}
 
           {viewingId && (
             <NavLink to={exitTo} className="dash-nav-exit">

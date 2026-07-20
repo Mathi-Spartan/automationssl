@@ -26,6 +26,18 @@ async function resolveUser(req) {
   } catch { return null }
 }
 
+
+async function rpc(fn, body) {
+  const r = await fetch(`${SB()}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`${fn} failed: ${r.status} ${await r.text().catch(() => '')}`)
+  const rows = await r.json()
+  return Array.isArray(rows) ? rows[0] : rows
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: true, message: 'Method not allowed' })
 
@@ -41,7 +53,7 @@ export default async function handler(req, res) {
     if (!order_id) return res.status(400).json({ error: true, message: 'order_id is required.' })
 
     const ord = await (await fetch(
-      `${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,product_id,gogetssl_order_id,status,api_response,assigned_at`,
+      `${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,product_id,gogetssl_order_id,status,api_response,assigned_at,consumes_quota`,
       { headers: H() }
     )).json()
     const order = ord?.[0]
@@ -55,6 +67,11 @@ export default async function handler(req, res) {
       if (op?.[0]?.parent_reseller_id !== user.id)
         return res.status(403).json({ error: true, message: 'This subscription does not belong to you or your customers.' })
     }
+
+    // 'active' is the vendor's word for an order that has been provisioned.
+    // Anything short of that never consumed the plan it was holding.
+    const vendorStatus = order.api_response?.order?.status || order.status || ''
+    const neverActivated = String(vendorStatus).toLowerCase() !== 'active'
 
     const isAcme = Number(order.product_id) === 300
     const vendorOrderId = order.gogetssl_order_id
@@ -82,10 +99,25 @@ export default async function handler(req, res) {
     await fetch(`${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}`, {
       method: 'PATCH',
       headers: { ...H(), Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: 'cancelled', last_synced_at: new Date().toISOString() }),
+      body: JSON.stringify({
+        status: 'cancelled',
+        last_synced_at: new Date().toISOString(),
+        // Decided once, here, and never recomputed: a plan cancelled before it
+        // ever activated gives its unit back; one cancelled after activation
+        // stays spent.
+        ...(neverActivated ? { consumes_quota: false } : {}),
+      }),
     })
 
-    return res.status(200).json({ ok: true, cancelled: true, order_id, vendor_order_id: vendorOrderId })
+    if (neverActivated && order.consumes_quota !== false && order.user_id && order.product_id != null) {
+      await rpc('release_quota', { buyer: order.user_id, prod: Number(order.product_id), qty: 1 })
+        .catch((e) => console.error('release_quota on cancel failed:', String(e)))
+    }
+
+    return res.status(200).json({
+      ok: true, cancelled: true, order_id, vendor_order_id: vendorOrderId,
+      inventory_returned: neverActivated,
+    })
   } catch (err) {
     return res.status(500).json({ error: true, message: 'Cancellation failed.', detail: String(err.message || err) })
   }

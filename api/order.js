@@ -12,6 +12,20 @@
 
 const GG2 = 'https://my.gogetssl.com/api/v2'
 
+// Quota is a yes/no gate and knows nothing about price. Reserving happens
+// BEFORE the CA call so two concurrent orders cannot both take the last unit —
+// the decision is made inside Postgres under row locks, not here.
+async function rpc(fn, body) {
+  const r = await fetch(`${SB()}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`${fn} failed: ${r.status} ${await r.text().catch(() => '')}`)
+  const rows = await r.json()
+  return Array.isArray(rows) ? rows[0] : rows
+}
+
 const KNOWN_PRODUCTS = {
   300: { name: 'Sectigo ACME Certificate-as-a-Service', category: 'acme' },
   400: { name: 'RapidSSL Plan + Automate', category: 'ais' },
@@ -152,15 +166,50 @@ export default async function handler(req, res) {
       }
     }
 
-    const orderRes = await fetch(endpoint, {
-      method: 'POST',
-      headers: ggHeaders(),
-      body: JSON.stringify(payload),
-    })
-    const order = await orderRes.json()
+    // -------- reserve inventory before spending money --------
+    // Every level of the chain is charged: the buyer, their reseller, and the
+    // master. Refused here costs nothing; refused after the CA call would mean
+    // a paid certificate we cannot record.
+    let reserved = false
+    try {
+      const q = await rpc('reserve_quota', { buyer: targetUserId, prod: Number(product_id), qty: 1, allow_over: false })
+      if (!q?.ok) {
+        return res.status(409).json({
+          error: true,
+          message: q?.blocked_name
+            ? `${q.blocked_name} has no inventory left for this plan (${q.blocked_used} of ${q.blocked_cap} used). Ask your provider to raise the limit.`
+            : 'No inventory left for this plan. Ask your provider to raise the limit.',
+          quota: q || null,
+        })
+      }
+      reserved = true
+    } catch (e) {
+      // A quota system that fails open would silently defeat the limits, so
+      // this refuses rather than guessing.
+      console.error('reserve_quota failed:', String(e))
+      return res.status(503).json({ error: true, message: 'Could not check inventory. Please try again.' })
+    }
+
+    let order, orderRes
+    try {
+      orderRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: ggHeaders(),
+        body: JSON.stringify(payload),
+      })
+      order = await orderRes.json()
+    } catch (e) {
+      await rpc('release_quota', { buyer: targetUserId, prod: Number(product_id), qty: 1 }).catch(() => {})
+      console.error('CA call threw, quota released:', String(e))
+      return res.status(502).json({ error: true, message: 'Could not reach the certificate authority. Nothing was ordered.' })
+    }
 
     const orderId = order?.order?.id
     if (!orderRes.ok || !orderId) {
+      // Nothing was bought, so give the unit back.
+      await rpc('release_quota', { buyer: targetUserId, prod: Number(product_id), qty: 1 }).catch((e) => {
+        console.error('release_quota after CA rejection failed:', String(e))
+      })
       console.error('GoGetSSL V2 order rejected:', JSON.stringify(order))
       return res.status(502).json({
         error: true,
@@ -196,6 +245,11 @@ export default async function handler(req, res) {
     }
 
     // -------- record in Supabase (best-effort; order already exists at the CA) --------
+    // The reservation is deliberately NOT released when this fails. A real
+    // order exists at the CA, so the unit really was spent; handing it back
+    // would let a failing insert be used to order past the limit. The ledger
+    // can therefore over-count relative to the orders table, which is the safe
+    // direction and is visible on the Inventory page.
     let db_ok = true
     try {
       const sbRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/orders`, {

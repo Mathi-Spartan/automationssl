@@ -13,6 +13,19 @@ function ggH() {
   return { Authorization: `GGS ${code}:${pass}`, Accept: 'application/json' }
 }
 
+async function rpc(fn, body) {
+  const r = await fetch(`${SB()}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`${fn} failed: ${r.status}`)
+  const rows = await r.json()
+  return Array.isArray(rows) ? rows[0] : rows
+}
+
+const nextRenewal = (payload) => payload?.items?.[0]?.subscription?.next_renewal || null
+
 async function syncOrder(order) {
   try {
     const category = Number(order.product_id) === 300 ? 'caas' : 'ais'
@@ -24,12 +37,31 @@ async function syncOrder(order) {
     const fresh = await r.json()
 
     const orderStatus = fresh?.order?.status || order.status
+
+    // There is no renewal event to listen for — the CA just renews. The only
+    // signal is the renewal date moving forward, so that is what we count.
+    // allow_over is deliberate: a renewal cannot be refused, so it is permitted
+    // to push an account past its cap rather than be blocked. The over-limit
+    // state surfaces on the Inventory page for the master to top up.
+    let renewed = false
+    const wasDue = nextRenewal(order.api_response)
+    const nowDue = nextRenewal(fresh)
+    if (wasDue && nowDue && new Date(nowDue) > new Date(wasDue)
+        && order.consumes_quota !== false && order.user_id && order.product_id != null) {
+      try {
+        await rpc('reserve_quota', { buyer: order.user_id, prod: Number(order.product_id), qty: 1, allow_over: true })
+        renewed = true
+      } catch (e) {
+        console.error('renewal quota consume failed for', order.id, String(e))
+      }
+    }
+
     await fetch(`${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order.id)}`, {
       method: 'PATCH',
       headers: { ...H(), Prefer: 'return=minimal' },
       body: JSON.stringify({ api_response: fresh, status: orderStatus, last_synced_at: new Date().toISOString() }),
     })
-    return { id: order.id, synced: true, status: orderStatus }
+    return { id: order.id, synced: true, status: orderStatus, renewed }
   } catch (e) {
     return { id: order.id, error: String(e.message) }
   }
@@ -47,7 +79,7 @@ export default async function handler(req, res) {
     // Find orders not synced in the last 6 hours
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
     const r = await fetch(
-      `${SB()}/rest/v1/orders?select=id,product_id,status,api_response,last_synced_at` +
+      `${SB()}/rest/v1/orders?select=id,user_id,product_id,status,api_response,last_synced_at,consumes_quota` +
       `&or=(last_synced_at.is.null,last_synced_at.lt.${encodeURIComponent(sixHoursAgo)})` +
       `&order=last_synced_at.asc.nullsfirst&limit=100`,
       { headers: H() }

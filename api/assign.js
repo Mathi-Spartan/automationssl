@@ -26,6 +26,18 @@ async function resolveUser(req) {
   }
 }
 
+
+async function rpc(fn, body) {
+  const r = await fetch(`${SB()}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`${fn} failed: ${r.status} ${await r.text().catch(() => '')}`)
+  const rows = await r.json()
+  return Array.isArray(rows) ? rows[0] : rows
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: true, message: 'Method not allowed' })
 
@@ -42,7 +54,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: true, message: 'order_id and customer_id are required.' })
 
     const ord = await (await fetch(
-      `${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,assigned_at,product_name,gogetssl_order_id`,
+      `${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&select=id,user_id,assigned_at,product_name,product_id,gogetssl_order_id,consumes_quota`,
       { headers: H() }
     )).json()
     const order = ord?.[0]
@@ -63,6 +75,26 @@ export default async function handler(req, res) {
     if (target.account_type === 'reseller')
       return res.status(400).json({ error: true, message: 'Plans cannot be assigned to a reseller account. Choose one of their customers instead.' })
 
+    // The unit moves with the plan: the reseller who bought it to stock gets it
+    // back, the customer is charged. Done first so a customer with no room is
+    // refused before the permanent assignment is stamped.
+    let moved = false
+    if (order.consumes_quota !== false && order.product_id != null) {
+      try {
+        const m = await rpc('move_quota', { from_account: user.id, to_account: target.id, prod: Number(order.product_id) })
+        if (!m?.ok) {
+          return res.status(409).json({
+            error: true,
+            message: `${m?.blocked_name || 'That customer'} has no inventory left for this plan (${m?.blocked_used} of ${m?.blocked_cap} used). Raise their limit first.`,
+          })
+        }
+        moved = true
+      } catch (e) {
+        console.error('move_quota failed:', String(e))
+        return res.status(503).json({ error: true, message: 'Could not check inventory. Please try again.' })
+      }
+    }
+
     // Assign: move ownership, stamp provenance, clear the reseller's server tag
     // (the customer will tag it to one of their own servers).
     const up = await fetch(`${SB()}/rest/v1/orders?id=eq.${encodeURIComponent(order_id)}&assigned_at=is.null`, {
@@ -77,6 +109,11 @@ export default async function handler(req, res) {
     })
     const upRows = await up.json().catch(() => [])
     if (!up.ok || !Array.isArray(upRows) || upRows.length === 0) {
+      // Put the unit back where it was — no assignment happened.
+      if (moved) {
+        await rpc('move_quota', { from_account: target.id, to_account: user.id, prod: Number(order.product_id) })
+          .catch((e) => console.error('move_quota rollback failed:', String(e)))
+      }
       console.error('Assignment rejected:', up.status, JSON.stringify(upRows))
       return res.status(409).json({ error: true, message: 'Assignment failed — the subscription may have just been assigned.' })
     }

@@ -33,6 +33,18 @@ async function resolveUser(req) {
   }
 }
 
+
+async function rpc(fn, body) {
+  const r = await fetch(`${SB()}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SRK(), Authorization: `Bearer ${SRK()}` },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`${fn} failed: ${r.status} ${await r.text().catch(() => '')}`)
+  const rows = await r.json()
+  return Array.isArray(rows) ? rows[0] : rows
+}
+
 export default async function handler(req, res) {
   if (req.method === 'DELETE') return handleRemove(req, res)
   if (req.method !== 'POST') return res.status(405).json({ error: true, message: 'Method not allowed' })
@@ -74,6 +86,24 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: true, message: `${clean} is already on this subscription.` })
 
     // ---- vendor add (pro-rated billing happens on the CA side) ----
+    // Sectigo CaaS is priced per domain, so an added domain is an inventory
+    // unit like any order. Charged against the plan OWNER's chain, not the
+    // reseller performing the add.
+    let domReserved = false
+    try {
+      const q = await rpc('reserve_quota', { buyer: order.user_id, prod: 300, qty: 1, allow_over: false })
+      if (!q?.ok) {
+        return res.status(409).json({
+          error: true,
+          message: `${q?.blocked_name || 'This account'} has no inventory left for Sectigo CaaS (${q?.blocked_used} of ${q?.blocked_cap} used). Raise the limit before adding another domain.`,
+        })
+      }
+      domReserved = true
+    } catch (e) {
+      console.error('reserve_quota (domain add) failed:', String(e))
+      return res.status(503).json({ error: true, message: 'Could not check inventory. Please try again.' })
+    }
+
     let addRes = await fetch(`${GG2}/certificates/acme/${order.gogetssl_order_id}/domains`, {
       method: 'POST',
       headers: ggHeaders(),
@@ -89,6 +119,10 @@ export default async function handler(req, res) {
       })
       const retryBody = await retry.json().catch(() => ({}))
       if (!retry.ok) {
+        if (domReserved) {
+          await rpc('release_quota', { buyer: order.user_id, prod: 300, qty: 1 })
+            .catch((e) => console.error('release_quota after domain add rejection failed:', String(e)))
+        }
         console.error('CaaS domain add rejected:', addRes.status, JSON.stringify(addBody), '| retry:', retry.status, JSON.stringify(retryBody))
         return res.status(502).json({
           error: true,

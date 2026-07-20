@@ -11,6 +11,7 @@ import Customers from './pages/Customers.jsx'
 import OrderFor from './pages/OrderFor.jsx'
 import Plans from './pages/Plans.jsx'
 import Pricing from './pages/Pricing.jsx'
+import Inventory from './pages/Inventory.jsx'
 import { AuthProvider, useAuth } from './lib/AuthContext.jsx'
 import { supabase } from './lib/supabase.js'
 
@@ -141,6 +142,7 @@ function Chrome() {
           <Route path="/dashboard" element={<DashShell><Dashboard /></DashShell>} />
           <Route path="/dashboard/plans" element={<DashShell><Plans /></DashShell>} />
           <Route path="/dashboard/servers" element={<DashShell><Servers /></DashShell>} />
+          <Route path="/dashboard/inventory" element={<DashShell><Inventory /></DashShell>} />
           <Route path="/dashboard/pricing" element={<DashShell><Pricing /></DashShell>} />
           <Route path="/dashboard/as/:customerId/pricing" element={<DashShell><Pricing /></DashShell>} />
           <Route path="/dashboard/customers" element={<DashShell><Customers /></DashShell>} />
