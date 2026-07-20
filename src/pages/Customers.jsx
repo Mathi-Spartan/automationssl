@@ -4,6 +4,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { deliverables } from './Dashboard.jsx'
+import { PRODUCTS } from '../catalog.js'
 import { Stagger } from '../components/Motion.jsx'
 
 export default function Customers({ viewAs = null }) {
@@ -15,6 +16,9 @@ export default function Customers({ viewAs = null }) {
   const scopeId = viewAs?.id || session?.user?.id
   const scopeProfile = viewAs || profile
   const [subs, setSubs] = useState(null)
+  // list and cost per product, straight from resolve_price so this panel
+  // cannot drift from what the order API actually charges.
+  const [priceRows, setPriceRows] = useState([])
   const [orders, setOrders] = useState([])
   const [form, setForm] = useState({ email: '', password: '', full_name: '', company_name: '', account_type: 'customer' })
   const [busy, setBusy] = useState(false)
@@ -60,6 +64,16 @@ export default function Customers({ viewAs = null }) {
   useEffect(() => {
     if (scopeId && scopeProfile?.account_type === 'reseller') reload()
   }, [scopeId, scopeProfile?.account_type])
+
+  useEffect(() => {
+    if (!scopeId || scopeProfile?.account_type !== 'reseller') return
+    let alive = true
+    Promise.all(PRODUCTS.map((p) =>
+      supabase.rpc('resolve_price', { buyer: scopeId, prod: p.id })
+        .then(({ data }) => ({ id: p.id, name: p.name, unit: p.priceNote, ...(data?.[0] || {}) }))))
+      .then((rows) => { if (alive) setPriceRows(rows) })
+    return () => { alive = false }
+  }, [scopeId, scopeProfile?.account_type, slabs.discount_pct])
 
   if (loading || (session && !profile)) return <div className="form-page"><p>Loading…</p></div>
   if (!session) return <Navigate to="/login" replace state={{ from: '/dashboard/customers' }} />
@@ -510,25 +524,45 @@ export default function Customers({ viewAs = null }) {
             <button type="button" className={'slab-opt' + (slabs.markup_pct == null ? ' on' : '')}
               onClick={() => saveMarkup(null)} disabled={savingMarkup}>Not set</button>
           </div>
-          {slabs.discount_pct != null && (
-            <p className="markup-bar-eg">
-              {(() => {
-                const list = 63
-                const cost = list * (1 - slabs.discount_pct / 100)
-                if (slabs.markup_pct == null) {
-                  return <>RapidSSL costs you <b>${cost.toFixed(2)}</b>. Choose a slab to set what your customers pay.</>
-                }
-                const raw = cost * (1 + slabs.markup_pct / 100)
-                const charged = Math.min(raw, list)
-                return (
-                  <>
-                    RapidSSL: you pay <b>${cost.toFixed(2)}</b>, your customer pays <b>${charged.toFixed(2)}</b>
-                    {raw > list && <span className="markup-bar-capped"> — {slabs.markup_pct}% would be ${raw.toFixed(2)}, capped at the ${list} list price</span>}
-                    {raw <= list && <> — you keep <b>${(charged - cost).toFixed(2)}</b></>}
-                  </>
-                )
-              })()}
-            </p>
+          {slabs.discount_pct != null && priceRows.length > 0 && (
+            <div className="markup-bar-eg">
+              {slabs.markup_pct == null && (
+                <p className="mp-lead">Your cost on every plan. Choose a slab above to set what your customers pay.</p>
+              )}
+              <table className="mp-table">
+                <thead>
+                  <tr>
+                    <th>Plan</th>
+                    <th>List</th>
+                    <th>You pay</th>
+                    <th>Customer pays</th>
+                    <th>You keep</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {priceRows.map((r) => {
+                    const list = Number(r.list_price)
+                    const cost = Number(r.bill_price)
+                    if (!isFinite(list) || !isFinite(cost)) return null
+                    const raw = slabs.markup_pct == null ? null : cost * (1 + slabs.markup_pct / 100)
+                    const charged = raw == null ? null : Math.min(raw, list)
+                    const capped = raw != null && raw > list
+                    return (
+                      <tr key={r.id}>
+                        <td className="mp-name">{r.name}<span className="mp-unit">{r.unit}</span></td>
+                        <td className="mp-num mp-muted">${list.toFixed(2)}</td>
+                        <td className="mp-num">${cost.toFixed(2)}</td>
+                        <td className="mp-num">
+                          {charged == null ? '—' : <b>${charged.toFixed(2)}</b>}
+                          {capped && <span className="markup-bar-capped mp-cap">capped from ${raw.toFixed(2)}</span>}
+                        </td>
+                        <td className="mp-num">{charged == null ? '—' : <b>${(charged - cost).toFixed(2)}</b>}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
           <p className="markup-bar-note">
             Added to your own cost when your customers buy. Never charged above the public

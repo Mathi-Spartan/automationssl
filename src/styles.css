@@ -2382,3 +2382,18 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .plans-card{cursor:default;display:flex;flex-direction:column;gap:6px}
 .plans-card.is-blocked{opacity:.62}
 .plans-buy{margin-top:auto;align-self:flex-start;font-size:.82rem;padding:8px 16px}
+
+/* ── Markup worked example, all products ── */
+.mp-lead { margin: 0 0 8px; font-size: .79rem; color: #55708a; }
+.mp-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.mp-table th { text-align: right; font-weight: 600; color: #8fa3b4; font-size: .7rem;
+  text-transform: uppercase; letter-spacing: .04em; padding: 0 0 6px; border-bottom: 1px solid #eef2f7; }
+.mp-table th:first-child { text-align: left; }
+.mp-table td { padding: 7px 0; border-bottom: 1px solid #f4f7fa; vertical-align: top; }
+.mp-table tr:last-child td { border-bottom: 0; }
+.mp-name { color: #06182c; font-weight: 600; padding-right: 14px; }
+.mp-unit { display: block; font-weight: 400; color: #9aa8b5; font-size: .7rem; }
+.mp-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 14px; }
+.mp-muted { color: #9aa8b5; }
+.mp-cap { display: block; font-size: .68rem; }
+@media (max-width: 700px) { .mp-table { font-size: .72rem; } .mp-unit { display: none; } }
