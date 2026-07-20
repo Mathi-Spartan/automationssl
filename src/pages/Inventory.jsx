@@ -19,6 +19,13 @@ export default function Inventory() {
   const [renewing, setRenewing] = useState({})
   const [err, setErr] = useState(null)
   const [busy, setBusy] = useState(null)
+  const [open, setOpen] = useState(() => new Set())
+
+  const toggle = (id) => setOpen((s) => {
+    const n = new Set(s)
+    if (n.has(id)) n.delete(id); else n.add(id)
+    return n
+  })
 
   const isMaster = profile?.can_create_resellers === true
   const meId = session?.user?.id
@@ -132,12 +139,29 @@ export default function Inventory() {
           {grantable.map((id) => {
             const a = acct(id)
             const list = byAccount[id].sort((x, y) => x.product_id - y.product_id)
+            const isOpen = open.has(id)
+            // The collapsed header has to carry enough to answer "do I need to
+            // open this?" — otherwise collapsing just hides the information.
+            const totUsed = list.reduce((n, r) => n + r.used, 0)
+            const totCap = list.reduce((n, r) => n + r.cap, 0)
+            const over = list.filter((r) => r.used > r.cap).length
+            const atLimit = list.filter((r) => r.used <= r.cap && r.cap - r.used <= 0).length
+            const due = list.reduce((n, r) => n + (renewing[`${id}:${r.product_id}`] || 0), 0)
             return (
-              <div key={id} className="inv-acct">
-                <div className="inv-acct-head">
+              <div key={id} className={'inv-acct' + (isOpen ? ' is-open' : '')}>
+                <button type="button" className="inv-acct-head" aria-expanded={isOpen}
+                  onClick={() => toggle(id)}>
+                  <span className="inv-chev" aria-hidden="true">{isOpen ? '\u25be' : '\u25b8'}</span>
                   <span className="inv-acct-name">{a?.full_name || 'Unnamed'}</span>
                   {a?.customer_code && <span className="inv-acct-code">{a.customer_code}</span>}
-                </div>
+                  <span className="inv-acct-sum">
+                    <span className="inv-acct-tot">{totUsed} of {totCap} used</span>
+                    {over > 0 && <span className="inv-flag is-over">{over} over limit</span>}
+                    {over === 0 && atLimit > 0 && <span className="inv-flag is-out">{atLimit} at limit</span>}
+                    {due > 0 && <span className="inv-flag is-due">{due} renewing</span>}
+                  </span>
+                </button>
+                {isOpen && (
                 <table className="inv-table">
                   <thead>
                     <tr><th>Plan</th><th>Used</th><th>Limit</th><th /></tr>
@@ -156,6 +180,7 @@ export default function Inventory() {
                     ))}
                   </tbody>
                 </table>
+                )}
               </div>
             )
           })}

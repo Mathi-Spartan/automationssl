@@ -2431,7 +2431,27 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .inv-over { font-size: .7rem; color: #b23c3c; font-weight: 600; margin-top: 4px; }
 .inv-due { font-size: .7rem; color: #8a5a00; margin-top: 4px; }
 .inv-acct { background: #fff; border: 1px solid #e2ebf4; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
-.inv-acct-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+/* A button, not a div: keyboard focus and Enter/Space come free, and screen
+   readers get the expanded state from aria-expanded. Needs the usual button
+   resets since it has to look like a row of text. */
+.inv-acct-head { display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: 0; padding: 4px 0; margin: 0; font: inherit; text-align: left;
+  cursor: pointer; border-radius: 8px; }
+.inv-acct.is-open .inv-acct-head { margin-bottom: 6px; }
+.inv-acct-head:hover .inv-acct-name { color: #3375b1; }
+.inv-acct-head:focus-visible { outline: 2px solid var(--cert); outline-offset: 2px; }
+.inv-chev { color: #9aa8b5; font-size: .7rem; width: 12px; flex: none; }
+.inv-acct-sum { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  justify-content: flex-end; }
+.inv-acct-tot { font-size: .74rem; color: #7f93a6; font-variant-numeric: tabular-nums; }
+.inv-flag { font-size: .66rem; font-weight: 600; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+.inv-flag.is-over { background: #fdecec; color: #b23c3c; }
+.inv-flag.is-out { background: #fff4e5; color: #8a5a00; }
+.inv-flag.is-due { background: #eef4fb; color: #3375b1; }
+@media (max-width: 640px) {
+  .inv-acct-head { flex-wrap: wrap; }
+  .inv-acct-sum { margin-left: 20px; width: 100%; justify-content: flex-start; }
+}
 .inv-acct-name { font-weight: 700; color: #06182c; font-size: .86rem; }
 .inv-acct-code { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: #3375b1;
   background: #eef5fc; border-radius: 5px; padding: 1px 6px; }
@@ -2511,6 +2531,7 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
   .slab-opt,
   .mt-type-opt,
   .inv-cap-save,
+  .inv-acct-head,
   .ce-x { min-height: 44px; }
   .slab-opt { padding: 11px 16px; }
   .ce-x { min-width: 44px; }
