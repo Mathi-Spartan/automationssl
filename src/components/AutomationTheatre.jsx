@@ -166,7 +166,7 @@ function ReissueCompare({ slices, drawn, onReplay }) {
 
       <div className="rc-grid">
         <div className={'rc-panel' + (manual >= 3 ? ' strain' : '')}>
-          <div className="rc-head"><i className="rc-dot bad" aria-hidden="true" />Manual reissuance</div>
+          <div className="rc-head"><i className="rc-dot bad" aria-hidden="true" />Manual management</div>
           <div className="rc-note">CSR generation, validation and deployment, per cycle</div>
           <div className="rc-bar">
             {slices.map((sl, i) => (
