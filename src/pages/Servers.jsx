@@ -44,7 +44,10 @@ function CustomerServers({ session }) {
   async function addServer(e) {
     e.preventDefault()
     if (!form.name.trim()) return
-    await supabase.from('servers').insert({ owner_id: session.user.id, name: form.name.trim(), hostname: form.hostname.trim() || null, environment: form.environment, webserver: form.webserver || null })
+    // This insert failed silently for as long as the page existed: the
+    // webserver column did not exist and the error was discarded.
+    const { error } = await supabase.from('servers').insert({ owner_id: session.user.id, name: form.name.trim(), hostname: form.hostname.trim() || null, environment: form.environment, webserver: form.webserver || null })
+    if (error) { setErr(error.message); return }
     setForm({ name: '', hostname: '', environment: 'production', webserver: '' })
     setShowForm(false)
     reload()
@@ -52,7 +55,8 @@ function CustomerServers({ session }) {
 
   async function removeServer(id) {
     if (!confirm('Remove this server? Your plans stay — they just lose this tag.')) return
-    await supabase.from('servers').delete().eq('id', id)
+    const { error } = await supabase.from('servers').delete().eq('id', id)
+    if (error) { setErr(error.message); return }
     reload()
   }
 
