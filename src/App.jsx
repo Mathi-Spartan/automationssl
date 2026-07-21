@@ -10,6 +10,7 @@ import Servers from './pages/Servers.jsx'
 import Customers from './pages/Customers.jsx'
 import OrderFor from './pages/OrderFor.jsx'
 import Plans from './pages/Plans.jsx'
+import Workspace from './pages/Workspace.jsx'
 import Pricing from './pages/Pricing.jsx'
 import Inventory from './pages/Inventory.jsx'
 import { AuthProvider, useAuth } from './lib/AuthContext.jsx'
@@ -141,6 +142,8 @@ function Chrome() {
           <Route path="/signup" element={<Navigate to="/login" replace />} />
           <Route path="/dashboard" element={<DashShell><Dashboard /></DashShell>} />
           <Route path="/dashboard/plans" element={<DashShell><Plans /></DashShell>} />
+          <Route path="/dashboard/workspace" element={<DashShell><Workspace /></DashShell>} />
+          <Route path="/dashboard/as/:customerId/workspace" element={<DashShell><Workspace /></DashShell>} />
           <Route path="/dashboard/as/:customerId/plans" element={<DashShell><Plans /></DashShell>} />
           <Route path="/dashboard/servers" element={<DashShell><Servers /></DashShell>} />
           <Route path="/dashboard/inventory" element={<DashShell><Inventory /></DashShell>} />

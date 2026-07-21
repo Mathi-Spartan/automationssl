@@ -70,6 +70,11 @@ export default function DashShell({ children }) {
           <NavLink to={base} end>
             <span className="ic" aria-hidden="true">▦</span> Overview
           </NavLink>
+          {!navIsReseller && (
+            <NavLink to={`${base}/workspace`}>
+              <span className="ic" aria-hidden="true">◈</span> Workspace
+            </NavLink>
+          )}
           {!navIsReseller && !viewingId && (
             <NavLink to={`${base}/servers`}>
               <span className="ic" aria-hidden="true">🖥</span> Servers

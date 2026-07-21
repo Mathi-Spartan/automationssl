@@ -2568,3 +2568,61 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 /* Whose prices these are, when a reseller is viewing a customer's plans page. */
 .plans-scope { background: #eef4fb; color: #1d466b; border: 1px solid #c9dcf0;
   font-size: .84rem; margin: 0 0 16px; padding: 11px 14px; }
+
+/* ═══ Workspace — the linked servers/plans/domains map (customer only) ═══ */
+.ws-wrap { position: relative; background: #fff; border: 1px solid #e2ebf4; border-radius: 16px; padding: 18px; }
+.ws-wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.ws-wire { fill: none; stroke: #d5e0ea; stroke-width: 1.5; transition: stroke .2s, stroke-width .2s, opacity .25s; }
+.ws-wire.hot { stroke: #17B890; stroke-width: 2.5; }
+.ws-wire.dim { opacity: .15; }
+.ws-board { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 64px; }
+.ws-col h3 { font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: #8fa3b4;
+  font-weight: 600; margin: 0 0 12px; display: flex; justify-content: space-between; }
+.ws-col h3 span { font-family: 'IBM Plex Mono', monospace; }
+.ws-node { position: relative; background: #f5f8fb; border: 1.5px solid #e2ebf4; border-radius: 12px;
+  padding: 11px 13px; margin-bottom: 12px; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, opacity .25s; }
+.ws-node:hover { border-color: #7fb0e0; }
+.ws-node.sel { border-color: #17B890; box-shadow: 0 0 0 3px #e2f7f0; }
+.ws-node.faded { opacity: .28; }
+.ws-node.dropok { border-color: #17B890; border-style: dashed; background: #e2f7f0; }
+.ws-node.busy { opacity: .55; pointer-events: none; }
+.ws-node[draggable="true"] { cursor: grab; }
+.ws-nm { font-size: .84rem; font-weight: 700; color: #06182c; }
+.ws-nm.mono { font-family: 'IBM Plex Mono', monospace; font-size: .78rem; font-weight: 500; }
+.ws-mt { font-family: 'IBM Plex Mono', monospace; font-size: .66rem; color: #8fa3b4; margin-top: 2px; }
+.ws-row { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; align-items: center; }
+.ws-pill { font-size: .66rem; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 4px; }
+.ws-pill.ok { background: #e2f7f0; color: #0e8a6c; }
+.ws-pill.warn { background: #fbf2de; color: #a06f14; }
+.ws-pill.mut { background: #edf2f6; color: #8fa3b4; }
+.ws-pill.ais { background: #e8f2fb; color: #1e5e96; }
+.ws-pill.acme { background: #e2f7f0; color: #0e8a6c; }
+.ws-dt { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex: none; }
+.ws-dt.g { background: #17B890; }
+.ws-dt.a { background: #d99a2b; }
+.ws-price { font-weight: 700; font-size: .8rem; color: #06182c; margin-left: auto; }
+.ws-price em { font-style: normal; font-size: .62rem; color: #8fa3b4; font-weight: 400; }
+.ws-grip { position: absolute; top: 9px; right: 10px; color: #c3d2de; font-size: .72rem; cursor: grab; }
+.ws-lock { position: absolute; top: 8px; right: 10px; font-size: .7rem; opacity: .6; }
+.ws-dnode { padding: 8px 12px; }
+.ws-assign { position: absolute; bottom: 9px; right: 10px; font: inherit; font-size: .68rem; font-weight: 600;
+  color: #1a5a94; background: none; border: 0; cursor: pointer; padding: 2px 4px; }
+.ws-assign:hover { text-decoration: underline; }
+.ws-picker { position: absolute; right: 8px; bottom: 32px; background: #fff; border: 1px solid #e2ebf4;
+  border-radius: 10px; box-shadow: 0 12px 30px rgba(10,37,64,.14); padding: 5px; z-index: 20; min-width: 150px; }
+.ws-picker button { display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit;
+  font-size: .76rem; padding: 7px 9px; border-radius: 7px; cursor: pointer; color: #0a2540; }
+.ws-picker button:hover { background: #e2f7f0; color: #0e8a6c; }
+.ws-empty { font-size: .76rem; color: #8fa3b4; }
+.ws-legend { display: flex; gap: 16px; font-size: .72rem; color: #55708a; margin-top: 14px;
+  padding-top: 13px; border-top: 1px solid #eef2f7; align-items: center; flex-wrap: wrap; }
+.ws-legend .ws-dt { margin-right: 5px; }
+.ws-legend-r { margin-left: auto; color: #8fa3b4; }
+.ws-toasts { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 60; }
+.ws-toast { background: #0e2f20; color: #dfeee5; font-size: .78rem; border-radius: 10px; padding: 10px 16px;
+  display: flex; gap: 9px; align-items: center; box-shadow: 0 10px 30px rgba(6,18,29,.3); }
+.ws-toast.warn { background: #4a3208; color: #f6e8c8; }
+@media (max-width: 900px) { .ws-board { grid-template-columns: 1fr; gap: 18px; } .ws-wires { display: none; } }
