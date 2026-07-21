@@ -266,7 +266,7 @@ export default function Workspace() {
             ))}
           </svg>
           <div className="ws-board">
-            <div className="ws-col">
+            <div className="ws-col ws-col-srv">
               <h3>Servers <span>{serverNodes.length - 1}</span></h3>
               {serverNodes.map((sv) => {
                 const pls = plans.filter((p) => p.server === sv.id)
@@ -291,7 +291,7 @@ export default function Workspace() {
               })}
             </div>
 
-            <div className="ws-col">
+            <div className="ws-col ws-col-pln">
               <h3>Plans <span>{plans.length}</span></h3>
               {plans.length === 0 && <p className="ws-empty">No plans yet — buy one and it appears here.</p>}
               {plans.map((p) => (
@@ -329,7 +329,7 @@ export default function Workspace() {
               ))}
             </div>
 
-            <div className="ws-col">
+            <div className="ws-col ws-col-dom">
               <h3>Domains <span>{domains.length}</span></h3>
               {domains.length === 0 && <p className="ws-empty">Domains appear as your plans issue certificates.</p>}
               {domains.map((dm) => (
