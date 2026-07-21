@@ -2607,10 +2607,11 @@ a:hover > .b-arrow, a:hover .b-arrow, button:hover .b-arrow { transform: transla
 .ws-grip { position: absolute; top: 9px; right: 10px; color: #c3d2de; font-size: .72rem; cursor: grab; }
 .ws-lock { position: absolute; top: 8px; right: 10px; font-size: .7rem; opacity: .6; }
 .ws-dnode { padding: 8px 12px; }
-.ws-assign { position: absolute; bottom: 9px; right: 10px; font: inherit; font-size: .68rem; font-weight: 600;
+.ws-actions { text-align: right; margin-top: 6px; }
+.ws-assign { font: inherit; font-size: .68rem; font-weight: 600;
   color: #1a5a94; background: none; border: 0; cursor: pointer; padding: 2px 4px; }
 .ws-assign:hover { text-decoration: underline; }
-.ws-picker { position: absolute; right: 8px; bottom: 32px; background: #fff; border: 1px solid #e2ebf4;
+.ws-picker { position: absolute; right: 8px; bottom: 36px; background: #fff; border: 1px solid #e2ebf4;
   border-radius: 10px; box-shadow: 0 12px 30px rgba(10,37,64,.14); padding: 5px; z-index: 20; min-width: 150px; }
 .ws-picker button { display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit;
   font-size: .76rem; padding: 7px 9px; border-radius: 7px; cursor: pointer; color: #0a2540; }

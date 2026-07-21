@@ -63,7 +63,7 @@ export default function Workspace() {
     if (!scopeId) return
     const [o, sv] = await Promise.all([
       supabase.from('orders')
-        .select('id, product_id, product_name, status, server_id, api_response, sale_price, created_at')
+        .select('id, product_id, product_name, status, server_id, api_response, sale_price, created_at, gogetssl_order_id')
         .eq('user_id', scopeId).neq('status', 'cancelled').order('created_at'),
       supabase.from('servers')
         .select('id, name, hostname, environment, webserver')
@@ -82,7 +82,7 @@ export default function Workspace() {
       id: o.id,
       dbId: o.id,
       label: o.product_name || 'Plan',
-      orderNo: o.api_response?.order?.order_id || o.id.slice(0, 8),
+      orderNo: o.gogetssl_order_id || o.id.slice(0, 8),
       caas: o.product_id === CAAS,
       server: o.server_id || 'unassigned',
       price: o.sale_price != null ? `$${Number(o.sale_price).toFixed(2)}` : '',
@@ -312,9 +312,11 @@ export default function Workspace() {
                     {p.price && <span className="ws-price">{p.price}<em>/yr{p.perDomain ? ' · per-domain' : ''}</em></span>}
                   </div>
                   {!impersonating && (
-                    <button type="button" className="ws-assign" onClick={(e) => { e.stopPropagation(); setPicker(picker === p.id ? null : p.id) }}>
-                      Assign ▾
-                    </button>
+                    <div className="ws-actions">
+                      <button type="button" className="ws-assign" onClick={(e) => { e.stopPropagation(); setPicker(picker === p.id ? null : p.id) }}>
+                        Assign ▾
+                      </button>
+                    </div>
                   )}
                   {picker === p.id && (
                     <div className="ws-picker" onClick={(e) => e.stopPropagation()}>
